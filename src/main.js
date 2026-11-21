@@ -6,7 +6,7 @@
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
     else if (params.get('tm') === 'sync') mode = 'sync';
-    else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 3 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in
+    else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 10 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in (approving in the Authenticator can take a while)
     else if (PHONE && params.get('tm') === 'agenda') { mode = 'redirect'; target = PORTAL + '?tm=rooster'; } // link from v3
   } else if (!TOP && !TEST) mode = 'none';
   else if (!PHONE) mode = 'classic';

@@ -12,7 +12,14 @@
       get(`/sap/opu/odata/sap/ZC_EP_SCHEDULE_SRV/Events?sap-client=200&$format=json&$skip=0&$top=3000&$filter=${encodeURIComponent(filter)}&$expand=EventTeacherSet,EventLocationSet`),
       get('/sap/opu/odata/sap/ZC_IER_SRV/EvaluationSet?sap-client=200&$format=json&$expand=toLocation,toStaff'),
     ]);
-    if (ev.status === 'rejected' && ex.status === 'rejected') throw ev.reason;
+    if (ev.status === 'rejected' && ex.status === 'rejected') {
+      const x = ev.reason, y = ex.reason;
+      const detail = `lessen: ${why(x)} · examens: ${why(y)}`;
+      const e = (x && x.auth) ? x : (y && y.auth) ? y : new Error('KU Loket');
+      e.detail = detail;
+      e.http = !!(x && x.status && y && y.status); // KU Loket itself answered with an error
+      throw e;
+    }
     const lessons = ev.status === 'fulfilled' ? res(ev.value && ev.value.d).map((e) => {
       const loc = res(e.EventLocationSet)[0] || {};
       return {
@@ -32,14 +39,48 @@
     return { lessons, exams, range: [ymd(from), ymd(to)] }; // null = could not be read this time (keep the old copy)
   }
 
-  /* runs inside the hidden KU Loket frame that the app opens.
-     Read first, stop the page only when that worked: when KU Loket's own session has expired, the page we are on
-     is KU Loket's sign-in step (an automatic form to the KU Leuven login). Stopping that would make every
-     attempt fail, so it is left running; it comes back here once you are signed in. */
+  /* what went wrong, in a few words: shown small under an error, so a screenshot says what happened */
+  function why(e) {
+    if (!e) return 'onbekend';
+    if (e.detail) return e.detail;
+    if (e.auth) return 'aanmelden nodig';
+    if (e.status) return 'HTTP ' + e.status;
+    if (e.name === 'SyntaxError') return 'onverwacht antwoord';
+    return 'geen verbinding (' + String(e.message || e).slice(0, 40) + ')';
+  }
+  /* When KU Loket's own session has run out, the page we are on is its sign-in step: a form that sends you to
+     the KU Leuven login by itself. Meanwhile the timetable requests fail (Safari cancels them, or they are sent to
+     the login), so a failed request says nothing until we know which page this is. The sign-in step must never be stopped. */
+  const signInStep = () => !!document.querySelector('input[name="SAMLRequest"],input[name="SAMLResponse"],form[action*="idp.kuleuven.be"]');
+  const whenParsed = (fn) => {
+    if (document.readyState !== 'loading') setTimeout(fn, 250);
+    else document.addEventListener('DOMContentLoaded', () => setTimeout(fn, 250), { once: true });
+  };
+
+  /* runs inside the hidden KU Loket frame that the app opens. Read first, stop the page only when that worked. */
   function bridge() {
-    const post = (m) => { try { W.parent.postMessage(Object.assign({ tm4: 'agenda' }, m), PORTAL_ORIGIN); } catch (_) {} };
-    loketData().then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); },
-      (e) => post(e && e.auth ? { ok: false, pending: 'login' } : { ok: false, error: String((e && e.message) || e) }));
+    let sent = false;
+    const post = (m) => {
+      if (sent) return;
+      sent = true;
+      try { W.parent.postMessage(Object.assign({ tm4: 'agenda' }, m), PORTAL_ORIGIN); } catch (_) {}
+    };
+    // leaving for the KU Leuven login (which can't finish inside a hidden frame): the app opens KU Loket itself
+    W.addEventListener('pagehide', () => post({ ok: false, pending: 'login' }));
+    let tries = 0;
+    const attempt = () => {
+      tries++;
+      loketData().then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); }, (e) => {
+        if (e && e.auth) { post({ ok: false, pending: 'login', why: why(e) }); return; }
+        whenParsed(() => {
+          if (sent) return;
+          if (signInStep()) { post({ ok: false, pending: 'login', why: why(e) }); return; }
+          if (tries < 2) { setTimeout(attempt, 1000); return; }
+          post({ ok: false, error: why(e) });
+        });
+      });
+    };
+    attempt();
   }
 
   /* top-level: "Bijwerken" opens KU Loket itself (signing in if needed), which reads the timetable and goes
@@ -51,29 +92,57 @@
   }
   function syncPage() {
     const back = syncBack();
-    ss.set('tm4-sync', JSON.stringify({ back, ts: Date.now() }));
+    let prev = {};
+    try { prev = JSON.parse(ss.get('tm4-sync') || '{}'); } catch (_) {}
+    const reloads = prev.ts && Date.now() - prev.ts < 10 * 60e3 ? prev.reloads || 0 : 0;
+    ss.set('tm4-sync', JSON.stringify({ back, ts: Date.now(), reloads }));
     // cover whatever KU Loket shows meanwhile, without touching it (its sign-in step has to keep running)
     const dark = isDark();
     const cover = document.createElement('style');
     cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"Rooster bijwerken\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
     (document.head || document.documentElement).appendChild(cover);
-    const fail = (title, text) => {
+    let gone = false;
+    W.addEventListener('pagehide', () => { gone = true; });
+    W.addEventListener('beforeunload', () => { gone = true; });
+    // came back here with the back button (e.g. from the KU Leuven login): return to the app instead of waiting
+    W.addEventListener('pageshow', (ev) => { if (ev.persisted) { ss.del('tm4-sync'); location.replace(`${PORTAL}?tm=${back.split('/')[0]}`); } });
+    const again = () => location.replace(`${LOKET}?tm=sync&back=${encodeURIComponent(back)}`);
+    const fail = (title, text, detail) => {
       ss.del('tm4-sync');
       takeover('Rooster bijwerken', [PORTAL_ORIGIN]);
       document.body.classList.add('no-tabs');
-      document.body.innerHTML = `<div class="sync" data-tm4>${ico('warn')}<b style="color:var(--text);font-size:19px">${esc(title)}</b><span>${esc(text)}</span><button type="button" class="btn" id="tm4-retry">Opnieuw proberen</button><a class="btn ghost" href="${PORTAL}?tm=${back.split('/')[0]}">Terug naar Toledo</a></div>`;
-      document.getElementById('tm4-retry').addEventListener('click', () => location.replace(`${LOKET}?tm=sync&back=${encodeURIComponent(back)}`));
+      document.body.innerHTML = `<div class="sync" data-tm4>${ico('warn')}<b style="color:var(--text);font-size:19px">${esc(title)}</b><span>${esc(text)}</span><button type="button" class="btn" id="tm4-retry">Opnieuw proberen</button><a class="btn ghost" href="${PORTAL}?tm=${back.split('/')[0]}">Terug naar Toledo</a>${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
+      document.getElementById('tm4-retry').addEventListener('click', again);
     };
-    loketData().then((data) => {
-      ss.del('tm4-sync');
-      try { W.stop(); } catch (_) {}
-      location.replace(`${PORTAL}?tm=${back.split('/')[0]}#${back}&tmsync=${encodeURIComponent(JSON.stringify(data))}`);
-    }, (e) => {
-      if (e && e.auth) {
-        // KU Loket is signing you in on this very page: let it. If nothing happens, say so.
-        setTimeout(() => fail('Aanmelden bij KU Loket lukte niet', 'Open KU Loket één keer gewoon en probeer het daarna opnieuw.'), 30000);
-      } else fail('Het rooster kon niet geladen worden', 'KU Loket antwoordde niet zoals verwacht. Probeer het zo opnieuw.');
-    });
+    let tries = 0;
+    const attempt = () => {
+      tries++;
+      loketData().then((data) => {
+        ss.del('tm4-sync');
+        try { W.stop(); } catch (_) {}
+        location.replace(`${PORTAL}?tm=${back.split('/')[0]}#${back}&tmsync=${encodeURIComponent(JSON.stringify(data))}`);
+      }, (e) => {
+        if (gone) return; // on its way to the KU Leuven login: the page after it carries on
+        whenParsed(() => {
+          if (gone) return;
+          if (signInStep()) {
+            // KU Loket is signing you in from this very page: let it. If nothing happens, say so.
+            setTimeout(() => { if (!gone) fail('Aanmelden bij KU Loket lukte niet', 'Open KU Loket één keer gewoon en probeer het daarna opnieuw.', why(e)); }, 30000);
+            return;
+          }
+          if (tries < 3) { setTimeout(attempt, tries === 1 ? 1200 : 3000); return; }
+          if (!(e && e.http) && reloads < 1) {
+            // a fresh page from KU Loket: if its session ran out, that page signs you in again
+            ss.set('tm4-sync', JSON.stringify({ back, ts: Date.now(), reloads: reloads + 1 }));
+            again();
+            return;
+          }
+          if (e && e.auth) fail('Aanmelden bij KU Loket lukte niet', 'Open KU Loket één keer gewoon en probeer het daarna opnieuw.', why(e));
+          else fail('Het rooster kon niet geladen worden', 'KU Loket reageert nu niet. Probeer het over een paar minuten opnieuw.', why(e));
+        });
+      });
+    };
+    attempt();
   }
 
   /* portal while signing in: the normal Toledo page does the login, then we switch back to the app */

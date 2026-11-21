@@ -198,7 +198,7 @@
     function agendaBanner() {
       if (!P.agenda && P.ag !== 'loading' && P.ag) return `<div class="banner">${ico('calendar')}<span class="main">Je volledige rooster komt uit KU Loket en is nog niet geladen.</span><button type="button" data-act="agsync">Laden</button></div>`;
       const stale = !P.agenda || Date.now() - P.agenda.ts > 3 * 864e5;
-      if (P.ag === 'failed' && stale) return `<div class="banner">${ico('warn')}<span class="main">Het lessenrooster kon niet bijgewerkt worden.</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
+      if (P.ag === 'failed' && stale) return `<div class="banner">${ico('warn')}<span class="main">${P.agLogin ? 'KU Loket wil dat je even opnieuw aanmeldt om je rooster bij te werken.' : 'Het lessenrooster kon niet bijgewerkt worden.'}</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
       return '';
     }
     function authBanner() {
@@ -369,7 +369,7 @@
       if (!X.length) {
         if (!P.agenda) {
           if (P.ag === 'loading' || !P.ag) return skGroup(3);
-          return empty('cap', 'Examenrooster nog niet geladen', 'Je examens komen uit KU Loket.', '<p style="margin-top:14px"><button type="button" class="btn" data-act="agsync">Examenrooster laden</button></p>');
+          return empty('cap', 'Examenrooster nog niet geladen', P.agLogin ? 'Je examens komen uit KU Loket. Die wil dat je even opnieuw aanmeldt.' : 'Je examens komen uit KU Loket.', '<p style="margin-top:14px"><button type="button" class="btn" data-act="agsync">Examenrooster laden</button></p>');
         }
         return empty('cap', 'Geen examens', 'Er staan (nog) geen examens in je individueel examenrooster.');
       }
@@ -383,7 +383,9 @@
     FILL.rooster = (el) => {
       segSet(el, P.seg);
       const now = Date.now();
-      put($('[data-k="body"]', el), agendaBanner() + (P.seg === 'examens' ? roosterExamens(now) : roosterLessen(now)) + freshLine(P.seg === 'examens'));
+      // the empty Examens page has its own button, so no banner above it
+      const banner = P.seg === 'examens' && !P.agenda && !exams().length ? '' : agendaBanner();
+      put($('[data-k="body"]', el), banner + (P.seg === 'examens' ? roosterExamens(now) : roosterLessen(now)) + freshLine(P.seg === 'examens'));
     };
 
     // ---- Updates
@@ -640,7 +642,7 @@
       f.tabIndex = -1;
       f.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
       let timer = 0, done = false;
-      const finish = (ok) => {
+      const finish = (ok, login) => {
         if (done) return;
         done = true;
         clearTimeout(timer);
@@ -648,8 +650,9 @@
         setTimeout(() => f.remove(), 50);
         bridgeBusy = false;
         P.ag = ok ? 'ok' : 'failed';
+        P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
-        else { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
+        else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
         dirty('vandaag', 'rooster');
         if (P.tab === 'rooster') setNav(NAVS.rooster());
         if (!ok && force) ACTS.agsync();
@@ -660,15 +663,22 @@
         if (e.data.ok && e.data.data) { saveAgenda(e.data.data); finish(true); return; }
         if (e.data.pending) {
           // KU Loket wants you to sign in first: that needs the real page
-          if (force) { finish(false); return; }
+          if (force) { finish(false, true); return; }
+          // show the "Laden" button right away; the frame may still get through by itself, so give it a little longer
+          if (P.ag === 'loading') {
+            P.ag = 'failed';
+            P.agLogin = true;
+            dirty('vandaag', 'rooster');
+            if (P.tab === 'rooster') setNav(NAVS.rooster());
+          }
           clearTimeout(timer);
-          timer = setTimeout(() => finish(false), 15000);
+          timer = setTimeout(() => finish(false, true), 20000);
           return;
         }
         finish(false);
       };
       W.addEventListener('message', onMsg);
-      timer = setTimeout(() => finish(false), force ? 7000 : 15000);
+      timer = setTimeout(() => finish(false), force ? 7000 : 10000);
       document.body.appendChild(f);
     }
 
