@@ -100,6 +100,29 @@
     return `--c:rgb(${c});--ct:${lum > 170 ? '#1c1c1e' : '#fff'};--cd-l:rgb(${dk});--cd-d:rgb(${lt})`;
   }
 
+  /* ================================================================== updates */
+  // Userscripts on iPhone never updates by itself. Check GitHub now and then and offer the new version in the app.
+  const UPDATE_URL = 'https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js';
+  const newerThan = (a, b) => {
+    const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+    for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
+    return false;
+  };
+  function checkUpdate(cb) {
+    if (TEST) return;
+    let st = null; try { st = JSON.parse(localStorage.getItem('tm4:upd') || 'null'); } catch (_) {}
+    if (st && st.v && newerThan(st.v, VERSION)) cb(st.v);
+    if (st && Date.now() - st.ts < 3 * 3600e3) return;
+    fetch(UPDATE_URL + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+      .then((r) => (r.ok ? r.text() : ''))
+      .then((t) => {
+        const m = /@version\s+([\d.]+)/.exec(t);
+        if (!m) return;
+        try { localStorage.setItem('tm4:upd', JSON.stringify({ ts: Date.now(), v: m[1] })); } catch (_) {}
+        if (newerThan(m[1], VERSION)) cb(m[1]);
+      }, () => {});
+  }
+
   /* ================================================================== storage + network */
   const NS = 'tm4:';
   const store = {
