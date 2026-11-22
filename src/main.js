@@ -2,6 +2,7 @@
   if (!SITE) return;
   let mode = 'classic', target = '';
   if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
+  else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
@@ -30,14 +31,15 @@
   }
   W.__TM_MODE__ = mode;
 
-  if (mode === 'redirect') { try { W.stop(); } catch (_) {} location.replace(target); return; }
-  if (mode === 'bridge') { bridge(); return; }
   // build our page once the parser has created <html> (before any of the page's own scripts can run)
   const whenRoot = (fn) => {
     if (document.documentElement) { fn(); return; }
     const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); fn(); } });
     mo.observe(document, { childList: true });
   };
+  if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
+  if (mode === 'bridge') { bridge(); return; }
+  if (mode === 'cover') { whenRoot(() => cover('Openen\u2026')); return; }
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }

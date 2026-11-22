@@ -1,7 +1,7 @@
   /* ================================================================== environment */
   const W = window;
   const VERSION = '__VERSION__';
-  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp' }[location.hostname];
+  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
   const PATH = W.__TM_PATH__ || location.pathname;
@@ -296,12 +296,42 @@
     // home-screen icon (Safari's "Zet op beginscherm" reads it from the page; without one it draws a letter)
     add('link', { rel: 'apple-touch-icon', sizes: '180x180', href: TM_ICON });
     add('link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://toledo.kuleuven.be/portal/images/favicon/favicon-32x32.png' });
-    add('style', {}).textContent = CSS;
+    add('style', { 'data-tm4': '' }).textContent = CSS;
     applyTheme(THEME);
     if (/[?&#]th=(light|dark|auto)\b/.test(location.hash + '&' + location.search)) saveTheme(THEME);
     try { history.scrollRestoration = 'manual'; } catch (_) {}
     initPress();
     initMotion();
+    keepOut();
+  }
+
+  // Safari can keep handing the page's own markup and styles to the document after we took over (when the whole
+  // page had already arrived, or when the extension started the script a moment late), and the site's own app may
+  // still add things. None of that may show for even a moment or restyle the app: the CSS hides everything in
+  // <body> that isn't ours, and stylesheets that aren't ours are taken out as soon as they appear.
+  function keepOut() {
+    const root = document.documentElement;
+    if (!root || root.__tmKeep) return;
+    root.__tmKeep = true;
+    const foreignStyle = (n) => n.nodeType === 1 && !n.hasAttribute('data-tm4') && (n.tagName === 'STYLE' || (n.tagName === 'LINK' && /stylesheet/i.test(n.getAttribute('rel') || '')));
+    const clean = () => {
+      [root, document.head].forEach((box) => { if (box) Array.from(box.children).forEach((n) => { if (foreignStyle(n)) n.remove(); }); });
+      if (document.head && headObs.__on !== document.head) { headObs.disconnect(); headObs.observe(document.head, { childList: true }); headObs.__on = document.head; }
+    };
+    const headObs = new MutationObserver(clean);
+    new MutationObserver(clean).observe(root, { childList: true });
+    clean();
+  }
+
+  // a page on the way somewhere else (a redirect, Toledo's link service): cover it in the app's colours instead of
+  // showing it, without touching it (its own redirect has to keep running)
+  function cover(text) {
+    const dark = isDark();
+    const st = document.createElement('style');
+    st.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}body{visibility:hidden!important}html::after{content:"${text}";visibility:visible;position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
+    (document.head || document.documentElement).appendChild(st);
+    // still here after a while: the page has something to say (an error, a question), so show it after all
+    setTimeout(() => st.remove(), 7000);
   }
 
   /* ================================================================== page-to-page motion */

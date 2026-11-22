@@ -94,6 +94,7 @@
       if (out.files.length && !rich && txt.length && txt.length < 200) { out.x = false; out.sn = txt; }
       return out;
     }
+    const UDB = /^ultra[\s_-]*document[\s_-]*body$/i;
     const bodyOf = (x) => (x.body && typeof x.body === 'object' ? (x.body.displayText || x.body.rawText || '') : (x.body || ''));
     function normItem(x) {
       const h = typeof x.contentHandler === 'string' ? x.contentHandler : (x.contentHandler && x.contentHandler.id) || '';
@@ -101,7 +102,7 @@
       const it = { id: x.id, p: x.parentId || '', t: String(x.title || '').trim() || 'Zonder titel', m: Number(x.modifiedDate) || Date.parse(x.modified || x.created || '') || 0 };
       const d = textOf(x.description);
       if (d) it.d = d.slice(0, 200);
-      if (/x-bb-(folder|lesson)/.test(h) || cd.isFolder) it.k = 'folder';
+      if (/x-bb-(folder|lesson)/.test(h) || cd.isFolder) { it.k = 'folder'; if (/x-bb-document/.test(h)) it.ud = 1; }
       else if (/x-bb-file/.test(h)) {
         it.k = 'file';
         const f = cd.file || {};
@@ -112,6 +113,9 @@
       else if (/asmt|assignment|assessment|test|survey|turnitin/.test(h)) it.k = 'task';
       else if (/forum|discussion|journal|blog|wiki|conversation/.test(h)) it.k = 'talk';
       else it.k = 'other';
+      // Ultra's newer "Document" pages keep their text in child items called "ultraDocumentBody":
+      // that text is shown on the page itself (see folderView), never as a row of its own
+      if (it.k === 'doc' && UDB.test(it.t)) { it.ub = 1; if (x.body != null) it.html = sanitize(bodyOf(x), (a) => { const f = fileFromAnchor(a); return f ? frowHtml(f) : ''; }); }
       U.items[it.id] = it;
       return it;
     }
@@ -206,6 +210,12 @@
       return row({ href: f.u || undefined, act: f.u ? '' : 'att', attrs: f.u ? '' : ` data-id="${esc(o.id || '')}"`, iconHtml: `<span class="fi" style="--c:${col}">${lbl}</span>`,
         title: o.title && o.title !== f.n ? o.title : niceName(f.n), sub, external: true, cls: (o.cls || '') + (o.clamp ? ' note' : ''), dot: o.dot });
     }
+    // a folder that is really a Document page: its children hold the page's text
+    function isDocPage(pk, it) {
+      const c = cachedKids(pk, it.id);
+      if (c) return c.v.some((k) => k.ub);
+      return !!it.ud;
+    }
     function folderInfo(pk, it) {
       const c = cachedKids(pk, it.id);
       if (!c) return { sub: it.d || 'Map', fresh: 0 };
@@ -222,11 +232,18 @@
       switch (it.k) {
         case 'folder': {
           const fi = folderInfo(pk, it);
+          if (isDocPage(pk, it)) return row({ href: `#/c/${pk}/f/${it.id}`, attrs: ` data-nav="1" data-title="${esc(it.t)}"`, iconHtml: lead('doc'), title: it.t, sub: path != null ? path : it.d || 'Document', dot: fi.fresh > 0 });
           return row({ href: `#/c/${pk}/f/${it.id}`, attrs: ` data-nav="1" data-title="${esc(it.t)}"`, iconHtml: lead('folder'), title: it.t, sub: path != null ? path : fi.sub, dot: fi.fresh > 0 });
         }
         case 'file':
           return fileRow(it.f, { title: it.t, name: it.f.n, id: it.id, dot, sub: path != null ? path : undefined });
         case 'doc': {
+          if (it.ub) {
+            // the text of a Document page (e.g. in "Nieuw" or a search): open the page it belongs to
+            const par = U.items[it.p];
+            const t = par && !par.ub ? par.t : 'Document';
+            return row({ href: it.p ? `#/c/${pk}/f/${it.p}` : `#/c/${pk}`, attrs: ` data-nav="1" data-title="${esc(t)}"`, iconHtml: lead('doc'), title: t, sub: path != null ? path : textOf(it.html).slice(0, 120) || 'Document', dot });
+          }
           const files = it.files || [];
           if (!it.x && files.length === 1) return fileRow(files[0], { title: it.t, name: files[0].n, dot, sub: path != null ? path : it.sn || undefined, clamp: !!it.sn });
           if (!it.x && files.length > 1 && files.length <= 8) {
@@ -452,10 +469,32 @@
       el.innerHTML = `<div class="lt"><h1 data-k="title"></h1><p class="lt-sub" data-k="sub"></p></div><div data-k="list">${skGroup(5)}</div>`;
       const draw = () => {
         const t = $('[data-k="title"]', el);
-        t.textContent = st.title || 'Map';
+        t.textContent = st.title || (known && known.ud ? 'Document' : 'Map');
         t.className = (st.title || '').length > 26 ? 'long' : '';
         if (!st.items) return;
         const n = st.items.length;
+        if (st.items.some((it) => it.ub)) {
+          // a Document page: show its text right here, with any files or links in between where they belong
+          put($('[data-k="sub"]', el), esc(st.desc));
+          let h = '', grp = '';
+          const flush = () => { if (grp) { h += `<div class="group">${grp}</div>`; grp = ''; } };
+          st.items.forEach((it) => {
+            if (!it.ub) { grp += itemRow(it, pk); return; }
+            if (it.html == null) {
+              // not in the list's answer: fetch this part of the page on its own
+              if (!it.__f) { it.__f = 1; fetchItem(pk, it.id).then((x) => { it.html = x.html || ''; draw(); }, () => { it.html = ''; draw(); }); }
+              flush();
+              h += '<div class="doc"><div class="sk" style="height:14px;width:92%"></div><div class="sk" style="height:14px;width:76%;margin-top:11px"></div><div class="sk" style="height:14px;width:84%;margin-top:11px"></div></div>';
+              return;
+            }
+            if (!it.html.trim()) return;
+            flush();
+            h += `<div class="doc rt">${it.html}</div>`;
+          });
+          flush();
+          put($('[data-k="list"]', el), `<div class="udoc">${h || empty('doc', 'Dit document is leeg', '')}</div>`);
+          return;
+        }
         put($('[data-k="sub"]', el), esc([st.desc, n ? `${n} item${n === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')));
         put($('[data-k="list"]', el), n ? `<div class="group">${st.items.map((it) => itemRow(it, pk)).join('')}</div>` : empty('folder', 'Deze map is leeg', ''));
       };
@@ -513,6 +552,7 @@
       fetchItem(pk, id).then((it) => {
         const target = directTarget(pk, it);
         if (target) { goTo(target, { replace: true }); return; }
+        if (it.ub && it.p) { replaceRoute(`#/c/${pk}/f/${it.p}`); return; }
         replaceRoute(it.k === 'folder' ? `#/c/${pk}/f/${id}` : it.k === 'doc' ? `#/c/${pk}/d/${id}` : `#/c/${pk}`);
       }, (e) => {
         if (e && e.auth) return relogin();

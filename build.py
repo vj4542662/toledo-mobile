@@ -3,7 +3,7 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.5.1"
+VERSION = "4.6.0"
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
@@ -87,6 +87,7 @@ header = f"""// ==UserScript==
 // @match        https://ultra.edu.kuleuven.cloud/ultra/*
 // @match        https://webwsp.aps.kuleuven.be/sap/bc/ui2/flp*
 // @match        https://idp.kuleuven.be/idp/*
+// @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @run-at       document-start
