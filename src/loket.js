@@ -185,33 +185,53 @@
     try { document.cookie = '__Host-rememberDevice=; secure; samesite=none; path=/; max-age=0'; } catch (_) {}
   }
 
-  /* After "Login met KU Leuven Authenticator" on the phone itself, KU Leuven shows a page with an "open the app" button.
-     That button is tapped for you once, so the Authenticator opens straight away (you approve there and come back).
-     Only a link that opens an app is followed (not an ordinary web page), once per page and not when you come back
-     to the page, so it can never loop. */
-  function autoOpenApp() {
-    const RX = /open.{0,30}(app|authenticator)|(app|authenticator).{0,20}(openen|open)/i;
-    const isApp = (u) => /^[a-z][a-z0-9+.-]*:/i.test(u) && !/^(https?|javascript|mailto|tel|about|data|blob):/i.test(u);
-    let done = false, tries = 0;
-    const look = () => {
-      if (done || document.visibilityState !== 'visible') return;
-      const els = Array.from(document.querySelectorAll('a[href], button, [role="button"], input[type="button"], input[type="submit"]'))
-        .filter((el) => el.offsetParent !== null && RX.test((el.textContent || el.value || el.getAttribute('aria-label') || '').trim()));
-      const el = els.find((x) => x.tagName === 'A' && isApp(x.getAttribute('href') || ''));
-      if (!el) { if (++tries < 40) setTimeout(look, 250); return; }
-      const key = 'tm4-openapp:' + el.getAttribute('href').slice(0, 120);
-      if (ss.get(key)) return; // already opened once from this page
-      ss.set(key, '1');
-      done = true;
-      location.href = el.getAttribute('href');
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', look, { once: true }); else look();
+  /* "Log in via KU Leuven Authenticator" normally opens a second step with an "Open KU Leuven Authenticator app" button.
+     iOS only lets a web page open another app from a real tap, so the script uses your tap on the first button for it:
+     it fetches that second step itself (the same request the button would send), shows it, and in the same moment
+     opens the app link from it (icts.kuleuven.be/apps/authenticator/…). You approve in the app and come back to a page
+     that finishes the login by itself, as before. If anything is off (slow network, page changed), the normal second
+     step simply appears, so you never end up worse off. Nothing is filled in: no username, no password. */
+  function fastAuthenticator() {
+    const APP = /^https:\/\/icts\.kuleuven\.be\/apps\/authenticator\/[\w-]+$/;
+    let busy = false;
+    W.addEventListener('click', (e) => {
+      const b = e.target && e.target.closest && e.target.closest('#btnnextauthlogin');
+      const form = b && b.form;
+      if (!form || busy || e.defaultPrevented) return;
+      const rd = form.querySelector('[name="__Host-rememberDevice"]');
+      if (rd && rd.checked) return; // you chose the notification route yourself: leave it alone
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      busy = true;
+      const t0 = Date.now();
+      const body = new URLSearchParams(new FormData(form));
+      body.append(b.name, b.value || '');
+      const plain = () => {
+        const h = document.createElement('input');
+        h.type = 'hidden'; h.name = b.name; h.value = b.value || '';
+        form.appendChild(h);
+        HTMLFormElement.prototype.submit.call(form);
+      };
+      fetch(form.action, { method: 'POST', body, credentials: 'include', redirect: 'follow' })
+        .then((r) => (r.ok ? r.text().then((html) => ({ html, url: r.url })) : Promise.reject(new Error('HTTP ' + r.status))))
+        .then(({ html, url }) => {
+          const a = new DOMParser().parseFromString(html, 'text/html').getElementById('btnMobileDevice');
+          const app = a && a.getAttribute('href');
+          if (!app || !APP.test(app)) throw new Error('no app link');
+          if (url && new URL(url).origin === location.origin) history.replaceState(null, '', url);
+          document.open();
+          document.write(html);
+          document.close();
+          loginSkin(true);
+          if (Date.now() - t0 < 900) location.href = app; // still part of your tap: iOS opens the app
+        })
+        .catch(() => { busy = false; plain(); });
+    }, true);
   }
 
-  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the "Open de app" button tapped for you */
-  function loginSkin() {
-    forgetDevice();
-    autoOpenApp();
+  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the Authenticator app opened straight from your tap */
+  function loginSkin(again) {
+    if (!again) { forgetDevice(); fastAuthenticator(); }
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');
