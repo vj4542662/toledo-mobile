@@ -194,9 +194,34 @@
     W.addEventListener('load', sync, { once: true });
   }
 
-  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, plus the "Remember my device" preference above */
+  /* After "Login met KU Leuven Authenticator" on the phone itself, KU Leuven shows a page with an "open the app" button.
+     That button is tapped for you once, so the Authenticator opens straight away (you approve there and come back).
+     Only a link that opens an app is followed (not an ordinary web page), once per page and not when you come back
+     to the page, so it can never loop. Unticking "Remember my device" yourself switches this off too. */
+  function autoOpenApp() {
+    try { if (localStorage.getItem('tm4-autopush') === 'off') return; } catch (_) {}
+    const RX = /open.{0,30}(app|authenticator)|(app|authenticator).{0,20}(openen|open)/i;
+    const isApp = (u) => /^[a-z][a-z0-9+.-]*:/i.test(u) && !/^(https?|javascript|mailto|tel|about|data|blob):/i.test(u);
+    let done = false, tries = 0;
+    const look = () => {
+      if (done || document.visibilityState !== 'visible') return;
+      const els = Array.from(document.querySelectorAll('a[href], button, [role="button"], input[type="button"], input[type="submit"]'))
+        .filter((el) => el.offsetParent !== null && RX.test((el.textContent || el.value || el.getAttribute('aria-label') || '').trim()));
+      const el = els.find((x) => x.tagName === 'A' && isApp(x.getAttribute('href') || ''));
+      if (!el) { if (++tries < 40) setTimeout(look, 250); return; }
+      const key = 'tm4-openapp:' + el.getAttribute('href').slice(0, 120);
+      if (ss.get(key)) return; // already opened once from this page
+      ss.set(key, '1');
+      done = true;
+      location.href = el.getAttribute('href');
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', look, { once: true }); else look();
+  }
+
+  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, the "Remember my device" preference and opening the app */
   function loginSkin() {
     rememberDevice();
+    autoOpenApp();
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');
