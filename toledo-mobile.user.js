@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Toledo Mobile
 // @namespace    https://toledo.kuleuven.be/portal
-// @version      4.6.2
+// @version      4.6.3
 // @description  KU Leuven Toledo as a real phone app: Vandaag, Vakken, Rooster, Updates and Meer, with course content, files and weblectures one tap away. Runs on your own Toledo session.
 // @match        https://toledo.kuleuven.be/portal*
 // @match        https://ultra.edu.kuleuven.cloud/ultra/*
@@ -34,7 +34,7 @@
   const LOGIN_CSS = "html.tm4-login{--bg:#f2f2f7;--card:#fff;--text:#000;--sub:#6d6d72;--sep:rgba(60,60,67,.2);--fill:rgba(118,118,128,.12);--accent:#0a6cd6;--red:#ff3b30;\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;color-scheme:light;background:var(--bg)!important}\nhtml.tm4-login.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}\n@media (prefers-color-scheme:dark){html.tm4-login:not(.light){color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}}\nhtml.tm4-login body{background:var(--bg)!important;color:var(--text)!important;font-family:var(--font)!important;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}\nhtml.tm4-login .vw-100{width:100%!important}\nhtml.tm4-login .vh-100{height:auto!important;min-height:100vh;min-height:100dvh}\nhtml.tm4-login #background,html.tm4-login #footer{display:none!important}\nhtml.tm4-login .sidebar{width:100%!important;max-width:none!important;min-height:100vh;min-height:100dvh;background:var(--bg)!important;border:0!important;box-shadow:none!important;\npadding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important}\nhtml.tm4-login #language{width:100%;padding:8px 10px 0!important}\nhtml.tm4-login #language .nav-link{color:var(--sub)!important;font-size:14px!important;padding:6px 8px!important}\nhtml.tm4-login #content{width:100%!important;max-width:460px;margin:0 auto;justify-content:flex-start!important;padding:4vh 22px 28px!important}\nhtml.tm4-login #service-info{display:flex;flex-direction:column;align-items:center;text-align:center;margin:0 0 30px!important}\nhtml.tm4-login #serviceDescription,html.tm4-login #serviceDescription .description-logo-text{display:contents!important}\nhtml.tm4-login #serviceDescription .col-3{order:0;flex:none!important;width:auto!important;max-width:none!important;padding:0!important}\nhtml.tm4-login #serviceLogo{display:block;width:80px;height:80px;object-fit:contain;padding:12px;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.1)}\nhtml.tm4-login #service-info h5{order:1;margin:18px 0 6px!important;font:700 30px/36px var(--font)!important;letter-spacing:.2px;color:var(--text)!important}\nhtml.tm4-login #serviceDescription .col-9{order:2;flex:none!important;width:auto!important;max-width:30ch!important;padding:0!important;color:var(--sub)!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .auth-forms{display:flex;flex-direction:column}\nhtml.tm4-login .loginbutton{margin:0!important;padding:0!important}\nhtml.tm4-login .loginMethod:not(.hidden){display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;margin:0!important;padding:12px 18px!important;\nborder:0!important;border-radius:14px!important;font:600 16px/21px var(--font)!important;box-shadow:none!important;text-align:left!important;-webkit-tap-highlight-color:transparent;transition:transform .12s,opacity .12s}\nhtml.tm4-login .loginMethod:active{transform:scale(.98);opacity:.85}\nhtml.tm4-login .loginMethod br{display:none!important}\nhtml.tm4-login #btnnextauthlogin{background:var(--accent)!important;color:#fff!important}\nhtml.tm4-login #btnnextauthlogin img{flex:none;width:32px;height:32px;margin:0!important;padding:3px;border-radius:8px;background:#fff}\nhtml.tm4-login #btnPwdLogin{background:var(--card)!important;color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--sep)!important}\nhtml.tm4-login #btnPwdLogin i,html.tm4-login .loginMethod i{flex:none;margin:0!important;font-size:24px!important;color:inherit!important}\nhtml.tm4-login .form-check:not(.hidden){display:flex!important;align-items:center;gap:10px;min-height:36px;margin:10px 4px 0!important;padding:0!important}\nhtml.tm4-login .form-check-input{position:static!important;flex:none;width:22px!important;height:22px!important;margin:0!important;accent-color:var(--accent);background-color:var(--card)}\nhtml.tm4-login .form-check-label,html.tm4-login .text-muted{color:var(--sub)!important}\nhtml.tm4-login .form-check-label{font-size:15px!important;line-height:20px}\nhtml.tm4-login #orSeperator:not(.hidden){display:flex!important;align-items:center;gap:12px;margin:18px 4px!important;padding:0!important;color:var(--sub)!important;font-size:13px!important;text-transform:uppercase;letter-spacing:.4px;background:none!important}\nhtml.tm4-login #orSeperator::before,html.tm4-login #orSeperator::after{content:\"\"!important;flex:1;height:.5px;margin:0!important;border:0!important;background:var(--sep)!important;position:static!important;width:auto!important}\nhtml.tm4-login .input-group{margin:0 0 10px!important}\nhtml.tm4-login .form-control{height:52px!important;padding:0 14px!important;border:1px solid var(--sep)!important;border-radius:12px!important;background:var(--card)!important;color:var(--text)!important;\nfont:17px var(--font)!important;box-shadow:none!important;-webkit-appearance:none;appearance:none}\nhtml.tm4-login .form-control::placeholder{color:var(--sub)!important;opacity:1}\nhtml.tm4-login .form-control:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)!important;outline:0!important}\nhtml.tm4-login .btn-primary,html.tm4-login #pwdLoginBtn{min-height:52px;border:0!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font:600 17px var(--font)!important;box-shadow:none!important}\nhtml.tm4-login .form-group{margin-bottom:0!important}\nhtml.tm4-login #pwdLoginForm .form-group{margin-top:14px!important}\nhtml.tm4-login #btnGoToMain:not(.hidden){display:flex!important;align-items:center;gap:4px;margin:16px auto 0!important;color:var(--accent)!important;font:500 16px var(--font)!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml.tm4-login #revokeConsent{margin-top:14px!important}\nhtml.tm4-login .alert:not(.hidden){border:0!important;border-radius:12px!important;padding:12px 14px!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .alert-danger{background:color-mix(in srgb,var(--red) 13%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .alert-warning{background:color-mix(in srgb,#ff9500 15%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .help{margin-top:22px!important;text-align:center}\nhtml.tm4-login .help > a{color:var(--sub)!important;font-size:15px!important;text-decoration:none!important}\nhtml.tm4-login .help-links{margin:12px 0 0!important;padding:0!important;list-style:none!important;text-align:left;background:var(--card);border-radius:12px;overflow:hidden}\nhtml.tm4-login .help-links li{margin:0!important}\nhtml.tm4-login .help-links li + li a{border-top:.5px solid var(--sep)}\nhtml.tm4-login .help-links a{display:block;padding:13px 16px;color:var(--accent)!important;font-size:15px;text-decoration:none!important}\nhtml.tm4-login #content h1,html.tm4-login #content h2,html.tm4-login #content h3,html.tm4-login #content h4{color:var(--text)!important;font-family:var(--font)!important}\nhtml.tm4-login #content p{color:var(--text)}\nhtml.tm4-login #content .btn:not(.loginMethod):not(.close):not(#btnGoToMain){min-height:50px;border-radius:14px!important;font:600 17px var(--font)!important}\nhtml.tm4-login #content .btn-secondary,html.tm4-login #content .btn-light,html.tm4-login #content .btn-outline-primary{background:var(--card)!important;color:var(--accent)!important;border:1px solid var(--sep)!important}\nhtml.tm4-login #content a{color:var(--accent)}";
   /* ================================================================== environment */
   const W = window;
-  const VERSION = '4.6.2';
+  const VERSION = '4.6.3';
   const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
@@ -2259,23 +2259,93 @@
       fetch(form.action, { method: 'POST', body, credentials: 'include', redirect: 'follow' })
         .then((r) => (r.ok ? r.text().then((html) => ({ html, url: r.url })) : Promise.reject(new Error('HTTP ' + r.status))))
         .then(({ html, url }) => {
-          const a = new DOMParser().parseFromString(html, 'text/html').getElementById('btnMobileDevice');
+          const doc2 = new DOMParser().parseFromString(html, 'text/html');
+          const a = doc2.getElementById('btnMobileDevice');
           const app = a && a.getAttribute('href');
-          if (!app || !APP.test(app)) throw new Error('no app link');
+          const cont = doc2.getElementById('loginformnextauth');
+          if (!app || !APP.test(app) || !cont) throw new Error('no app link');
+          // where "I signed in with the app, continue" goes: used when you come back from the app (see finishAfterApp)
+          ss.set('tm4-fa', JSON.stringify({ action: new URL(cont.getAttribute('action'), url || location.href).href, ts: Date.now() }));
           if (url && new URL(url).origin === location.origin) history.replaceState(null, '', url);
           document.open();
           document.write(html);
           document.close();
           loginSkin(true);
           if (Date.now() - t0 < 900) location.href = app; // still part of your tap: iOS opens the app
+          finishAfterApp();
         })
         .catch(() => { busy = false; plain(); });
     }, true);
   }
 
+  /* Back from the Authenticator app: KU Leuven's page should notice the approval by itself, but iOS pauses it while
+     you are in the app (and sometimes reloads it as an empty page). So once you are back, the script presses KU Leuven's
+     own "Click this button after you signed in with the app" for you: the same request, sent to the same step. */
+  function finishAfterApp() {
+    const saved = () => { try { const v = JSON.parse(ss.get('tm4-fa') || 'null'); return v && Date.now() - v.ts < 10 * 60e3 ? v : null; } catch (_) { return null; } };
+    const go = () => {
+      const v = saved();
+      if (!v || new URL(v.action).origin !== location.origin) return;
+      ss.del('tm4-fa');
+      const f = document.getElementById('loginformnextauth') || (() => {
+        const n = document.createElement('form');
+        n.method = 'post';
+        n.innerHTML = '<input type="hidden" name="_eventId_proceed" value="">';
+        (document.body || document.documentElement).appendChild(n);
+        return n;
+      })();
+      f.setAttribute('action', f.id ? f.getAttribute('action') || v.action : v.action);
+      HTMLFormElement.prototype.submit.call(f);
+    };
+    let away = document.visibilityState === 'hidden';
+    const back = () => {
+      if (document.visibilityState === 'hidden') { away = true; return; }
+      if (away) setTimeout(() => { if (document.visibilityState === 'visible') go(); }, 1200); // KU Leuven's page gets a moment first
+    };
+    document.addEventListener('visibilitychange', back);
+    W.addEventListener('pageshow', (e) => { if (e.persisted) { away = true; back(); } });
+  }
+
+  /* iOS reloaded the page while you were in the app (it then comes back empty, or as the waiting step again):
+     finish the login from the saved step. The saved step only exists after the app was opened by fastAuthenticator. */
+  function emptyAfterApp() {
+    let v = null;
+    try { v = JSON.parse(ss.get('tm4-fa') || 'null'); } catch (_) {}
+    if (!v || Date.now() - v.ts > 10 * 60e3) return;
+    const check = () => {
+      if (document.getElementById('nextauthLoginForm') || document.querySelector('input[name="SAMLResponse"]')) { ss.del('tm4-fa'); return; }
+      const wait = document.getElementById('loginformnextauth');
+      if (!wait && document.body && document.body.innerText.trim().length > 40) return; // a real page (e.g. an error): leave it
+      ss.del('tm4-fa');
+      const n = wait || document.createElement('form');
+      n.method = 'post';
+      if (!wait) n.action = v.action;
+      if (!wait) { n.innerHTML = '<input type="hidden" name="_eventId_proceed" value="">'; (document.body || document.documentElement).appendChild(n); }
+      HTMLFormElement.prototype.submit.call(n);
+    };
+    if (document.readyState === 'complete') setTimeout(check, 600); else W.addEventListener('load', () => setTimeout(check, 600), { once: true });
+  }
+
+  /* The last step of a login is an empty-looking page that passes the result to Toledo / KU Loket by itself.
+     If iOS paused it (you were in the app), it can stay white: send it on once you look at it again. */
+  function nudgeSamlPost() {
+    let sent = false;
+    const nudge = () => {
+      const i = document.querySelector('form input[name="SAMLResponse"]');
+      if (sent || !i || document.visibilityState !== 'visible') return;
+      sent = true;
+      HTMLFormElement.prototype.submit.call(i.form);
+    };
+    W.addEventListener('beforeunload', () => { sent = true; }); // the page sent it itself: never twice
+    const later = () => setTimeout(nudge, 1500);
+    if (document.readyState === 'complete') later(); else W.addEventListener('load', later, { once: true });
+    document.addEventListener('visibilitychange', later);
+    W.addEventListener('pageshow', later);
+  }
+
   /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the Authenticator app opened straight from your tap */
   function loginSkin(again) {
-    if (!again) { forgetDevice(); fastAuthenticator(); }
+    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); }
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');

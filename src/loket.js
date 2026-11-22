@@ -215,23 +215,93 @@
       fetch(form.action, { method: 'POST', body, credentials: 'include', redirect: 'follow' })
         .then((r) => (r.ok ? r.text().then((html) => ({ html, url: r.url })) : Promise.reject(new Error('HTTP ' + r.status))))
         .then(({ html, url }) => {
-          const a = new DOMParser().parseFromString(html, 'text/html').getElementById('btnMobileDevice');
+          const doc2 = new DOMParser().parseFromString(html, 'text/html');
+          const a = doc2.getElementById('btnMobileDevice');
           const app = a && a.getAttribute('href');
-          if (!app || !APP.test(app)) throw new Error('no app link');
+          const cont = doc2.getElementById('loginformnextauth');
+          if (!app || !APP.test(app) || !cont) throw new Error('no app link');
+          // where "I signed in with the app, continue" goes: used when you come back from the app (see finishAfterApp)
+          ss.set('tm4-fa', JSON.stringify({ action: new URL(cont.getAttribute('action'), url || location.href).href, ts: Date.now() }));
           if (url && new URL(url).origin === location.origin) history.replaceState(null, '', url);
           document.open();
           document.write(html);
           document.close();
           loginSkin(true);
           if (Date.now() - t0 < 900) location.href = app; // still part of your tap: iOS opens the app
+          finishAfterApp();
         })
         .catch(() => { busy = false; plain(); });
     }, true);
   }
 
+  /* Back from the Authenticator app: KU Leuven's page should notice the approval by itself, but iOS pauses it while
+     you are in the app (and sometimes reloads it as an empty page). So once you are back, the script presses KU Leuven's
+     own "Click this button after you signed in with the app" for you: the same request, sent to the same step. */
+  function finishAfterApp() {
+    const saved = () => { try { const v = JSON.parse(ss.get('tm4-fa') || 'null'); return v && Date.now() - v.ts < 10 * 60e3 ? v : null; } catch (_) { return null; } };
+    const go = () => {
+      const v = saved();
+      if (!v || new URL(v.action).origin !== location.origin) return;
+      ss.del('tm4-fa');
+      const f = document.getElementById('loginformnextauth') || (() => {
+        const n = document.createElement('form');
+        n.method = 'post';
+        n.innerHTML = '<input type="hidden" name="_eventId_proceed" value="">';
+        (document.body || document.documentElement).appendChild(n);
+        return n;
+      })();
+      f.setAttribute('action', f.id ? f.getAttribute('action') || v.action : v.action);
+      HTMLFormElement.prototype.submit.call(f);
+    };
+    let away = document.visibilityState === 'hidden';
+    const back = () => {
+      if (document.visibilityState === 'hidden') { away = true; return; }
+      if (away) setTimeout(() => { if (document.visibilityState === 'visible') go(); }, 1200); // KU Leuven's page gets a moment first
+    };
+    document.addEventListener('visibilitychange', back);
+    W.addEventListener('pageshow', (e) => { if (e.persisted) { away = true; back(); } });
+  }
+
+  /* iOS reloaded the page while you were in the app (it then comes back empty, or as the waiting step again):
+     finish the login from the saved step. The saved step only exists after the app was opened by fastAuthenticator. */
+  function emptyAfterApp() {
+    let v = null;
+    try { v = JSON.parse(ss.get('tm4-fa') || 'null'); } catch (_) {}
+    if (!v || Date.now() - v.ts > 10 * 60e3) return;
+    const check = () => {
+      if (document.getElementById('nextauthLoginForm') || document.querySelector('input[name="SAMLResponse"]')) { ss.del('tm4-fa'); return; }
+      const wait = document.getElementById('loginformnextauth');
+      if (!wait && document.body && document.body.innerText.trim().length > 40) return; // a real page (e.g. an error): leave it
+      ss.del('tm4-fa');
+      const n = wait || document.createElement('form');
+      n.method = 'post';
+      if (!wait) n.action = v.action;
+      if (!wait) { n.innerHTML = '<input type="hidden" name="_eventId_proceed" value="">'; (document.body || document.documentElement).appendChild(n); }
+      HTMLFormElement.prototype.submit.call(n);
+    };
+    if (document.readyState === 'complete') setTimeout(check, 600); else W.addEventListener('load', () => setTimeout(check, 600), { once: true });
+  }
+
+  /* The last step of a login is an empty-looking page that passes the result to Toledo / KU Loket by itself.
+     If iOS paused it (you were in the app), it can stay white: send it on once you look at it again. */
+  function nudgeSamlPost() {
+    let sent = false;
+    const nudge = () => {
+      const i = document.querySelector('form input[name="SAMLResponse"]');
+      if (sent || !i || document.visibilityState !== 'visible') return;
+      sent = true;
+      HTMLFormElement.prototype.submit.call(i.form);
+    };
+    W.addEventListener('beforeunload', () => { sent = true; }); // the page sent it itself: never twice
+    const later = () => setTimeout(nudge, 1500);
+    if (document.readyState === 'complete') later(); else W.addEventListener('load', later, { once: true });
+    document.addEventListener('visibilitychange', later);
+    W.addEventListener('pageshow', later);
+  }
+
   /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the Authenticator app opened straight from your tap */
   function loginSkin(again) {
-    if (!again) { forgetDevice(); fastAuthenticator(); }
+    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); }
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');
