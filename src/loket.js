@@ -173,33 +173,23 @@
     add();
   }
 
-  /* KU Leuven's own "Remember my device" preference (idp.kuleuven.be/idp/profile/user/prefs): with it on, signing in
-     sends the request to the KU Leuven Authenticator straight away, so you only approve it there. Safari keeps such a
-     cookie for at most 7 days, so it is set again on every visit. Unticking the box yourself switches this off.
-     Nothing else on the page is read or filled in: no username, no password, and the approval stays yours. */
-  function rememberDevice() {
-    const NAME = '__Host-rememberDevice';
-    let off = false;
-    try { off = localStorage.getItem('tm4-autopush') === 'off'; } catch (_) {}
-    const has = () => document.cookie.split(';').some((c) => c.trim() === NAME + '=1');
-    if (!off && !has()) { try { document.cookie = NAME + '=1; secure; samesite=none; path=/; max-age=94608000'; } catch (_) {} }
-    const sync = () => {
-      const cb = document.querySelector('input[name="' + NAME + '"]');
-      if (!cb || cb.__tm4) return;
-      cb.__tm4 = true;
-      if (!off && !cb.checked) cb.checked = true;
-      cb.addEventListener('change', () => { try { localStorage.setItem('tm4-autopush', cb.checked ? 'on' : 'off'); } catch (_) {} });
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync, { once: true }); else sync();
-    W.addEventListener('load', sync, { once: true });
+  /* Version 4.4 switched KU Leuven's "Remember my device" preference on for you. That sends a notification to the
+     Authenticator instead of showing the "Open de app" button, so it is switched off again once (cookie removed).
+     After that the box is yours: the script no longer touches it. */
+  function forgetDevice() {
+    try {
+      if (localStorage.getItem('tm4-rd-cleared')) return;
+      localStorage.setItem('tm4-rd-cleared', '1');
+      localStorage.removeItem('tm4-autopush');
+    } catch (_) { return; }
+    try { document.cookie = '__Host-rememberDevice=; secure; samesite=none; path=/; max-age=0'; } catch (_) {}
   }
 
   /* After "Login met KU Leuven Authenticator" on the phone itself, KU Leuven shows a page with an "open the app" button.
      That button is tapped for you once, so the Authenticator opens straight away (you approve there and come back).
      Only a link that opens an app is followed (not an ordinary web page), once per page and not when you come back
-     to the page, so it can never loop. Unticking "Remember my device" yourself switches this off too. */
+     to the page, so it can never loop. */
   function autoOpenApp() {
-    try { if (localStorage.getItem('tm4-autopush') === 'off') return; } catch (_) {}
     const RX = /open.{0,30}(app|authenticator)|(app|authenticator).{0,20}(openen|open)/i;
     const isApp = (u) => /^[a-z][a-z0-9+.-]*:/i.test(u) && !/^(https?|javascript|mailto|tel|about|data|blob):/i.test(u);
     let done = false, tries = 0;
@@ -218,9 +208,9 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', look, { once: true }); else look();
   }
 
-  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, the "Remember my device" preference and opening the app */
+  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the "Open de app" button tapped for you */
   function loginSkin() {
-    rememberDevice();
+    forgetDevice();
     autoOpenApp();
     const r = document.documentElement;
     r.classList.add('tm4-login');

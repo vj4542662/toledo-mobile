@@ -3,7 +3,7 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.6.0"
+VERSION = "4.6.1"
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
@@ -101,8 +101,8 @@ header = f"""// ==UserScript==
   - A course opens on ultra.edu.kuleuven.cloud/ultra/app: content, announcements and grades. PDFs, files and weblectures open directly.
   - The timetable and exams come from KU Loket (same KU Leuven sign-in), read in a hidden frame.
   - Pages the app doesn't cover (submitting an assignment, tests, KU Loket apps) keep the phone layout of version 3.
-  - The KU Leuven sign-in page gets an app look, and KU Leuven's own "Remember my device" preference is kept on, so the
-    sign-in goes to the Authenticator by itself. The script never reads or fills in your username or password there.
+  - The KU Leuven sign-in page gets an app look, and its "Open de app" button (after "Login met KU Leuven Authenticator")
+    is tapped for you. The script never reads or fills in your username or password there.
   - While the app is open, Toledo, Blackboard and KU Loket get a small request every few minutes so their sessions don't time out.
   Everything uses your own session in your own browser; nothing is sent anywhere else.
 */
