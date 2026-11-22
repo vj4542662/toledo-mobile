@@ -232,7 +232,7 @@
   }
   try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (THEME === 'auto') applyTheme('auto'); }); } catch (_) {}
 
-  const TM_ICON = 'data:image/png;base64,__ICON__';
+  const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
   /* ================================================================== shell */
   function takeover(title, preconnect) {
@@ -254,7 +254,7 @@
     add('title', {}).textContent = title;
     // home-screen icon (Safari's "Zet op beginscherm" reads it from the page; without one it draws a letter)
     add('link', { rel: 'apple-touch-icon', sizes: '180x180', href: TM_ICON });
-    add('link', { rel: 'icon', type: 'image/png', href: TM_ICON });
+    add('link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://toledo.kuleuven.be/portal/images/favicon/favicon-32x32.png' });
     add('style', {}).textContent = CSS;
     applyTheme(THEME);
     if (/[?&#]th=(light|dark|auto)\b/.test(location.hash + '&' + location.search)) saveTheme(THEME);
