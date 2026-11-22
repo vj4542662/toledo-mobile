@@ -28,7 +28,9 @@
     const U = { depth: (history.state && history.state.tm && history.state.d) || 0, views: new Map(), titles: {}, items: {}, cur: null, curKey: '', animBack: false, scroll: {} };
     try { U.scroll = JSON.parse(ss.get('tm4-uscroll') || '{}') || {}; } catch (_) {}
     const fromPortal = /^https:\/\/toledo\.kuleuven\.be\//.test(document.referrer);
-    const uget = (p) => api(ULTRA + p);
+    // remember when Blackboard last answered, to tell the portal (see leave())
+    let okAt = 0;
+    const uget = (p) => api(ULTRA + p).then((v) => { okAt = Date.now(); return v; });
 
     /* ---------------- routes + context ---------------- */
     function parse() {
@@ -510,7 +512,7 @@
       const view = { el, title: () => '' };
       fetchItem(pk, id).then((it) => {
         const target = directTarget(pk, it);
-        if (target) { location.replace(target); return; }
+        if (target) { goTo(target, { replace: true }); return; }
         replaceRoute(it.k === 'folder' ? `#/c/${pk}/f/${id}` : it.k === 'doc' ? `#/c/${pk}/d/${id}` : `#/c/${pk}`);
       }, (e) => {
         if (e && e.auth) return relogin();
@@ -547,7 +549,7 @@
         store.set('lu:' + lu, { ts: Date.now(), v: c.id });
         saveMeta(c.id, { name: c.name, lu });
         finish(c.id);
-      }, () => { if (!TEST) location.replace(JOURNEY + encodeURIComponent(lu)); });
+      }, () => { if (!TEST) goTo(JOURNEY + encodeURIComponent(lu), { replace: true }); });
     }
     const keyOf = (r) => (r.type === 'course' ? '/c/' + r.pk : r.path);
     function navFor(v) {
@@ -563,7 +565,7 @@
       if (r.type === 'resolve') { resolveLu(r); return; }
       if (r.type === 'none') {
         if (PATH_PK) { history.replaceState(history.state, '', location.pathname + '#/c/' + PATH_PK); render(anim); return; }
-        location.replace(PORTAL + '?tm=vakken');
+        goTo(PORTAL + '?tm=vakken', { replace: true, dir: 'back' });
         return;
       }
       if ([...r.q.keys()].length) saveCtx(r.pk, r.q);
@@ -599,8 +601,9 @@
     function leave(tab) {
       const f = getCtx(parse().pk).f || 'vakken';
       saveScroll();
-      if (fromPortal && f === tab && history.length > U.depth + 1) { history.go(-(U.depth + 1)); return; }
-      location.href = PORTAL + '?tm=' + tab;
+      setTabOn(tab);
+      if (fromPortal && f === tab && history.length > U.depth + 1) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
+      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : ''), { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -640,7 +643,7 @@
       menu: () => {
         const pk = parse().pk;
         sheet({ title: meta(pk).name || 'Vak', actions: [
-          { label: 'Openen in Blackboard', run: () => { ss.set('tm4-classic-ultra', String(Date.now())); location.href = `${ULTRA}/ultra/courses/${pk}/outline?tm=classic`; } },
+          { label: 'Openen in Blackboard', run: () => { ss.set('tm4-classic-ultra', String(Date.now())); goTo(`${ULTRA}/ultra/courses/${pk}/outline?tm=classic`); } },
           { label: 'Vernieuwen', run: () => { try { Object.keys(localStorage).filter((k) => k.startsWith(`${NS}c:${pk}:`) || k === `${NS}a:${pk}` || k === `${NS}g:${pk}` || k.startsWith(`${NS}i:${pk}:`)).forEach((k) => localStorage.removeItem(k)); } catch (_) {} location.reload(); } },
         ] });
       },
@@ -651,9 +654,9 @@
         try {
           const j = await uget(`/learn/api/public/v1/courses/${pk}/contents/${id}/attachments`);
           const a = (j.results || [])[0];
-          if (a) { location.href = `${ULTRA}/learn/api/public/v1/courses/${pk}/contents/${id}/attachments/${a.id}/download`; return; }
+          if (a) { goTo(`${ULTRA}/learn/api/public/v1/courses/${pk}/contents/${id}/attachments/${a.id}/download`); return; }
         } catch (e) { if (e.auth) { relogin(); return; } }
-        location.href = deepLink(pk, { id });
+        goTo(deepLink(pk, { id }));
       },
       retry: () => location.reload(),
     };

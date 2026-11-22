@@ -58,6 +58,18 @@ html.tm4 body > :not([data-tm4]){display:none!important}
 @keyframes tm-pop{from{transform:translate3d(-14%,0,0);opacity:0}to{transform:none;opacity:1}}
 @keyframes tm-fade{from{opacity:0}to{opacity:1}}
 .tm4 .appear{animation:tm-fade .22s ease-out}
+/* ---------- page-to-page motion (see leaving() in core.js) ---------- */
+.tm4 #tm-main{transition:transform .34s cubic-bezier(.2,.85,.25,1),opacity .34s ease}
+.tm4.tm-leave-fwd #tm-main{transform:translate3d(-9%,0,0);opacity:.4}
+.tm4.tm-leave-back #tm-main{transform:translate3d(9%,0,0);opacity:.4}
+.tm4.tm-leaving #tm-main{pointer-events:none}
+.tm4.tm-arrive #tm-main{animation:tm-fade .2s ease-out}
+.tm4.tm-arrive-fwd #tm-main{animation:tm-push .36s cubic-bezier(.2,.85,.25,1)}
+.tm4.tm-arrive-back #tm-main{animation:tm-pop .32s cubic-bezier(.2,.85,.25,1)}
+.tm4 .nav::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;opacity:0;pointer-events:none}
+.tm4.tm-leaving .nav::after{opacity:1;animation:tm-load 7s cubic-bezier(.08,.75,.2,1) forwards}
+@keyframes tm-load{0%{transform:scaleX(.02)}12%{transform:scaleX(.42)}100%{transform:scaleX(.94)}}
+@media (prefers-reduced-motion:reduce){.tm4.tm-leaving .nav::after{transform:scaleX(.6)}}
 @media (prefers-reduced-motion:reduce){.tm4 *,.tm4 *::before,.tm4 *::after{animation:none!important;transition:none!important}}
 
 /* ---------- section headers ---------- */

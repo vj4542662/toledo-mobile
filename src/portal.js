@@ -1,6 +1,9 @@
   /* ================================================================== portal app (toledo.kuleuven.be/portal/) */
   function portalApp() {
-    takeover('Toledo', [ULTRA, LOKET_ORIGIN]);
+    takeover('Toledo', [ULTRA, new URL(JOURNEY).origin, LOKET_ORIGIN]);
+    // the course pages say when Blackboard last answered (?ub=): while that session is surely still alive,
+    // course links go straight to the course instead of through Toledo's link service (one redirect less)
+    { const ub = Number(params.get('ub')) || 0; if (ub > 0 && ub * 1e3 <= Date.now() + 60e3) store.set('p:ultraok', ub * 1e3); }
     const cv = (k) => { const c = store.get(k); return c ? c.v : null; };
     const P = {
       tab: '', seg: 'lessen', filter: 'alles', search: '', showComm: false, showOff: false, feedN: 50,
@@ -70,7 +73,8 @@
       const nl = nextLesson(lu);
       if (nl) q.set('n', nextText(nl));
       const route = pk ? `#/c/${pk}${extra || ''}` : `#/vak/${encodeURIComponent(lu)}${extra || ''}`;
-      if (/^ULTRA-/.test(lu || '')) return `${JOURNEY}${encodeURIComponent(lu)}${route}?${q}`;
+      const ultraOk = pk && Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
+      if (/^ULTRA-/.test(lu || '') && !ultraOk) return `${JOURNEY}${encodeURIComponent(lu)}${route}?${q}`;
       return pk ? `${ULTRA}/ultra/courses/${pk}/outline${route}?${q}` : '';
     }
     function lessons() {
@@ -545,7 +549,7 @@
         sheet({ title: 'Alles als gelezen markeren?', msg: `${todo.length} update${todo.length === 1 ? '' : 's'} worden ook in Toledo als gelezen gemarkeerd.`, actions: [{ label: 'Markeer als gelezen', run: () => { markRead(todo); dirty('updates', 'vandaag', 'vakken'); setNav(NAVS.updates()); toast('Alles gelezen'); } }] });
       },
       agrefresh: () => refreshAgenda(true),
-      agsync: () => { location.href = LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster'); },
+      agsync: () => { goTo(LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster')); },
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
       theme: (b) => {
         const t = b.dataset.id;
@@ -575,7 +579,7 @@
       const card = e.target.closest('[data-href]');
       if (card && !e.target.closest('button')) {
         const href = card.dataset.href;
-        if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else location.href = href;
+        if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
     const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer)$/;

@@ -255,6 +255,57 @@
     if (/[?&#]th=(light|dark|auto)\b/.test(location.hash + '&' + location.search)) saveTheme(THEME);
     try { history.scrollRestoration = 'manual'; } catch (_) {}
     initPress();
+    initMotion();
+  }
+
+  /* ================================================================== page-to-page motion */
+  // Going to another page (a course, back to the app's tabs, a file) is a real page load in Safari. Safari keeps
+  // showing the current page until the next one can paint, so the tap gets an answer right away: the content
+  // slides aside and dims and a loading bar runs under the navigation bar. The next page then slides in, like
+  // a screen being pushed (or popped) in an app, instead of popping up after a white flash.
+  let leaveT = 0;
+  function leaving(dir) {
+    const r = document.documentElement;
+    if (!r || !r.classList.contains('tm4')) return;
+    r.classList.remove('tm-arrive', 'tm-arrive-fwd', 'tm-arrive-back', 'tm-leave-fwd', 'tm-leave-back');
+    void r.offsetWidth;
+    r.classList.add('tm-leaving', dir === 'back' ? 'tm-leave-back' : 'tm-leave-fwd');
+    clearTimeout(leaveT);
+    leaveT = setTimeout(stay, 8000); // a download, or a link that opened elsewhere: give the page back
+  }
+  function stay() {
+    clearTimeout(leaveT);
+    const r = document.documentElement;
+    if (r) r.classList.remove('tm-leaving', 'tm-leave-fwd', 'tm-leave-back');
+  }
+  function goTo(url, { replace, dir } = {}) {
+    if (!TEST) leaving(dir);
+    if (replace) location.replace(url); else location.href = url;
+  }
+  // which way does a link go? back to the app's tabs (portal) is "back", everything else is "forward"
+  const dirOf = (url) => (SITE !== 'portal' && /^https:\/\/toledo\.kuleuven\.be\/portal/.test(url) ? 'back' : 'fwd');
+  function initMotion() {
+    if (W.__tm4motion) return;
+    W.__tm4motion = true;
+    const r = document.documentElement;
+    const ref = hostOf(document.referrer);
+    const arrive = SITE === 'ultra' ? (/^toledo\.kuleuven\.be$|journey/.test(ref) ? 'fwd' : '')
+      : (/kuleuven\.cloud$|journey|^webwsp\./.test(ref) ? 'back' : '');
+    r.classList.add(arrive ? 'tm-arrive-' + arrive : 'tm-arrive');
+    setTimeout(() => r.classList.remove('tm-arrive', 'tm-arrive-fwd', 'tm-arrive-back'), 600);
+    // ordinary links that leave the page (the app's own handlers run first and cancel what they handle)
+    W.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (!a || a.hasAttribute('download') || (a.target && a.target !== '_self')) return;
+      const u = absU(a.getAttribute('href'), location.href);
+      if (!/^https:/.test(u) || u.split('#')[0] === location.href.split('#')[0]) return;
+      if (!TEST) leaving(dirOf(u));
+    });
+    // back here from the next page (Safari's back/forward cache): slide the page back into place
+    W.addEventListener('pageshow', (e) => { if (e.persisted) stay(); });
+    // a link that opened another app (Outlook, Teams…): give the page back when you return
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') stay(); });
   }
 
   function buildShell(tabs, active) {
