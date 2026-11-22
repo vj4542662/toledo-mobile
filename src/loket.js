@@ -173,8 +173,30 @@
     add();
   }
 
-  /* KU Leuven sign-in page (idp.kuleuven.be): only a new look, nothing on the page is read or filled in */
+  /* KU Leuven's own "Remember my device" preference (idp.kuleuven.be/idp/profile/user/prefs): with it on, signing in
+     sends the request to the KU Leuven Authenticator straight away, so you only approve it there. Safari keeps such a
+     cookie for at most 7 days, so it is set again on every visit. Unticking the box yourself switches this off.
+     Nothing else on the page is read or filled in: no username, no password, and the approval stays yours. */
+  function rememberDevice() {
+    const NAME = '__Host-rememberDevice';
+    let off = false;
+    try { off = localStorage.getItem('tm4-autopush') === 'off'; } catch (_) {}
+    const has = () => document.cookie.split(';').some((c) => c.trim() === NAME + '=1');
+    if (!off && !has()) { try { document.cookie = NAME + '=1; secure; samesite=none; path=/; max-age=94608000'; } catch (_) {} }
+    const sync = () => {
+      const cb = document.querySelector('input[name="' + NAME + '"]');
+      if (!cb || cb.__tm4) return;
+      cb.__tm4 = true;
+      if (!off && !cb.checked) cb.checked = true;
+      cb.addEventListener('change', () => { try { localStorage.setItem('tm4-autopush', cb.checked ? 'on' : 'off'); } catch (_) {} });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync, { once: true }); else sync();
+    W.addEventListener('load', sync, { once: true });
+  }
+
+  /* KU Leuven sign-in page (idp.kuleuven.be): a new look, plus the "Remember my device" preference above */
   function loginSkin() {
+    rememberDevice();
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');

@@ -133,6 +133,24 @@
     if (/text\/html/.test(ct)) throw new AuthError('html');
     return r.json();
   }
+  /* Keep a session alive while the app is open: a small request every few minutes while you look at it, and
+     one straight away when you come back to the page. It only refreshes a session that is still valid; it never
+     signs you in. Each ping is a plain GET of something the app reads anyway. */
+  function keepAlive(name, pings, every = 4 * 60e3) {
+    if (TEST) return;
+    const KEY = 'ka:' + name;
+    const ping = () => {
+      if (document.visibilityState !== 'visible') return;
+      const last = Number(ss.get(KEY)) || 0;
+      if (Date.now() - last < every - 5e3) return;
+      ss.set(KEY, String(Date.now()));
+      pings.forEach(([url, mode]) => fetch(url, { credentials: 'include', mode: mode || 'cors', cache: 'no-store', headers: mode === 'no-cors' ? {} : { Accept: 'application/json' } }).catch(() => {}));
+    };
+    setInterval(ping, 60e3);
+    document.addEventListener('visibilitychange', ping);
+    W.addEventListener('pageshow', ping);
+    setTimeout(ping, 20e3);
+  }
   const inflight = new Map();
   const once = (key, fn) => {
     if (!inflight.has(key)) inflight.set(key, fn().finally(() => inflight.delete(key)));

@@ -695,6 +695,8 @@
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
+    // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
+    keepAlive('portal', [[PORTAL_ORIGIN + '/portal/api/user'], [LOKET_ORIGIN + '/sap/bc/ui2/start_up', 'no-cors']]);
     const wake = () => {
       if (document.visibilityState !== 'visible') return;
       dirty(P.tab);

@@ -686,6 +686,7 @@
 
     if (!history.state || !history.state.tm) history.replaceState({ tm: 1, d: 0 }, '', location.hash);
     render('none');
+    keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };
     document.addEventListener('visibilitychange', wake);
     W.addEventListener('pageshow', (e) => { if (e.persisted) wake(); });
