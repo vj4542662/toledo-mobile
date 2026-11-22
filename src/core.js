@@ -232,6 +232,8 @@
   }
   try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (THEME === 'auto') applyTheme('auto'); }); } catch (_) {}
 
+  const TM_ICON = 'data:image/png;base64,__ICON__';
+
   /* ================================================================== shell */
   function takeover(title, preconnect) {
     try { W.stop(); } catch (_) {}
@@ -250,6 +252,9 @@
     add('meta', { name: 'format-detection', content: 'telephone=no' });
     (preconnect || []).forEach((h) => add('link', { rel: 'preconnect', href: h, crossorigin: 'use-credentials' }));
     add('title', {}).textContent = title;
+    // home-screen icon (Safari's "Zet op beginscherm" reads it from the page; without one it draws a letter)
+    add('link', { rel: 'apple-touch-icon', sizes: '180x180', href: TM_ICON });
+    add('link', { rel: 'icon', type: 'image/png', href: TM_ICON });
     add('style', {}).textContent = CSS;
     applyTheme(THEME);
     if (/[?&#]th=(light|dark|auto)\b/.test(location.hash + '&' + location.search)) saveTheme(THEME);

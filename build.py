@@ -3,12 +3,14 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.3.0"
+VERSION = "4.3.1"
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
 app = ''.join((src / f).read_text() for f in ['core.js', 'portal.js', 'ultra.js', 'loket.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION)
+import base64
+app = app.replace('__ICON__', base64.b64encode((src / 'icon.png').read_bytes()).decode())
 
 classic = (src / 'classic-v3.js').read_text()
 classic = classic.split('// ==/UserScript==', 1)[1]
