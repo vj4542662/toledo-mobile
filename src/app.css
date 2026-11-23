@@ -343,3 +343,77 @@ html.tm4 body > :not([data-tm4]){display:none!important}
 .tm4 .sync small{max-width:320px;font-size:12px;line-height:1.4;color:var(--sub);opacity:.75;word-break:break-word}
 html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .udoc > * + *{margin-top:16px}
+
+/* ---------- cards + charts (Studievoortgang, ISP) ---------- */
+.tm4 .cap.green{background:color-mix(in srgb,var(--green) 16%,transparent);color:#1f8a3d}
+.tm4.dark .cap.green{color:#4cd964}
+@media (prefers-color-scheme:dark){.tm4:not(.light) .cap.green{color:#4cd964}}
+.tm4 .gh span{float:right;text-transform:none;letter-spacing:0}
+.tm4 .card{margin:16px 16px 0;padding:14px 16px 16px;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.tm4 .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.tm4 .card-h b{font-size:17px;font-weight:600}
+.tm4 .card-h span{color:var(--sub);font-size:15px;font-weight:500}
+.tm4 .card-note{margin:12px 0 0;color:var(--sub);font-size:13.5px;line-height:18px}
+.tm4 .card-note b{color:var(--text)}
+.tm4 .stack{display:flex;gap:3px;height:14px;border-radius:7px;overflow:hidden;background:var(--fill)}
+.tm4 .stack i{display:block;min-width:4px;border-radius:3px;transform-origin:0 50%;animation:tm-grow .7s cubic-bezier(.2,.85,.25,1) both}
+.tm4 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:11px;font-size:13.5px;color:var(--sub)}
+.tm4 .legend span{display:inline-flex;align-items:center;gap:6px}
+.tm4 .legend i{width:9px;height:9px;border-radius:50%}
+.tm4 .legend b{color:var(--text);font-weight:600}
+@keyframes tm-grow{from{transform:scaleX(0)}to{transform:none}}
+@keyframes tm-rise{from{transform:scaleY(0)}to{transform:none}}
+.tm4 .ring{position:relative;flex:none}
+.tm4 .ring svg{display:block;width:100%;height:100%}
+.tm4 .ring circle{transition:stroke-dasharray .8s cubic-bezier(.2,.85,.25,1)}
+.tm4 .ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1}
+.tm4 .ring-mid b{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.tm4 .ring-mid small{margin-top:4px;font-size:11.5px;font-weight:600;opacity:.8}
+.tm4 .st-hero{position:relative;margin:2px 16px 0;padding:16px;border-radius:22px;color:#fff;overflow:hidden;background:linear-gradient(150deg,#1d5fa0,#0b2c52 70%);box-shadow:0 10px 28px rgba(11,44,82,.25)}
+.tm4 .st-hero.isp{background:linear-gradient(150deg,#5b3fb0,#24124f 72%);box-shadow:0 10px 28px rgba(45,20,95,.25)}
+.tm4 .st-hero::after{content:"";position:absolute;right:-50px;top:-70px;width:200px;height:200px;border-radius:50%;background:#4cd964;opacity:.22;filter:blur(34px)}
+.tm4 .st-hero > *{position:relative;z-index:1}
+.tm4 .st-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tm4 .st-hero .hero-lbl i{background:#4cd964}
+.tm4 .st-name{margin-top:8px;font-size:22px;line-height:27px;font-weight:700}
+.tm4 .st-spec{margin-top:3px;font-size:14.5px;line-height:19px;opacity:.85}
+.tm4 .st-row{display:flex;align-items:center;gap:18px;margin-top:14px}
+.tm4 .st-kpis{display:flex;flex-direction:column;gap:12px;min-width:0}
+.tm4 .kpi b{display:block;font-size:30px;line-height:32px;font-weight:700;letter-spacing:-.5px}
+.tm4 .kpi b small{font-size:17px;font-weight:600;opacity:.85}
+.tm4 .kpi span{display:block;margin-top:1px;font-size:13px;opacity:.8}
+.tm4 .vbars{display:flex;align-items:flex-end;gap:10px;height:150px}
+.tm4 .vb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;min-width:0}
+.tm4 .vb-v{font-size:13px;font-weight:600}
+.tm4 .vb-bar{flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;border-radius:8px;background:var(--fill)}
+.tm4 .vb-bar i{display:block;width:100%;border-radius:8px;transform-origin:50% 100%;animation:tm-rise .7s cubic-bezier(.2,.85,.25,1) both}
+.tm4 .vb-l{font-size:12px;color:var(--sub);white-space:nowrap}
+.tm4 .vbars.hist{height:120px;gap:8px}
+.tm4 .score{display:inline-flex;align-items:baseline;gap:1px;min-width:52px;justify-content:center;height:28px;padding:0 9px;border-radius:14px;background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc);font-size:17px;font-weight:700;line-height:28px}
+.tm4 .score small{font-size:11px;font-weight:600;opacity:.8}
+.tm4 .res{position:relative}
+.tm4 .res + .res::before{content:"";position:absolute;top:0;right:0;left:16px;height:.5px;background:var(--sep)}
+.tm4 .res.open{background:color-mix(in srgb,var(--fill) 40%,transparent)}
+.tm4 .res[role=button]{cursor:pointer}
+.tm4 .res .row{transition:none}
+.tm4 .res-d{padding:0 16px 14px;color:var(--sub);font-size:13.5px;line-height:18px;animation:tm-fade .2s ease-out}
+.tm4 .rk-box{margin-top:10px;padding:12px;border-radius:12px;background:var(--fill)}
+.tm4 .rk-line{margin:0 0 9px;color:var(--text);font-size:14px;line-height:19px}
+.tm4 .rk{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;height:24px}
+.tm4 .rk-c{font-weight:700;color:var(--sub)}
+.tm4 .rk-bar{height:9px;border-radius:5px;background:var(--fill)}
+.tm4 .rk-bar i{display:block;height:100%;border-radius:5px;background:var(--ter);transform-origin:0 50%;animation:tm-grow .6s cubic-bezier(.2,.85,.25,1) both}
+.tm4 .rk-v{min-width:92px;text-align:right;font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.tm4 .rk-v small{display:inline-block;min-width:44px;font-size:12.5px}
+.tm4 .rk.me .rk-c,.tm4 .rk.me .rk-v{color:var(--accent);font-weight:700}
+.tm4 .rk.me .rk-bar i{background:var(--accent)}
+.tm4 .row.done .t{color:var(--sub)}
+.tm4 .row.plain-note{min-height:40px}
+.tm4 .row.failed .t{color:var(--red)}
+
+/* ---------- pull to refresh ---------- */
+.tm4 .ptr{position:fixed;z-index:55;left:50%;top:calc(var(--st) + var(--nav) - 38px);width:36px;height:36px;margin-left:-18px;border-radius:50%;background:var(--card);
+  box-shadow:0 2px 12px rgba(0,0,0,.16);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.2,.85,.25,1),opacity .2s}
+.tm4 .ptr.drag{transition:none}
+.tm4 .ptr .spin{width:18px;height:18px;margin:0;border-width:2.2px;border-top-color:var(--accent);animation:none}
+.tm4 .ptr.busy .spin{animation:tm-spin .75s linear infinite}

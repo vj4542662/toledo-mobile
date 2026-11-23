@@ -288,6 +288,26 @@
     W.addEventListener('click', fix, true);
   }
 
+  /* Blackboard's and KU Loket's own pages (the ones the app leaves alone) have no dark look of their own. In dark
+     mode they get a "smart invert": light becomes dark, colours keep their hue, and pictures, videos and embedded
+     documents are turned back so they look exactly as they should. */
+  function classicDark() {
+    if (THEME === 'light') return;
+    const css = 'html{filter:invert(1) hue-rotate(180deg)!important;background:#fff!important}'
+      + 'html :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]){filter:invert(1) hue-rotate(180deg)!important}'
+      + 'html picture img,html :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]) :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]){filter:none!important}';
+    const st = document.createElement('style');
+    st.id = 'tm4-dark';
+    st.textContent = THEME === 'dark' ? css : `@media (prefers-color-scheme:dark){${css}}`;
+    const add = () => { const box = document.head || document.documentElement; if (box && !document.getElementById('tm4-dark')) box.appendChild(st); };
+    if (document.documentElement) add();
+    else { const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); add(); } }); mo.observe(document, { childList: true }); }
+    // keep it last, so later stylesheets can't win
+    const keep = () => { if (document.head && st.parentNode && st !== document.head.lastElementChild) document.head.appendChild(st); };
+    W.addEventListener('DOMContentLoaded', keep);
+    W.addEventListener('load', keep);
+  }
+
   const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
   /* ================================================================== shell */
@@ -503,6 +523,55 @@
     requestAnimationFrame(() => t.classList.add('on'));
     clearTimeout(toastT);
     toastT = setTimeout(() => t.classList.remove('on'), 2300);
+  }
+
+  /* pull down at the top of the page to refresh, like in an app. run() returns a promise (or nothing). */
+  function pullRefresh(run) {
+    if (W.__tm4ptr || !('ontouchstart' in W)) return;
+    W.__tm4ptr = true;
+    const ind = document.createElement('div');
+    ind.className = 'ptr';
+    ind.setAttribute('data-tm4', '');
+    ind.setAttribute('aria-hidden', 'true');
+    ind.innerHTML = '<span class="spin"></span>';
+    document.body.appendChild(ind);
+    const spin = ind.firstChild;
+    const GO = 72;
+    let y0 = 0, x0 = 0, pull = 0, on = false, busy = false;
+    const reset = () => { ind.classList.remove('drag', 'busy'); ind.style.transform = ''; ind.style.opacity = ''; spin.style.transform = ''; };
+    document.addEventListener('touchstart', (e) => {
+      on = false;
+      if (busy || W.scrollY > 0 || e.touches.length !== 1 || document.querySelector('.sheet') || (e.target.closest && e.target.closest('input, textarea, .tiles, .chips, .week'))) return;
+      on = true; pull = 0; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (!on) return;
+      const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+      if (W.scrollY > 2 || (pull < 10 && dx > Math.max(dy, 8))) { on = false; pull = 0; reset(); return; }
+      pull = Math.max(0, dy);
+      const d = Math.min(GO * 1.5, pull * 0.6);
+      ind.classList.add('drag');
+      ind.style.opacity = String(Math.min(1, pull / GO));
+      ind.style.transform = `translate3d(0,${d}px,0)`;
+      spin.style.transform = `rotate(${Math.round(pull * 3)}deg)`;
+    }, { passive: true });
+    const end = () => {
+      if (!on) return;
+      on = false;
+      if (pull * 0.6 < GO * 0.75) { reset(); pull = 0; return; }
+      pull = 0;
+      busy = true;
+      ind.classList.remove('drag');
+      ind.classList.add('busy');
+      ind.style.opacity = '1';
+      ind.style.transform = 'translate3d(0,52px,0)';
+      const t0 = Date.now();
+      let p; try { p = Promise.resolve(run()); } catch (_) { p = Promise.resolve(); }
+      const done = () => setTimeout(() => { busy = false; ind.style.opacity = '0'; ind.style.transform = ''; setTimeout(reset, 300); }, Math.max(0, 650 - (Date.now() - t0)));
+      Promise.race([p, new Promise((r) => setTimeout(r, 12000))]).then(done, done);
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', () => { if (on) { on = false; pull = 0; reset(); } }, { passive: true });
   }
 
   /* ================================================================== building blocks */

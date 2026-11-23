@@ -39,6 +39,76 @@
     return { lessons, exams, range: [ymd(from), ymd(to)] }; // null = could not be read this time (keep the old copy)
   }
 
+  /* ================================================================== KU Loket: study progress + ISP (read only) */
+  const sapGet = (svc, path) => api(`${LOKET_ORIGIN}/sap/opu/odata/sap/${svc}/${path}${path.includes('?') ? '&' : '?'}$format=json&sap-client=200`);
+  const odRes = (v) => { const d = v && v.d; return Array.isArray(d) ? d : d && Array.isArray(d.results) ? d.results : d ? [d] : []; };
+  const arrOf = (v) => (Array.isArray(v) ? v : v && Array.isArray(v.results) ? v.results : []);
+  const numOf = (v) => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  const sapDate = (v) => { const m = /^(\d{2})[.-](\d{2})[.-](\d{4})$/.exec(String(v || '').trim()) || /^(\d{4})(\d{2})(\d{2})$/.exec(String(v || '').trim()); if (!m) return ''; return m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2]}-${m[1]}`; };
+  // "Studievoortgangsdossier" (zr_1017) and "Mijn resultaten" (zr_1018): every study, its credits and every result
+  async function studyData() {
+    const HOME = 'ZC_ES_SVD_HOME_SRV', AW = 'ZC_ES_SVD_AW_SRV';
+    const list = odRes(await sapGet(HOME, 'StudySet?$top=50')).filter((s) => s.studyId);
+    list.sort((a, b) => (b.isActive === true) - (a.isActive === true) || String(b.acjaarLaatsteInschrijving).localeCompare(String(a.acjaarLaatsteInschrijving)));
+    const out = await Promise.all(list.slice(0, 4).map(async (s) => {
+      const id = s.studyId, acj = s.acjaarDiplomaObtained || '0000';
+      const hk = `StudySet(studyId='${id}',acjaarDiplomaObtained='${acj}')`;
+      const ak = `StudySet(studyId='${id}',acYearZittijd='9999',peridZittijd='999',studyIdZittijd='${id}',acjaarDiplomaObtained='${acj}',multipleStudyRecords=false)`;
+      const [kn, prog, akn, aprog, years] = await Promise.allSettled([
+        sapGet(HOME, hk + '/toKeyNumbers'), sapGet(HOME, hk + '/toStudyProgress'), sapGet(AW, ak + '/toKeyNumber'), sapGet(AW, ak + '/toStudyProgress'),
+        sapGet(AW, ak + '/toAcyearTotal?$expand=toResultTotal/toRanking'),
+      ]);
+      const ok = (x) => (x.status === 'fulfilled' ? odRes(x.value) : []);
+      const pct = ok(kn).find((k) => /diploma/i.test(k.keyName || ''));
+      const total = numOf(String((ok(akn)[0] || {}).posStudyPoints || '').replace(/[^\d.,]/g, ''));
+      return {
+        id, name: String(s.oplName || '').trim(), inst: String(s.instName || '').trim(), active: !!s.isActive,
+        done: s.diplomaObtained === 'DiplomaBehaald', doneYear: acj !== '0000' ? acj : '', pct: pct ? numOf(pct.keyValue) : null, total,
+        last: sapDate(s.datumLaatsteVrijgave),
+        prog: ok(prog).map((p) => [String(p.status || '').trim(), numOf(p.credits) || 0]),
+        now: ok(aprog).map((p) => [String(p.status || '').trim(), numOf(p.credits) || 0]),
+        years: ok(years).map((y) => ({
+          y: String(y.academicYear || ''),
+          c: arrOf(y.toResultTotal).map((r) => {
+            const rk = arrOf(r.toRanking).map((k) => [String(k.code || ''), numOf(k.lowGrade), numOf(k.highGrade), numOf(k.numberOfStudents) || 0, numOf(k.percentage) || 0, k.myRanking === 'X' ? 1 : 0]);
+            return { code: String(r.moduleCode || '').trim(), t: String(r.moduleDescription || '').trim(), sp: numOf(r.studyPoints) || 0, r: String(r.resultTotal || '').trim(),
+              sc: String(r.resultTotalScale || '').trim(), st: String(r.awStatus || '').trim(), d: sapDate(r.releaseDate), n: Number(r.numberOfBookings) || 1, sit: String(r.situeringsCode || '').trim(),
+              tol: !!r.tolerance, rk: rk.length ? rk : undefined };
+          }),
+        })).filter((y) => y.c.length).sort((a, b) => b.y.localeCompare(a.y)),
+      };
+    }));
+    return out;
+  }
+  // "Jouw individueel studieprogramma" (zr_0442): what you obtained and what you take this year, per part of the programme
+  async function ispData() {
+    const ISP = 'ZC_ISP_ST_OPO_SRV';
+    const reg = odRes(await sapGet(ISP, "RegistrationSet?$filter=page%20eq%20%27boekOpo%27")).sort((a, b) => (a.ispPrio || 9) - (b.ispPrio || 9))[0];
+    if (!reg) return null;
+    const pid = reg.programmeId, yr = reg.academicYear;
+    const [tree, spt] = await Promise.allSettled([
+      sapGet(ISP, `IndividualStudyProgrammeSet?$filter=${encodeURIComponent(`programmeId eq '${pid}' and academicYear eq '${yr}'`)}`),
+      sapGet(ISP, `RegistrationSet(page='boekOpo',programmeId='${pid}',academicYear='${yr}')/toStudyPointTotal`),
+    ]);
+    const nodes = tree.status === 'fulfilled' ? odRes(tree.value) : [];
+    const groups = nodes.filter((n) => n.otype === 'CG').map((n) => ({ id: String(n.nodeId), p: String(n.parentNodeId || ''), t: String(n.title || '').trim(), l: Number(n.hierarchyLevel) || 0 }));
+    const other = {};
+    const courses = [];
+    nodes.filter((n) => n.otype === 'SM').forEach((n) => {
+      const b = String(n.bookingStatus || '');
+      const g = String(n.parentNodeId || '');
+      if (b === 'credit' || /^booked/.test(b)) {
+        if (courses.some((c) => c.code === n.ectsCode && c.st === (b === 'credit' ? 'ok' : 'now'))) return;
+        courses.push({ g, code: String(n.ectsCode || '').trim(), t: String(n.title || '').trim(), sp: numOf(n.credits) || 0, per: String(n.offerPeriod || ''),
+          ph: [Number(n.startPhase) || 0, Number(n.endPhase) || 0], url: n.ectsURL ? 'https://' + String(n.ectsURL).replace(/^https?:\/\//, '') : '', st: b === 'credit' ? 'ok' : 'now', yr: String(n.academicYear || ''), must: n.opoObligated === 'X' });
+      } else if (/bookable/.test(b)) other[g] = (other[g] || 0) + 1;
+    });
+    const t = (spt.status === 'fulfilled' ? odRes(spt.value)[0] : null) || {};
+    const sp = nodes.find((n) => n.otype === 'SP');
+    return { name: String(reg.programmeDescription || '').trim(), yr, spec: sp ? String(sp.description || '').trim() : '', deadline: sapDate(reg.deadlineDate),
+      sem: [numOf(t.firstPeriod) || 0, numOf(t.secondPeriod) || 0, numOf(t.wholeYear) || 0], groups, courses, other };
+  }
+
   /* what went wrong, in a few words: shown small under an error, so a screenshot says what happened */
   function why(e) {
     if (!e) return 'onbekend';
@@ -57,6 +127,16 @@
     else document.addEventListener('DOMContentLoaded', () => setTimeout(fn, 250), { once: true });
   };
 
+  // the timetable first; study progress and ISP along with it when the app asks (?x=study). Those never make it fail.
+  function withStudy(p) {
+    if (params.get('x') !== 'study' && !/(^|&)x=study\b/.test(ss.get('tm4-sync-x') || '')) return p;
+    return p.then((data) => Promise.allSettled([studyData(), ispData()]).then(([a, b]) => {
+      if (a.status === 'fulfilled') data.study = a.value;
+      if (b.status === 'fulfilled') data.isp = b.value;
+      return data;
+    }));
+  }
+
   /* runs inside the hidden KU Loket frame that the app opens. Read first, stop the page only when that worked. */
   function bridge() {
     let sent = false;
@@ -70,7 +150,7 @@
     let tries = 0;
     const attempt = () => {
       tries++;
-      loketData().then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); }, (e) => {
+      withStudy(loketData()).then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); }, (e) => {
         if (e && e.auth) { post({ ok: false, pending: 'login', why: why(e) }); return; }
         whenParsed(() => {
           if (sent) return;
@@ -92,6 +172,7 @@
   }
   function syncPage() {
     const back = syncBack();
+    if (params.get('x') === 'study') ss.set('tm4-sync-x', 'x=study');
     let prev = {};
     try { prev = JSON.parse(ss.get('tm4-sync') || '{}'); } catch (_) {}
     const reloads = prev.ts && Date.now() - prev.ts < 10 * 60e3 ? prev.reloads || 0 : 0;
@@ -99,7 +180,7 @@
     // cover whatever KU Loket shows meanwhile, without touching it (its sign-in step has to keep running)
     const dark = isDark();
     const cover = document.createElement('style');
-    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"Rooster bijwerken\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
+    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"${/^(studie|isp)/.test(back) ? 'KU Loket openen' : 'Rooster bijwerken'}\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
     (document.head || document.documentElement).appendChild(cover);
     let gone = false;
     W.addEventListener('pagehide', () => { gone = true; });
@@ -109,6 +190,7 @@
     const again = () => location.replace(`${LOKET}?tm=sync&back=${encodeURIComponent(back)}`);
     const fail = (title, text, detail) => {
       ss.del('tm4-sync');
+      ss.del('tm4-sync-x');
       takeover('Rooster bijwerken', [PORTAL_ORIGIN]);
       document.body.classList.add('no-tabs');
       document.body.innerHTML = `<div class="sync" data-tm4>${ico('warn')}<b style="color:var(--text);font-size:19px">${esc(title)}</b><span>${esc(text)}</span><button type="button" class="btn" id="tm4-retry">Opnieuw proberen</button><a class="btn ghost" href="${PORTAL}?tm=${back.split('/')[0]}">Terug naar Toledo</a>${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
@@ -117,8 +199,9 @@
     let tries = 0;
     const attempt = () => {
       tries++;
-      loketData().then((data) => {
+      withStudy(loketData()).then((data) => {
         ss.del('tm4-sync');
+        ss.del('tm4-sync-x');
         try { W.stop(); } catch (_) {}
         location.replace(`${PORTAL}?tm=${back.split('/')[0]}#${back}&tmsync=${encodeURIComponent(JSON.stringify(data))}`);
       }, (e) => {
@@ -358,8 +441,21 @@
   }
 
   /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the Authenticator app opened straight from your tap */
+  /* "Stale Request": the KU Leuven login page you came back to (back button, or a tab reopened later) was already used.
+     Nothing to do there: start again from where you were going, which signs you in afresh (usually without a password). */
+  function staleLogin() {
+    const check = () => {
+      const b = document.body;
+      if (!b || !/stale request|verouderd verzoek|verlopen aanvraag/i.test(b.innerText || '')) return;
+      const ref = hostOf(document.referrer);
+      const to = /^webwsp\./.test(ref) ? LOKET : /kuleuven\.cloud$/.test(ref) ? ULTRA + '/ultra/course' : PORTAL + '?tm=vandaag';
+      cover('Opnieuw verbinden\u2026');
+      setTimeout(() => location.replace(to), 150);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check, { once: true }); else check();
+  }
   function loginSkin(again) {
-    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); }
+    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); staleLogin(); }
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');

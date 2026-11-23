@@ -12,7 +12,31 @@
       links: cv('p:links') || [], mail: cv('p:mail'), agenda: store.get('p:agenda'),
       lu2pk: store.get('p:lu2pk') || {}, seen: store.get('p:seen') || Date.now() - 2 * 864e5,
       err: {}, ag: '', loadedAt: 0, authFail: false,
+      study: store.get('p:study'), stSel: 0, stOpen: {}, done: store.get('p:done') || {},
     };
+    // the course pages report which assignments you already handed in (?done=pk~contentId~…!pk~…)
+    {
+      const dn = params.get('done');
+      if (dn != null) {
+        String(dn).split('!').forEach((part) => {
+          const [pk, ...ids] = part.split('~');
+          if (/^_\d+_\d+$/.test(pk)) P.done[pk] = ids.filter((x) => /^_\d+_\d+$/.test(x));
+        });
+        store.set('p:done', P.done);
+      }
+    }
+    const isDone = (e) => {
+      const u = e.url || '';
+      const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
+      const cid = (/contentId=(_\d+_\d+)/.exec(u) || [])[1];
+      return !!(pk && cid && P.done[pk] && P.done[pk].includes(cid));
+    };
+    function saveStudy(v) {
+      if (!v || (!v.study && !v.isp)) return;
+      const old = (P.study && P.study.v) || {};
+      P.study = { ts: Date.now(), v: { study: v.study || old.study || null, isp: v.isp || old.isp || null } };
+      store.set('p:study', P.study);
+    }
 
     function saveAgenda(v) {
       const old = (P.agenda && P.agenda.v) || {};
@@ -23,7 +47,7 @@
     // agenda handed over by the KU Loket page (see syncPage)
     const syncM = /[#&]tmsync=([^&]*)/.exec(location.hash);
     if (syncM) {
-      try { const v = JSON.parse(decodeURIComponent(syncM[1])); if (v && (v.lessons || v.exams)) saveAgenda(v); } catch (_) {}
+      try { const v = JSON.parse(decodeURIComponent(syncM[1])); if (v && (v.lessons || v.exams)) saveAgenda(v); if (v) saveStudy(v); } catch (_) {}
     }
 
     const TABS = [
@@ -72,6 +96,8 @@
       const q = new URLSearchParams({ lu: lu || '', t: cleanTitle(e.title || ''), k: String(e.color || ''), f: from || P.tab || 'vakken', th: THEME });
       const nl = nextLesson(lu);
       if (nl) q.set('n', nextText(nl));
+      const dl = dlPks();
+      if (dl) q.set('dl', dl);
       const route = pk ? `#/c/${pk}${extra || ''}` : `#/vak/${encodeURIComponent(lu)}${extra || ''}`;
       const ultraOk = pk && Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
       if (/^ULTRA-/.test(lu || '') && !ultraOk) return `${JOURNEY}${encodeURIComponent(lu)}${route}?${q}`;
@@ -108,6 +134,8 @@
       }).sort((a, b) => a.start - b.start);
     }
     const deadlines = (now = Date.now()) => P.events.filter((e) => e.subType === 'due' && !e.dismissed && e.date > now - 3600e3).sort((a, b) => a.date - b.date);
+    // courses with a deadline coming up: the course pages check there whether you already handed it in
+    const dlPks = () => Array.from(new Set(deadlines().filter((e) => e.date - Date.now() < 21 * 864e5).map((e) => (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(e.url || '') || [])[1]).filter(Boolean))).slice(0, 10).join('.');
     const feed = () => P.events.filter((e) => e.subType !== 'due' && !e.dismissed).sort((a, b) => b.date - a.date);
     const newFor = (lu, now = Date.now()) => P.events.filter((e) => e.sourceId === lu && !e.read && !e.dismissed && e.subType !== 'due' && e.date > now - 7 * 864e5).length;
 
@@ -170,9 +198,10 @@
     }
     function dueRow(e, now) {
       const hrs = (e.date - now) / 3600e3;
-      const tone = hrs < 48 ? 'red' : hrs < 120 ? 'orange' : '';
-      return row({ href: eventHref(e) || undefined, icon: 'pencil', style: colorVars(e.color), title: e.title || 'Deadline', clamp: true,
-        sub: cleanTitle(e.source), end: `<span class="cap ${tone}">${esc(dueLabel(e.date, now))}</span>`, attrs: ` data-ev="${esc(e.id)}"`, chevron: false });
+      const done = isDone(e);
+      const tone = done ? 'green' : hrs < 48 ? 'red' : hrs < 120 ? 'orange' : '';
+      return row({ href: eventHref(e) || undefined, icon: done ? 'check' : 'pencil', style: colorVars(e.color), title: e.title || 'Deadline', clamp: true, cls: done ? 'done' : '',
+        sub: cleanTitle(e.source) + (done ? ` · ${dueLabel(e.date, now)}` : ''), end: `<span class="cap ${tone}">${esc(done ? 'Ingeleverd' : dueLabel(e.date, now))}</span>`, attrs: ` data-ev="${esc(e.id)}"`, chevron: false });
     }
     function eventRow(e, now, timeOnly) {
       const src = e.subType === 'advalvas' ? 'Ad Valvas' : cleanTitle(e.source || '');
@@ -218,6 +247,13 @@
     BUILD.vandaag = () => '<div class="lt"><h1>Vandaag</h1><p class="lt-sub" data-k="date"></p></div><div data-k="body"></div>';
     NAVS.vandaag = () => ({ title: 'Vandaag' });
     const updateBanner = () => (P.newVer ? `<div class="banner">${ico('refresh')}<span class="main">Nieuwe versie ${esc(P.newVer)} van Toledo Mobile. Tik op Updaten en daarna op Userscripts in de adresbalk.</span><button type="button" data-act="update">Updaten</button></div>` : '');
+    // KU Loket published new exam results (in the last two weeks) that you haven't looked at in the app yet
+    function resultsBanner(now) {
+      const S = P.study && P.study.v && P.study.v.study;
+      const s = S && S.find((x) => x.active);
+      if (!s || !s.last || store.get('p:resSeen') === s.last || now - fromYmd(s.last) > 14 * 864e5) return '';
+      return `<a class="banner" href="#studie">${ico('sparkle')}<span class="main"><b>Nieuwe examenresultaten</b><br>Bekendgemaakt op ${esc(dLong(fromYmd(s.last)))}.</span><span class="act" style="color:var(--accent);font-weight:600">Bekijk</span></a>`;
+    }
     function heroHtml(now) {
       const L = lessons();
       const live = L.find((l) => l.start <= now && l.end > now);
@@ -268,7 +304,7 @@
       const d = new Date(now);
       const greet = d.getHours() < 6 ? 'Goedenacht' : d.getHours() < 12 ? 'Goedemorgen' : d.getHours() < 18 ? 'Goedemiddag' : 'Goedenavond';
       put($('[data-k="date"]', el), esc(`${greet}${P.user && P.user.givenName ? ', ' + P.user.givenName : ''} · ${dLong(now)}`));
-      let h = updateBanner() + authBanner() + agendaBanner() + heroHtml(now);
+      let h = updateBanner() + authBanner() + agendaBanner() + resultsBanner(now) + heroHtml(now);
       // rest of today
       const L = lessons();
       const hero = L.find((l) => l.start <= now && l.end > now) || L.find((l) => l.start > now);
@@ -283,7 +319,7 @@
         }).join('')}</div>`;
       } else if (!P.enr.length && !P.loadedAt) h += `<div class="sh"><h2>Mijn vakken</h2></div><div class="tiles">${'<div class="tile sk" style="background:var(--fill)"></div>'.repeat(3)}</div>`;
       // deadlines
-      const dl = deadlines(now).filter((e) => e.date - now < 14 * 864e5);
+      const dl = deadlines(now).filter((e) => e.date - now < 14 * 864e5 && !isDone(e));
       if (dl.length) h += `<div class="sh"><h2>Deadlines</h2></div><div class="group">${dl.slice(0, 4).map((e) => dueRow(e, now)).join('')}</div>`;
       // updates
       const f = feed().slice(0, 4);
@@ -434,15 +470,46 @@
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
       const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
       let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${u.userId ? ' · ' + esc(u.userId) : ''}</span></span></div></div>`;
-      h += `<div class="group">${link(MAIL, 'mail', '#0a84ff', 'Mail', 'Outlook', unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '')}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${link(L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', 'chart', '#5856d6', 'Cijfers', 'Alle vakken in Blackboard')}${link(L['KULOKET-PROGRESS'] || 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL', 'trend', '#34aadc', 'Studievoortgang', 'KU Loket')}${link(L['KULOKET-ISP'] || 'https://kuleuven.be/kuloket/zr_0442?sap-language=NL', 'idcard', '#00a79d', 'ISP', 'Individueel studieprogramma')}${link(L['KULOKET-STUDENT'] || 'https://www.kuleuven.be/kuloket', 'idcard', '#1d4f86', 'KU Loket', 'Studentendossier')}</div>`;
+      const mailApp = store.get('mailApp') !== 'web';
+      h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
+      const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
+      const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
+      const I0 = P.study && P.study.v && P.study.v.isp;
+      const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
+      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${link(L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', 'chart', '#5856d6', 'Cijfers', 'Alle vakken in Blackboard')}${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ act: 'loket', iconHtml: `<span class="ic" style="--c:#1d4f86">${ico('grid')}</span>`, title: 'KU Loket', sub: 'Studietracker, uurrooster en meer' })}</div>`;
       h += `<div class="gh">Tools</div><div class="group">${link(L['KALTURA-MYMEDIA'] || ULTRA + '/ultra/tools', 'video', '#8e5bd8', 'My Media', 'Kaltura-video\'s')}${link(L.KURT || 'https://bib.kuleuven.be/faciliteiten/reserveren', 'seat', '#ff2d55', 'KURT', 'Studieplek reserveren')}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#a2845e', 'LIMO', 'Bibliotheek zoeken')}${link(L['KUL-ONEDRIVE'] || 'https://onedrive.kuleuven.be', 'cloud', '#0078d4', 'OneDrive')}${link(L['KUL-MS-OFFICE-365'] || 'https://office.com', 'grid', '#d83b01', 'Microsoft 365')}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
+      h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
       if (P.newVer) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar ' + P.newVer, sub: 'Daarna op Userscripts in de adresbalk tikken' })}</div>`;
       h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie en stuurt niets door.</p>`;
       put($('[data-k="body"]', el), h);
     };
+
+    // ---- Studievoortgang + ISP (from KU Loket, opened from Meer)
+    const stMeta = () => {
+      if (P.st === 'loading') return 'Bijwerken…';
+      const t = P.study && P.study.ts;
+      if (!t) return '';
+      return `Bijgewerkt ${dayDiff(t, Date.now()) === 0 ? 'vandaag ' + hhmm(t) : dShort(t) + ' ' + hhmm(t)} · <button type="button" data-act="strefresh">Bijwerken</button>`;
+    };
+    function stEmpty(what) {
+      if (P.st === 'loading' || (!P.study && !P.st)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
+      return empty(what === 'isp' ? 'idcard' : 'trend', what === 'isp' ? 'ISP nog niet geladen' : 'Studievoortgang nog niet geladen', 'Deze gegevens komen uit KU Loket.' + (P.stLogin ? ' KU Loket wil dat je even opnieuw aanmeldt.' : ''), '<p style="margin-top:14px"><button type="button" class="btn" data-act="stsync">Laden uit KU Loket</button></p>');
+    }
+    BUILD.studie = () => '<div class="lt"><h1>Studievoortgang</h1></div><div data-k="body"></div>';
+    NAVS.studie = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Studievoortgang', right: `<button type="button" class="nb" data-act="strefresh" aria-label="Vernieuwen">${P.st === 'loading' ? '<span class="spin" style="width:20px;height:20px;border-width:2px"></span>' : ico('refresh')}</button>` });
+    FILL.studie = (el) => {
+      const S = P.study && P.study.v && P.study.v.study;
+      put($('[data-k="body"]', el), S && S.length ? studyHtml(S, P.stSel, P.stOpen, stMeta()) : stEmpty('studie'));
+    };
+    BUILD.isp = () => '<div class="lt"><h1>Mijn ISP</h1></div><div data-k="body"></div>';
+    NAVS.isp = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Mijn ISP', right: NAVS.studie().right });
+    FILL.isp = (el) => {
+      const v = P.study && P.study.v;
+      put($('[data-k="body"]', el), v && v.isp ? ispHtml(v.isp, v.study, stMeta()) : stEmpty('isp'));
+    };
+    const SUBVIEW = { studie: 'meer', isp: 'meer' };
 
     /* ---------------- view switching ---------------- */
     function view(id) {
@@ -480,8 +547,10 @@
       const v = view(id);
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
-      setTabOn(id);
+      setTabOn(SUBVIEW[id] || id);
       render(id);
+      if (SUBVIEW[id]) refreshAgenda(false, true);
+      if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
       W.scrollTo(0, v.y || 0);
@@ -494,10 +563,10 @@
       // links from the course pages say where to go in ?tm= (the site's own app can rewrite #..., not ?...)
       const q = ignoreQuery ? '' : new URLSearchParams(location.search).get('tm') || '';
       let h = location.hash.replace(/^#\/?/, '').split('&')[0];
-      const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer' };
+      const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer', studie: 'studie', isp: 'isp' };
       if (qmap[q] && h.split('/')[0] !== qmap[q].split('/')[0]) h = qmap[q];
       const [a, b] = h.split('/');
-      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer' };
+      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp' };
       return { tab: map[a] || 'vandaag', sub: b || '' };
     }
     function badges() {
@@ -553,7 +622,34 @@
         sheet({ title: 'Alles als gelezen markeren?', msg: `${todo.length} update${todo.length === 1 ? '' : 's'} worden ook in Toledo als gelezen gemarkeerd.`, actions: [{ label: 'Markeer als gelezen', run: () => { markRead(todo); dirty('updates', 'vandaag', 'vakken'); setNav(NAVS.updates()); toast('Alles gelezen'); } }] });
       },
       agrefresh: () => refreshAgenda(true),
-      agsync: () => { goTo(LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster')); },
+      agsync: () => { goTo(LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster') + (SUBVIEW[P.tab] || studyStale() ? '&x=study' : '')); },
+      stsync: () => ACTS.agsync(),
+      strefresh: () => refreshAgenda(true, true),
+      stsel: (b) => { P.stSel = Number(b.dataset.id) || 0; FILL.studie(V.studie.el); },
+      resopen: (b) => { const k = b.dataset.k; P.stOpen[k] = !P.stOpen[k]; FILL.studie(V.studie.el); },
+      // Outlook-app first (iOS lets a tap open another app); no app after a moment: Outlook on the web
+      mail: () => {
+        if (store.get('mailApp') === 'web') { goTo(MAIL); return; }
+        let away = false;
+        const seen = () => { if (document.visibilityState === 'hidden') away = true; };
+        document.addEventListener('visibilitychange', seen);
+        W.addEventListener('pagehide', () => { away = true; }, { once: true });
+        location.href = 'ms-outlook://emails';
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', seen);
+          if (away) return;
+          toast('Outlook-app niet gevonden, Outlook op het web openen…');
+          setTimeout(() => goTo(MAIL), 900);
+        }, 2600);
+      },
+      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
+      loket: () => sheet({ title: 'KU Loket', actions: [
+        { label: 'Studietracker', href: 'https://kuleuven.be/kuloket/zr_0184?sap-language=NL' },
+        { label: 'Uurrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL' },
+        { label: 'Examenrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0363' },
+        { label: 'ISP aanpassen', href: 'https://www.kuleuven.be/kuloket/zr_0442?sap-language=NL' },
+        { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
+      ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
       theme: (b) => {
         const t = b.dataset.id;
@@ -586,7 +682,7 @@
         if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
-    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer)$/;
+    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp)$/;
     W.addEventListener('hashchange', () => {
       if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : '')); return; }
       const r = routeFromUrl(true);
@@ -623,7 +719,7 @@
         swr('p:mail', () => papi('emails/unread'), (v) => { P.mail = v; dirty('meer'); }).catch(() => {}),
       ];
       jobs[0].catch(onFail('user'));
-      Promise.allSettled(jobs).then(() => { mark(); dirty('vandaag', 'vakken', 'updates', 'rooster', 'meer'); });
+      return Promise.allSettled(jobs).then(() => { mark(); dirty('vandaag', 'vakken', 'updates', 'rooster', 'meer'); });
     }
 
     /* KU Loket lives on another origin of the same site: a hidden frame reads the timetable there
@@ -631,28 +727,39 @@
     // force = you pressed "vernieuwen": if the hidden frame can't do it quickly (or KU Loket first wants you to
     // sign in), the app opens KU Loket itself for a moment and comes straight back with the timetable.
     let bridgeBusy = false;
-    function refreshAgenda(force) {
+    const studyStale = () => !P.study || Date.now() - P.study.ts > 6 * 3600e3;
+    // force: you asked for it (button), so when the hidden frame can't, KU Loket opens for a moment.
+    // study: also read study progress + ISP (opening those pages, or when that copy is older than 6 hours).
+    // quiet: pulled to refresh: try the hidden frame, never leave the page.
+    function refreshAgenda(force, study, quiet) {
       const a = P.agenda;
-      if (!force && a && Date.now() - a.ts < 30 * 60e3) return;
-      if (bridgeBusy) { if (force) ACTS.agsync(); return; }
-      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return; }
+      const wantStudy = !!study && (force || studyStale());
+      if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
+      if (bridgeBusy) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return Promise.resolve(); }
       const fail = store.get('p:bridgefail') || { n: 0, ts: 0 };
-      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force) ACTS.agsync(); return; }
+      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      const withSt = wantStudy || studyStale();
       bridgeBusy = true;
       P.ag = 'loading';
-      dirty('vandaag', 'rooster');
+      if (withSt) P.st = 'loading';
+      dirty('vandaag', 'rooster', 'studie', 'isp');
+      if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
       if (P.tab === 'rooster') setNav(NAVS.rooster());
       const f = document.createElement('iframe');
-      f.src = LOKET + '?tm=bridge';
+      f.src = LOKET + '?tm=bridge' + (withSt ? '&x=study' : '');
       f.title = 'KU Loket';
       f.setAttribute('aria-hidden', 'true');
       f.setAttribute('data-tm4', '');
       f.tabIndex = -1;
       f.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
-      let timer = 0, done = false;
+      let timer = 0, done = false, settle = () => {};
+      const settled = new Promise((r) => { settle = r; });
       const finish = (ok, login) => {
         if (done) return;
         done = true;
+        settle();
+        if (withSt) { P.st = ok ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
         clearTimeout(timer);
         W.removeEventListener('message', onMsg);
         setTimeout(() => f.remove(), 50);
@@ -661,17 +768,17 @@
         P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
         else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
-        dirty('vandaag', 'rooster');
-        if (P.tab === 'rooster') setNav(NAVS.rooster());
-        if (!ok && force) ACTS.agsync();
-        else if (ok && force) toast('Rooster bijgewerkt');
+        dirty('vandaag', 'rooster', 'studie', 'isp', 'meer');
+        if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
+        if (!ok && force && !quiet) ACTS.agsync();
+        else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');
       };
       const onMsg = (e) => {
         if (e.origin !== LOKET_ORIGIN || !e.data || e.data.tm4 !== 'agenda') return;
-        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); finish(true); return; }
+        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); saveStudy(e.data.data); finish(true); return; }
         if (e.data.pending) {
           // KU Loket wants you to sign in first: that needs the real page
-          if (force) { finish(false, true); return; }
+          if (force && !quiet) { finish(false, true); return; }
           // show the "Laden" button right away; the frame may still get through by itself, so give it a little longer
           if (P.ag === 'loading') {
             P.ag = 'failed';
@@ -686,8 +793,9 @@
         finish(false);
       };
       W.addEventListener('message', onMsg);
-      timer = setTimeout(() => finish(false), force ? 7000 : 10000);
+      timer = setTimeout(() => finish(false), (force && !quiet ? 7000 : 10000) + (withSt ? 8000 : 0));
       document.body.appendChild(f);
+      return settled;
     }
 
     /* ---------------- start ---------------- */
@@ -701,6 +809,10 @@
     setTimeout(() => checkUpdate((v) => { P.newVer = v; dirty('vandaag', 'meer'); }), 1500);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
+    pullRefresh(() => {
+      if (SUBVIEW[P.tab]) return refreshAgenda(true, true, true);
+      return Promise.all([loadAll(true), refreshAgenda(true, false, true)]);
+    });
     keepAlive('portal', [[PORTAL_ORIGIN + '/portal/api/user'], [LOKET_ORIGIN + '/sap/bc/ui2/start_up', 'no-cors']]);
     const wake = () => {
       if (document.visibilityState !== 'visible') return;

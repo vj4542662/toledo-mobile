@@ -39,7 +39,15 @@
   };
   if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
   if (mode === 'bridge') { bridge(); return; }
-  if (mode === 'cover') { whenRoot(() => cover('Openen\u2026')); return; }
+  if (mode === 'cover') {
+    // came back here with the back button: this page would only send you forward again, so step over it
+    const back = () => { try { return (performance.getEntriesByType('navigation')[0] || {}).type === 'back_forward'; } catch (_) { return false; } };
+    if (back() && history.length > 1) { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); history.back(); return; }
+    W.addEventListener('pageshow', (e) => { if (e.persisted && history.length > 1) history.back(); });
+    whenRoot(() => cover('Openen\u2026'));
+    return;
+  }
+  if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }
