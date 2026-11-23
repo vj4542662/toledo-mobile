@@ -1,6 +1,10 @@
 {
- "version": "4.15.0",
+ "version": "4.16.0",
  "news": {
+  "4.16.0": [
+   "Studieplek: inchecken en uitchecken gebeurt nu in de app zelf. Na het inchecken verandert de knop in Uitchecken, en uitchecken vraagt eerst of je het zeker weet.",
+   "Studieplek: na reserveren, verwijderen of vernieuwen verschijnt er geen foutmelding meer."
+  ],
   "4.15.0": [
    "De hele app laadt sneller: Toledo Mobile zelf is een derde kleiner geworden.",
    "Vandaag en je vakken openen vlotter, ook met een vol lessenrooster.",
