@@ -467,8 +467,8 @@
         const dup = cnt[nm(a.name)] > 1 && roomCode(a.name);
         const title = dup ? roomCode(a.name) : nm(a.name);
         const sub = [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} personen`].filter(Boolean).join(' · ');
-        const when = b.length ? b.map((x) => `${hm(x.s)}–${hm(x.e)}`).join(' · ') : 'Volzet';
-        return `<button type="button" class="kgr${b.length ? '' : ' none'}" data-act="groom" data-r="${a.id}"${b.length ? '' : ' disabled'}><span class="kr-main"><b>${esc(title)}</b><span>${esc(sub)}</span><em>${b.length ? 'Vrij ' : ''}${esc(when)}</em></span>${b.length ? '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg>' : ''}</button>`;
+        const when = b.length ? b.map((x) => `<i>${hm(x.s)}–${hm(x.e)}</i>`).join(' · ') : 'Volzet';
+        return `<button type="button" class="kgr${b.length ? '' : ' none'}" data-act="groom" data-r="${a.id}"${b.length ? '' : ' disabled'}><span class="kr-main"><b>${esc(title)}</b><span>${esc(sub)}</span><em>${b.length ? 'Vrij ' : ''}${when}</em></span>${b.length ? '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg>' : ''}</button>`;
       };
       const open = list.filter((x) => x.b.length), full = list.filter((x) => !x.b.length);
       let h = head + dayRow;

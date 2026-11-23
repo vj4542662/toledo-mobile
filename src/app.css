@@ -755,3 +755,4 @@ html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row 
 .tm4 .kg-starts .chip{justify-content:center;font-variant-numeric:tabular-nums}
 .tm4 .kg-starts .chip.gap:not(:first-child){margin-left:10px}
 .tm4 .kb-ends .chip{text-align:center}
+.tm4 .kgr em i{font-style:normal;white-space:nowrap}
