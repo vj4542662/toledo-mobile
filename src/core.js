@@ -217,7 +217,7 @@
         <p class="upd-v">Versie ${esc(info.v)} <span>· je hebt nu ${esc(VERSION)}</span></p>
         ${news.length ? `<div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
         <div class="upd-how"><b>Zo werkt het (ongeveer 10 seconden)</b>
-          <ol><li>Tik hieronder op <b>Installeren</b>.</li><li>Kies in het venster van <b>Userscripts</b> voor <b>Install</b>.</li><li>Klaar! Tik op <b>Terug naar Toledo</b>.</li></ol>
+          <ol><li>Tik hieronder op <b>Installeren</b>.</li><li>Open <b>Userscripts</b> en tik op de <b>groene balk</b>.</li><li>Schuif naar beneden en tik op <b>Install</b> (niet op het vinkje bovenaan).</li></ol>
           <p>Op de volgende pagina leggen we het stap voor stap uit, met plaatjes.</p></div>
         <a class="btn upd-go" href="${esc(installUrl(info.v))}">Installeren</a>
         <button type="button" class="upd-later">Later</button>
@@ -253,7 +253,7 @@
       <span class="upd-ok warn">${ico('refresh')}</span>
       <h2>De update is nog niet gelukt</h2>
       <p class="upd-v">Je hebt nog versie ${esc(VERSION)}</p>
-      <div class="upd-how"><b>Wat vaak misgaat</b><ol><li>Na de <b>groene balk</b> komt nog een scherm. Tik daar onderaan op de blauwe knop <b>Install</b>.</li><li>Zie je die knop niet? Schuif het venster van Userscripts omhoog.</li></ol></div>
+      <div class="upd-how"><b>Wat vaak misgaat</b><ol><li>Na de <b>groene balk</b> komt nog een scherm. Schuif dat helemaal naar beneden en tik op de knop <b>Install</b>.</li><li>Tik <b>niet</b> op het blauwe vinkje bovenaan: dat sluit het venster zonder te installeren.</li></ol></div>
       <button type="button" class="btn upd-go">Opnieuw proberen</button>
       <button type="button" class="upd-later">Later</button></div></div>`;
     document.body.appendChild(layer);
@@ -299,7 +299,7 @@
       const step = (n, title, mock) => `<li class="ip-step"><span class="ip-n">${n}</span><div><b>${title}</b>${mock || ''}</div></li>`;
       // pictures of what you really see: Safari's address bar, the Userscripts window (it follows the iPhone's own dark/light setting)
       const bar = `<div class="ip-mock ip-bar"><span class="ip-hl">${ico('pagemenu')}</span><span class="ip-url">raw.githubusercontent.com</span><span class="ip-dim">${ico('refresh')}</span></div>`;
-      const pop = (inner) => `<div class="ip-mock ip-us-pop"><div class="ip-us-h">Userscripts</div>${inner}</div>`;
+      const pop = (inner, check) => `<div class="ip-mock ip-us-pop"><div class="ip-us-h">Userscripts${check ? `<span class="ip-us-chk">${ico('check')}<i></i></span>` : ''}</div>${inner}</div>`;
       document.body.innerHTML = `<main class="ip" data-tm4>
         <img class="upd-logo" src="${TM_LOGO}" alt="">
         <h1>${fresh || !v ? 'Nog even installeren' : 'Je bent helemaal mee'}</h1>
@@ -308,7 +308,7 @@
           ${step(1, `Tik in de adresbalk links op <span class="ip-k">${ico('pagemenu')}</span> <span class="ip-or">(op oudere iPhones: <span class="ip-k">aA</span>)</span>`, bar)}
           ${step(2, 'Tik op <b>Userscripts</b>', '<div class="ip-mock ip-list"><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div></div>')}
           ${step(3, 'Tik op de <b>groene balk</b>', pop('<div class="ip-us-green">Userscript Installed: <u>Tap to re-install</u></div><div class="ip-us-row">Toledo Mobile<span>JS</span></div>'))}
-          ${step(4, 'Tik onderaan op de blauwe knop <b>Install</b>', pop('<div class="ip-us-name">Toledo Mobile</div><div class="ip-us-btns"><span>Cancel</span><span class="ip-us-inst">Install</span></div>') + '<p class="ip-note">Zie je de knop niet? Schuif het venster van Userscripts omhoog, hij staat helemaal onderaan.</p>')}
+          ${step(4, 'Schuif naar beneden en tik op de knop <b>Install</b>', pop('<div class="ip-us-name">Toledo Mobile</div><div class="ip-us-lines"><i></i><i></i><i></i></div><div class="ip-us-scroll">↓ helemaal naar beneden schuiven ↓</div><div class="ip-us-btns"><span>Cancel</span><span class="ip-us-inst">Install</span></div>', true) + '<p class="ip-warn2"><b>Let op:</b> tik <b>niet</b> op het blauwe vinkje bovenaan. Dat sluit het venster zonder te installeren.</p>')}
           ${step(5, 'Klaar! Tik hieronder op <b>Terug naar Toledo</b>', '')}
         </ol>
         <p class="ip-tip">Gaat Userscripts vanzelf open? Begin dan bij stap 3.</p>` : ''}

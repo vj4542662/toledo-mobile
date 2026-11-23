@@ -705,3 +705,12 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .ip-us-btns span{flex:1;padding:8px 0;border-radius:8px;background:#8e8e93;color:#fff;text-align:center;font-weight:600;font-size:14px}
 .tm4 .ip-us-btns .ip-us-inst{background:#0a6cd6;box-shadow:0 0 0 3px rgba(10,108,214,.35)}
 @media (prefers-color-scheme:dark){.tm4 .ip-us-pop{background:#2f3237;color:#fff}.tm4 .ip-us-row span{color:#e5d94a}}
+.tm4 .ip-us-h{position:relative}
+.tm4 .ip-us-chk{position:absolute;right:8px;top:4px;width:28px;height:28px;border-radius:50%;background:#4d8ef7;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.55}
+.tm4 .ip-us-chk .i{width:16px;height:16px;stroke-width:2.6}
+.tm4 .ip-us-chk i{position:absolute;left:-3px;right:-3px;top:50%;height:3px;margin-top:-1.5px;background:#ff3b30;border-radius:2px;transform:rotate(-45deg)}
+.tm4 .ip-us-lines{padding:0 12px 6px}
+.tm4 .ip-us-lines i{display:block;height:7px;margin:5px 0;border-radius:4px;background:currentColor;opacity:.15}
+.tm4 .ip-us-lines i:nth-child(2){width:70%}.tm4 .ip-us-lines i:nth-child(3){width:50%}
+.tm4 .ip-us-scroll{padding:2px 0 8px;text-align:center;font-size:12.5px;font-weight:600;color:#0a6cd6}
+.tm4 .ip-warn2{margin:10px 0 0;padding:9px 11px;border-radius:10px;background:rgba(255,59,48,.1);color:var(--text);font-size:14px;line-height:19px;font-weight:400}
