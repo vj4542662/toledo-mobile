@@ -3933,9 +3933,12 @@
       const fitH = () => {
         const tabs = $('#tm-tabs');
         const top = box.getBoundingClientRect().top + W.scrollY;
-        box.style.height = Math.max(300, W.innerHeight - top - (tabs ? tabs.offsetHeight : 0) - 10) + 'px';
+        const vh = Math.min(W.innerHeight, document.documentElement.clientHeight || W.innerHeight);
+        box.style.height = Math.max(300, vh - top - (tabs ? tabs.offsetHeight : 0) - 10) + 'px';
       };
       fitH();
+      // once the slide-in is over, measure again (and fit the plan to the final size)
+      setTimeout(() => { if ($('#kmap') === box) { const h0 = box.style.height; fitH(); if (box.style.height !== h0) reset(false); } }, 420);
       const { W0, H0 } = Z;
       let s = 1, x = 0, y = 0, fit = 1;
       const bw = () => box.clientWidth, bh = () => box.clientHeight;
