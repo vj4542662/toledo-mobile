@@ -134,8 +134,12 @@
           h += res.map((r) => {
             const now = Date.now(), s = fromYmd(r.startDate, r.startTime), e = r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime);
             const live = now >= s - 15 * 60e3 && now < e;
-            const lid = r.locationId;
-            const unit = (lid && d.loc && d.loc.extra[lid] && d.loc.extra[lid].l && d.loc.extra[lid].l.unit) || '';
+            // a booking only names its seat ("Agora - Silent Study Seat 111"): find its library by that prefix
+            const pre = fold(String(r.resourceName || '').split(' - ')[0]);
+            const locs = d.loc ? d.loc.tiles.flatMap((t) => t.locations) : [];
+            const hit = r.locationId ? locs.find((l) => l.id === r.locationId) : pre && locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre));
+            const lid = hit ? hit.id : r.locationId;
+            const unit = hit ? hit.unit : '';
             return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top"><span class="kr-seat">${esc(seatNo(r.resourceName))}</span><span class="kr-main"><b>${esc(nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span></div>
               <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
               <div class="kr-acts">${live ? `<a class="pri" href="${esc(ORIG('/check-in/' + r.resourceId))}">Inchecken</a>` : ''}${lid ? `<a href="#/l/${esc(lid)}">Locatie</a>` : ''}<button type="button" class="red" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName))}">Annuleer</button></div></div>`;
@@ -487,7 +491,7 @@
       } else if (act === 'cancel') {
         e.preventDefault();
         const id = b.dataset.id;
-        sheet({ title: 'Reservatie annuleren?', msg: b.dataset.n, actions: [{ label: 'Annuleer reservatie', red: true, run: () => {
+        sheet({ title: 'Reservatie verwijderen?', msg: b.dataset.n, actions: [{ label: 'Reservatie verwijderen', red: true, run: () => {
           send('DELETE', '/reservations/' + encodeURIComponent(id) + '/').then(() => { toast('Geannuleerd'); store.del('kurt:res'); show(); }, (err) => toast(err.message || 'Annuleren lukte niet'));
         } }] });
       }
