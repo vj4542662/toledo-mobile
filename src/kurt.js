@@ -51,6 +51,7 @@
     const NL_TAGS = { 'power socket nearby': 'Stopcontact', silence: 'Stilte', 'adjustable desk': 'Verstelbaar bureau', 'desk lamp': 'Bureaulamp', window: 'Aan het raam', screen: 'Scherm' };
     const NL_CITY = { Leuven: 'Leuven', Antwerp: 'Antwerpen', Bruges: 'Brugge', Brussels: 'Brussel', Kortrijk: 'Kortrijk', 'Learning Lab': 'Learning Lab' };
     const hours = (s) => { const m = /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? `${m[1]}:${m[2]}–${m[3]}:${m[4]}` : ''; };
+    const shortUnit = (u) => String(u || '').replace(/ Learning Centre$/, '').replace(/^Vleminckxveld /, '').replace(/ Library$/, '').replace(/^Institute of Philosophy$/, 'Filosofie').replace(/^Law and Criminology$/, 'Rechten').replace(/^Economics and Business$/, 'Economie').replace(/^Social Sciences$/, 'Sociale Wet.');
     const openTxt = (l) => (l.closedToday || /closed/i.test(l.openingHoursToday || '') ? 'Vandaag gesloten' : hours(l.openingHoursToday) ? 'Open ' + hours(l.openingHoursToday) : '');
     const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
     const hm = (min) => pad(Math.floor(min / 60)) + ':' + pad(min % 60);
@@ -66,6 +67,7 @@
     const favs = () => store.get('kurt:fav') || [];
     const seatFavs = () => store.get('kurt:seats') || [];
     const isSeatFav = (rid) => seatFavs().some((f) => f.rid === rid);
+    const GROUP = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.2 19.6c.5-3.4 2.9-5.4 5.8-5.4s5.3 2 5.8 5.4"/><circle cx="16.8" cy="9.2" r="2.5"/><path d="M15.6 14.4c2.6-.5 4.7 1.2 5.2 4.4"/></svg>';
     const TRASH = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6.8h15M9.5 6.8V4.6h5v2.2M6.6 6.8l.9 12.4a1.6 1.6 0 0 0 1.6 1.5h5.8a1.6 1.6 0 0 0 1.6-1.5l.9-12.4M10.2 10.6v6.4M13.8 10.6v6.4"/></svg>';
     const STAR = (on) => `<svg class="i kstar${on ? ' on' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.8l-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>`;
     // known rooms (from the libraries you opened): id -> { l: library, n: name, t: resource types }, so a floor plan opens without asking KURT first
@@ -100,7 +102,7 @@
       set(w) { if (w) ss.set('tm4-kurt-when', JSON.stringify(w)); else ss.del('tm4-kurt-when'); },
     };
 
-    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>] */
+    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>], #/g/<location>[?d=<day>] group rooms */
     // KURT's own addresses (/locations/10, /zone/1) become the app's
     {
       const m = /^\/(locations|zone)\/(\d+)/.exec(location.pathname);
@@ -115,7 +117,7 @@
     };
     let depth = 0;
     const nav = (hash) => { depth++; location.hash = hash; };
-    const back = () => { if (depth > 0) { depth--; history.back(); } else { const r = route(); location.replace(K + '/' + (r.name === 'z' && zoneLoc[r.id] ? '#/l/' + zoneLoc[r.id] : '#/')); } };
+    const back = () => { if (depth > 0) { depth--; history.back(); } else { const r = route(); location.replace(K + '/' + (r.name === 'z' && zoneLoc[r.id] ? '#/l/' + zoneLoc[r.id] : r.name === 'g' ? '#/l/' + r.id : '#/')); } };
     const zoneLoc = store.get('kurt:zl') || {};
     let token = 0, keepY = 0;
     const show = (anim) => {
@@ -128,6 +130,7 @@
       W.scrollTo(0, keepY); keepY = 0;
       if (r.name === 'l') viewLoc(r.id, my);
       else if (r.name === 'z') viewZone(r.id, r.q, my);
+      else if (r.name === 'g') viewGroup(r.id, r.q, my);
       else viewHome(my);
     };
     let lastLen = history.length, quiet = false;
@@ -139,15 +142,15 @@
       const today = ymd(Date.now());
       const old = store.get('kurt:locinfo');
       let tiles, info;
-      if (old && old.day === today && old.tiles) ({ tiles, info } = old);
+      if (old && old.day === today && old.tiles && old.v === 2) ({ tiles, info } = old);
       else {
         tiles = await get('/tiles');
         info = {};
-        await Promise.all(tiles.flatMap((t) => t.locations).map((loc) => get('/locations/' + loc.id).then((l) => {
-          info[loc.id] = { unit: l.unit, address: l.address, openingHoursToday: l.openingHoursToday, closedToday: l.closedToday, zones: (l.zones || []).length };
+        await Promise.all(tiles.flatMap((t) => t.locations).map((loc) => Promise.all([get('/locations/' + loc.id), get('/resourcetypes?locationId=' + loc.id).catch(() => [])]).then(([l, ty]) => {
+          info[loc.id] = { unit: l.unit, address: l.address, openingHoursToday: l.openingHoursToday, closedToday: l.closedToday, zones: (l.zones || []).length, types: (ty || []).map((x) => x.id) };
           keepZones(loc.id, l.zones);
         }, () => {})));
-        store.set('kurt:locinfo', { day: today, tiles, info });
+        store.set('kurt:locinfo', { day: today, tiles, info, v: 2 });
       }
       const extra = {};
       await Promise.all(tiles.flatMap((t) => t.locations).map((loc) => get('/occupancies/' + loc.id).then((o) => o, () => null).then((o) => {
@@ -237,12 +240,14 @@
             // a booking only names its seat ("Agora - Silent Study Seat 111"): find its library by that prefix
             const pre = fold(String(r.resourceName || '').split(' - ')[0]);
             const locs = d.loc ? d.loc.tiles.flatMap((t) => t.locations) : [];
-            const hit = r.locationId ? locs.find((l) => l.id === r.locationId) : pre && locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre));
+            const w1 = pre.split(' ')[0];
+            const hit = r.locationId ? locs.find((l) => l.id === r.locationId) : pre && (locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre)) || (w1.length > 3 && locs.find((l) => fold(l.unit).startsWith(w1))));
+            const isRoom = !/\d\s*$/.test(String(r.resourceName || ''));
             const lid = hit ? hit.id : r.locationId;
             const unit = hit ? hit.unit : '';
             const cin = live && isIn(r);
             const dn = esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime + '–' + (r.endTime === '00:00' ? '24:00' : r.endTime));
-            return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top"><span class="kr-seat">${esc(seatNo(r.resourceName))}</span><span class="kr-main"><b>${esc(nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span><button type="button" class="kr-del" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime)}" aria-label="Reservatie verwijderen">${TRASH}</button></div>
+            return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top">${isRoom ? `<span class="kr-seat kr-room">${GROUP}</span>` : `<span class="kr-seat">${esc(seatNo(r.resourceName))}</span>`}<span class="kr-main"><b>${esc(isRoom ? 'Groepsruimte ' + nm(r.resourceName) : nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span><button type="button" class="kr-del" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime)}" aria-label="Reservatie verwijderen">${TRASH}</button></div>
               <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · <em>ingecheckt</em>' : live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
               <div class="kr-acts">${live ? `<button type="button" class="${cin ? 'red' : 'pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>` : ''}${lid ? `<a href="#/l/${esc(lid)}">Naar de locatie</a>` : ''}</div></div>`;
           }).join('');
@@ -252,6 +257,13 @@
         const all = tiles.flatMap((t) => t.locations);
         const fl = favs().map((id) => all.find((l) => l.id === id)).filter(Boolean);
         const fs = seatFavs();
+        // group rooms: right under your bookings, one tap per library (the last one you used first)
+        const gl = all.filter((l) => extra[l.id] && extra[l.id].l && (extra[l.id].l.types || []).includes(1));
+        if (gl.length) {
+          const last = store.get('kurt:glast'), fv = favs();
+          gl.sort((a, b) => (b.id === last) - (a.id === last) || fv.includes(b.id) - fv.includes(a.id));
+          h += `<div class="sh"><h2>Groepswerkruimte</h2></div><div class="card kg-home"><div class="kg-home-t">${GROUP}<span><b>Reserveer een lokaal voor je groep</b><span>Kies een bibliotheek en zie meteen welke uren vrij zijn</span></span></div><div class="kg-libs">${gl.map((l) => `<a class="chip" href="#/g/${l.id}">${esc(shortUnit(l.unit))}</a>`).join('')}</div></div>`;
+        }
         h += `<div class="sh"><h2>Favorieten</h2></div>`;
         if (!fl.length && !fs.length) h += `<div class="card ko-empty">${STAR(false)}<span>Tik op de ster bij een bibliotheek of bij een stoel, dan vind je ze hier terug.</span></div>`;
         if (fl.length) h += `<div class="group">${fl.map((l) => locRow(l, extra[l.id])).join('')}</div>`;
@@ -342,8 +354,11 @@
         store.set('kurt:zl', zoneLoc);
         keepZones(id, zones);
         let h = l.fullImageUrl ? `<div class="ko-hero" style="background-image:url('${esc(K + '/' + l.fullImageUrl)}')"></div>` : '';
-        h += `<div class="lt"><h1${l.unit.length > 22 ? ' class="long"' : ''}>${esc(l.unit)}</h1><p class="lt-sub">${esc([openTxt(l), l.address].filter(Boolean).join(' · '))}</p></div>`;
+        const ll = l.navigationUrl && /query=([-\d.]+)%2C([-\d.]+)/.exec(l.navigationUrl);
+        const rt = [ll ? `<a href="https://maps.apple.com/?daddr=${ll[1]},${ll[2]}&q=${encodeURIComponent(l.unit)}">Route</a>` : '', l.navigationUrl ? `<a href="${esc(l.navigationUrl)}">${ll ? 'Google Maps' : 'Route'}</a>` : ''].filter(Boolean);
+        h += `<div class="lt"><h1${l.unit.length > 22 ? ' class="long"' : ''}>${esc(l.unit)}</h1><p class="lt-sub">${esc([openTxt(l), l.address].filter(Boolean).join(' · '))}</p>${rt.length ? `<p class="kroute">${ico('pin')}${rt.join('<i>·</i>')}</p>` : ''}</div>`;
         if (o && o.capacity && !o.closed) h += `<div class="ko-occ"><span><b>${Math.max(0, o.capacity - o.occupancy)}</b> van ${o.capacity} plaatsen vrij nu</span>${occBar(o)}</div>`;
+        if ((L.types || []).some((t) => t.id === 1)) h += `<a class="card kg-cta" href="#/g/${esc(id)}"><span class="kg-ic">${GROUP}</span><span class="kr-main"><b>Groepswerkruimte reserveren</b><span>Zie welke lokalen vrij zijn en reserveer</span></span><svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></a>`;
         if (zones.length) {
           h += `<div class="sh"><h2>Kies je plek</h2></div>`;
           h += par ? whenPill(sel) : '<div class="kw sk"></div>';
@@ -356,14 +371,7 @@
             return `<a class="kz${free && !free.length ? ' none' : ''}" href="#/z/${z.id}"><span class="kz-fp"${fpc ? ` style="background-image:url('${esc(fpc)}')"` : ''}></span><span class="kz-t"><b>${esc(z.name.trim())}</b><span>${free == null ? '<span class="sk" style="display:inline-block;width:90px"></span>' : free.length ? `<em>${free.length} vrij</em> · max. ${best} u` : 'Niets vrij op dit uur'}</span></span><span class="kz-go">${ico('pin')}Kaart</span></a>`;
           }).join('')}</div>`;
         } else h += `<div class="card ko-none">${ico('info')}<span>Deze locatie heeft geen plattegrond in KURT. Reserveer hier via KURT zelf.</span></div>`;
-        const acts = [];
-        if (l.navigationUrl) {
-          const ll = /query=([-\d.]+)%2C([-\d.]+)/.exec(l.navigationUrl);
-          acts.push(`<a class="pri" href="${esc(l.navigationUrl)}">Google Maps</a>`);
-          if (ll) acts.push(`<a href="https://maps.apple.com/?ll=${ll[1]},${ll[2]}&q=${encodeURIComponent(l.unit)}">Apple Kaarten</a>`);
-        }
-        if (acts.length) h += `<div class="sh"><h2>Route</h2></div><div class="card rp-loc"><div class="rp-addr">${ico('pin')}<span><b>${esc(l.address || '')}</b></span></div><div class="rp-acts">${acts.join('')}</div></div>`;
-        const types = (L.types || []).filter((t) => !zones.length || ![302, 303].includes(t.id));
+        const types = (L.types || []).filter((t) => t.id !== 1 && (!zones.length || ![302, 303].includes(t.id)));
         if (types.length) h += `<div class="gh">Ook te reserveren</div><div class="group">${types.map((t) => row({ href: ORIG('/locations/' + id), icon: 'seat', soft: true, title: NL_TYPES[t.id] || t.name, sub: 'In KURT zelf', external: true })).join('')}</div>`;
         if (L.news && L.news.length) h += `<details class="rp-more"><summary>Berichten van ${esc(l.unit)}</summary>${L.news.map((n) => `<p class="rp-list">${esc(textOf(n.title || ''))}${n.title ? ': ' : ''}${esc(textOf(n.content || n.text || ''))}</p>`).join('')}</details>`;
         put(sec, h);
@@ -402,6 +410,182 @@
       } catch (e) {
         if (my === token && !c && !(e && e.auth)) put(sec, empty('warn', 'Locatie kon niet geladen worden', '', `<p style="margin-top:14px"><a class="btn" href="${esc(ORIG('/locations/' + id))}">Open in KURT</a></p>`));
       }
+    }
+
+    /* ---------- group work rooms: a day, every room with its free hours, tap an hour to book */
+    // one request gives every room of the day with its hours (startTime '' = the whole day)
+    const roomsFor = (lid, day) => memo(`gr:${lid}:${day}`, 60e3, async () => {
+      let all = [];
+      for (let pg = 0; pg < 6; pg++) {
+        const a = await get(`/resourcetypeavailabilities?locationId=${lid}&zoneId=-1&resourceTypeId=1&pageNumber=${pg}&startDate=${day}&startTime=&endDate=${day}&endTime=&participantCount=-1&tagIds=&exactMatch=false&onlyFavorites=false&resourceNameInfix=&version=2.0`);
+        const v = (a && a.availabilities) || [];
+        all = all.concat(v);
+        if (v.length < 25) break;
+      }
+      return all;
+    });
+    const roomCode = (n) => String(n || '').split(' - ')[0].replace(/^\S+\s+/, '');
+    // the hours of a room: free = 'A' and not already over
+    const roomSlots = (a, day) => {
+      const al = a.slotAllocation || '';
+      const slot = Math.round(1440 / (al.length || 24)) || 60;
+      const nowMin = day === ymd(Date.now()) ? (Date.now() - fromYmd(day)) / 60e3 : -1;
+      const out = [];
+      for (let i = 0; i < al.length; i++) {
+        if (al[i] === 'C') continue;
+        out.push({ i, m: i * slot, free: al[i] === 'A' && (i + 1) * slot > nowMin + 10 });
+      }
+      return { slot, out };
+    };
+    const blocks = (sl) => {
+      const b = [];
+      sl.out.forEach((x) => { if (!x.free) return; const l = b[b.length - 1]; if (l && l.e === x.m) l.e = x.m + sl.slot; else b.push({ s: x.m, e: x.m + sl.slot }); });
+      return b;
+    };
+    let GR = null; // the group room page on screen
+    async function viewGroup(lid, q, my) {
+      const info = ((store.get('kurt:locinfo') || {}).info || {})[lid] || {};
+      const unit = info.unit || (((store.get('kurt:loc:' + lid) || {}).l) || {}).unit || '';
+      document.title = 'Groepswerkruimtes';
+      setNav({ back: { label: 'Terug', act: 'kback', href: '#/l/' + lid }, title: 'Groepsruimtes', always: true });
+      store.set('kurt:glast', Number(lid));
+      const head = `<div class="lt"><h1>Groepswerkruimtes</h1><p class="lt-sub">${esc(unit)}</p></div>`;
+      put(sec, head + '<div class="kg-days sk" style="height:50px"></div>' + skGroup(4));
+      let par;
+      try { par = await parFor(lid, [1]); } catch (e) { if (my === token && !(e && e.auth)) put(sec, head + empty('warn', 'Groepsruimtes konden niet geladen worden', '', `<p style="margin-top:14px"><a class="btn" href="${esc(ORIG('/locations/' + lid))}">Open in KURT</a></p>`)); return; }
+      if (my !== token) return;
+      const days = ((par && par.startDates) || []).map((d) => d.value);
+      let day = q.get('d');
+      if (!days.includes(day)) day = days[0];
+      const dayRow = `<div class="kg-days">${days.map((v) => `<button type="button" class="chip${v === day ? ' on' : ''}" data-act="gday" data-l="${esc(lid)}" data-d="${v}">${esc(dayLbl(v))}<small>${esc(String(new Date(fromYmd(v)).getDate()))}/${new Date(fromYmd(v)).getMonth() + 1}</small></button>`).join('')}</div>`;
+      if (!day) { put(sec, head + empty('info', 'Geen dagen om te reserveren', 'KURT geeft voor deze bibliotheek geen dagen voor groepsruimtes.')); return; }
+      put(sec, head + dayRow + skGroup(4));
+      const onDay = sec.querySelector('.kg-days .on'); if (onDay) onDay.scrollIntoView({ block: 'nearest', inline: 'center' });
+      let rooms;
+      try { rooms = await roomsFor(lid, day); } catch (e) { if (my === token && !(e && e.auth)) put(sec, head + dayRow + empty('warn', 'Groepsruimtes konden niet geladen worden', '')); return; }
+      if (my !== token) return;
+      const list = rooms.map((a) => { const sl = roomSlots(a, day); return { a, sl, b: blocks(sl) }; });
+      list.sort((x, y) => (y.b.length > 0) - (x.b.length > 0) || String(x.a.name).localeCompare(String(y.a.name)));
+      GR = { lid, day, unit, list };
+      const nFree = list.filter((x) => x.b.length).length;
+      let h = head + dayRow;
+      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen hebben nog vrije uren. Tik op een groen uur.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
+      h += list.map(({ a, sl, b }) => `<div class="card kg${b.length ? '' : ' none'}">
+          <div class="kg-h"><span class="kg-ic">${GROUP}</span><span class="kr-main"><b>${esc(nm(a.name))}</b><span>${esc([roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} personen`].filter(Boolean).join(' · '))}</span></span><span class="kg-free">${b.length ? b.map((x) => `${hm(x.s).replace(/:00$/, '')}–${hm(x.e).replace(/:00$/, '')}`).slice(0, 2).join(', ') + (b.length > 2 ? '…' : '') : 'Volzet'}</span></div>
+          <div class="kg-strip">${sl.out.map((x) => `<button type="button" class="kg-c${x.free ? ' free' : ''}" data-act="groom" data-r="${a.id}" data-i="${x.i}"${x.free ? '' : ' disabled'} aria-label="${hm(x.m)}${x.free ? ' vrij' : ' bezet'}">${x.m % 120 === 0 || sl.out.length <= 12 ? x.m / 60 : ''}</button>`).join('')}</div>
+        </div>`).join('');
+      h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
+      put(sec, h);
+      const on2 = sec.querySelector('.kg-days .on'); if (on2) on2.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
+
+    // book a group room: until when, a subject and your group (KURT asks at least minParticipants people, you included)
+    async function pickRoom(rid, si) {
+      if (!GR) return;
+      const it = GR.list.find((x) => String(x.a.id) === String(rid));
+      if (!it) return;
+      const { a, sl } = it, day = GR.day, slot = sl.slot;
+      closeBook();
+      const al = a.slotAllocation || '';
+      const maxMin = a.maxDurationMinutes || 240;
+      const ends = [];
+      for (let k = si; k < al.length && al[k] === 'A' && (k - si + 1) * slot <= maxMin; k++) ends.push((k + 1) * slot);
+      if (!ends.length) return;
+      const me = ME || {};
+      const st = {
+        end: ends[Math.min(ends.length, 2) - 1],
+        subj: store.get('kurt:gsubj') || 'Groepswerk',
+        ppl: me.uid ? [{ uid: me.uid, email: me.email, me: true }] : [],
+        q: '', busy: false, err: '',
+      };
+      const start = si * slot;
+      const layer = document.createElement('div');
+      layer.setAttribute('data-tm4', '');
+      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+        <div class="kb-h"><span class="kr-seat kr-room">${GROUP}</span><span class="kr-main"><b>${esc(nm(a.name))}</b><span>${esc([roomCode(a.name), GR.unit].filter(Boolean).join(' · '))}</span></span></div>
+        <div class="kb-when kb-when-s">${ico('clock')}<span><b>${esc(dayLbl(day))}</b> vanaf ${hm(start)}</span></div>
+        <div class="kb-body"></div></div></div>`;
+      document.body.appendChild(layer);
+      bookLayer = layer;
+      const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb'), body = kb.querySelector('.kb-body');
+      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
+      scrim.addEventListener('click', closeBook);
+      let res = null;
+      memo('res:' + a.id, 30 * 60e3, () => get(`/resources/${a.id}?withDetails=true`)).then((x) => { res = x; draw(); }, () => {});
+      const mates = () => (store.get('kurt:mates') || []).filter((m) => !st.ppl.some((x) => x.uid.toUpperCase() === m.uid.toUpperCase()));
+      const draw = () => {
+        if (!layer.isConnected) return;
+        const n = st.ppl.length, min = a.minParticipants || 1, max = a.maxParticipants || 99;
+        const need = Math.max(0, min - n);
+        const subjOk = !(res && res.subjectIsRequired) || st.subj.trim().length >= 4;
+        const ok = !need && subjOk && st.ppl.length && !st.busy;
+        const rules = ((res && (res.conditionsOfUseNlUrl || res.conditionsOfUseEnUrl)) || '').trim();
+        body.innerHTML = `<div class="kb-l">Tot wanneer?</div>
+          <div class="chips kb-ends">${ends.map((m) => `<button type="button" class="chip${m === st.end ? ' on' : ''}" data-act="end" data-m="${m}">${hm(m)}<small>${dur(m - start)}</small></button>`).join('')}</div>
+          <label class="kb-l" for="kg-subj">Onderwerp</label>
+          <input id="kg-subj" class="kg-in" type="text" maxlength="100" autocomplete="off" value="${esc(st.subj)}" placeholder="Waarvoor? Bv. Groepswerk statistiek">
+          <div class="kb-l kg-pl">Groepsleden <b>${n}</b><span> · ${min === max ? min : `${min} tot ${max}`} personen, jij inbegrepen</span></div>
+          <div class="kg-ppl">${st.ppl.map((x) => `<div class="kg-p"><span class="kg-av">${esc((x.me ? (me.firstName || 'Jij') : x.email || x.uid).slice(0, 1).toUpperCase())}</span><span class="kr-main"><b>${esc(x.me ? 'Jij' : String(x.email || '').split('@')[0].replace(/\./g, ' ') || x.uid)}</b><span>${esc(x.uid)}</span></span>${x.me ? '' : `<button type="button" class="kg-x" data-act="gdel" data-u="${esc(x.uid)}" aria-label="Verwijder">${ico('close')}</button>`}</div>`).join('')}</div>
+          ${n < max ? `<form class="kg-add"><input id="kg-q" class="kg-in" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="r-nummer of e-mail van een groepslid" value="${esc(st.q)}"><button type="submit" class="kg-addb"${st.busy ? ' disabled' : ''}>${st.busy ? '<span class="spin"></span>' : 'Voeg toe'}</button></form>` : ''}
+          ${st.err ? `<p class="ko-hint err">${ico('warn')}${esc(st.err)}</p>` : ''}
+          ${n < max && mates().length ? `<div class="kb-l kg-ml">Eerder in je groep</div><div class="kg-mates">${mates().slice(0, 8).map((m) => `<button type="button" class="chip" data-act="gmate" data-u="${esc(m.uid)}">+ ${esc(String(m.email || '').split('@')[0].replace(/\./g, ' ') || m.uid)}</button>`).join('')}</div>` : ''}
+          <button type="button" class="btn kb-go" data-act="gbook"${ok ? '' : ' disabled'}>${need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : !subjOk ? 'Vul een onderwerp in (min. 4 tekens)' : `Reserveer · ${hm(start)}–${hm(st.end)}`}</button>
+          <p class="kb-legal">Je gaat akkoord met het ${rules ? `<a href="${esc(rules)}">reglement</a>` : 'reglement'}. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</p>`;
+        const on = body.querySelector('.kb-ends .chip.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+      };
+      const add = async (idf) => {
+        idf = String(idf || '').trim();
+        if (!idf || st.busy) return;
+        if (/^[rusbm]\d{5,}$/i.test(idf)) idf = idf.toUpperCase();
+        st.busy = true; st.err = ''; draw();
+        try {
+          const x = await get('/participants/' + encodeURIComponent(idf));
+          if (!x || !x.uid) throw new Error('');
+          if (st.ppl.some((y) => y.uid.toUpperCase() === x.uid.toUpperCase())) st.err = 'Die persoon staat al in je groep.';
+          else { st.ppl.push({ uid: x.uid, email: x.email }); st.q = ''; }
+        } catch (e) { st.err = `Niemand gevonden voor "${idf}". Typ een r-nummer (bv. r0123456) of een KU Leuven-mailadres.`; }
+        st.busy = false; draw();
+        const q = body.querySelector('#kg-q'); if (q && !st.q && st.ppl.length < (a.maxParticipants || 99) && st.ppl.length < (a.minParticipants || 1)) q.focus();
+      };
+      body.addEventListener('input', (e) => { if (e.target.id === 'kg-subj') { st.subj = e.target.value; const b = body.querySelector('[data-act="gbook"]'); const need = Math.max(0, (a.minParticipants || 1) - st.ppl.length); const ok = !need && (!(res && res.subjectIsRequired) || st.subj.trim().length >= 4); b.disabled = !ok; b.textContent = need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : ok ? `Reserveer · ${hm(start)}–${hm(st.end)}` : 'Vul een onderwerp in (min. 4 tekens)'; } else if (e.target.id === 'kg-q') st.q = e.target.value; });
+      body.addEventListener('submit', (e) => { e.preventDefault(); add(st.q); });
+      kb.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        const act = b.dataset.act;
+        if (act === 'end') { st.end = Number(b.dataset.m); draw(); return; }
+        if (act === 'gdel') { st.ppl = st.ppl.filter((x) => x.me || x.uid !== b.dataset.u); draw(); return; }
+        if (act === 'gmate') { const m = (store.get('kurt:mates') || []).find((x) => x.uid === b.dataset.u); if (m && st.ppl.length < (a.maxParticipants || 99)) { st.ppl.push({ uid: m.uid, email: m.email }); draw(); } return; }
+        if (act === 'done') { closeBook(); nav('#/'); return; }
+        if (act !== 'gbook' || b.disabled) return;
+        b.disabled = true; b.innerHTML = '<span class="spin"></span> Reserveren…';
+        try {
+          if (!res) res = await memo('res:' + a.id, 30 * 60e3, () => get(`/resources/${a.id}?withDetails=true`));
+          const end = st.end;
+          const endDate = end >= 1440 ? ymd(addDays(fromYmd(day), 1)) : day;
+          const endTime = end >= 1440 ? '00:00' : hm(end);
+          const parts = st.ppl.map(({ uid, email }) => ({ uid, email }));
+          const subject = st.subj.trim() || res.name;
+          // the same reservation KURT's own page sends
+          const payload = {
+            id: res.id, resourceName: res.name, subject, purpose: '', resourceId: a.id,
+            startDate: day, startTime: hm(start), endDate, endTime, participants: parts,
+            summary: [`Resource **${a.name}**`, `at **${a.unit}**`, `for **${parts.map((x) => String(x.email || '').replace('@', '&commat;')).join(', ')}**`, `from **${enDate(day)} ${hm(start)}** until **${enDate(endDate)} ${endTime}**`],
+            withCheckIn: false,
+          };
+          if (res.additionalFields) payload.additionalFields = res.additionalFields;
+          await send('POST', '/reservations/', payload);
+          store.set('kurt:gsubj', subject);
+          const others = parts.filter((x) => !me.uid || x.uid !== me.uid);
+          store.set('kurt:mates', others.concat((store.get('kurt:mates') || []).filter((m) => !others.some((o) => o.uid === m.uid))).slice(0, 12));
+          store.del('kurt:res'); memoClear();
+          kb.querySelector('.kb-when').hidden = true;
+          body.innerHTML = `<div class="kb-ok">${ico('check')}<b>Gereserveerd</b><span>${esc(nm(a.name))} · ${esc(dayLbl(day))} ${hm(start)}–${hm(end)}</span><span>${parts.length} personen. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</span></div><button type="button" class="btn kb-go" data-act="done">Klaar</button>`;
+        } catch (err) {
+          st.err = err.message || 'Reserveren lukte niet'; draw();
+        }
+      });
+      draw();
     }
 
     /* ---------- a room: the floor plan */
@@ -714,6 +898,12 @@
         store.set('kurt:fav', f.includes(id) ? f.filter((x) => x !== id) : [id].concat(f).slice(0, 6));
         b.innerHTML = STAR(!f.includes(id));
         toast(f.includes(id) ? 'Uit je favorieten' : 'Bij je favorieten op Studieplek');
+      } else if (act === 'gday') {
+        e.preventDefault();
+        quiet = true; location.replace(K + '/#/g/' + b.dataset.l + '?d=' + b.dataset.d);
+      } else if (act === 'groom') {
+        e.preventDefault();
+        if (!b.disabled) pickRoom(b.dataset.r, Number(b.dataset.i));
       } else if (act === 'checkin') {
         e.preventDefault();
         if (!b.disabled) validate(b, 10);
