@@ -516,7 +516,7 @@
     };
     // one result with its statistics (#resultaat/<study>:<year>:<code>), opened from Studievoortgang
     BUILD.resultaat = () => '<div data-k="body"></div>';
-    NAVS.resultaat = () => ({ back: { label: 'Terug', href: '#studie', act: 'resback' }, title: 'Resultaat' });
+    NAVS.resultaat = () => ({ back: { label: 'Terug', href: '#studie' }, title: 'Resultaat' });
     FILL.resultaat = (el) => {
       const S = P.study && P.study.v && P.study.v.study;
       const h = S && S.length ? resultHtml(S, P.resKey) : '';
@@ -555,13 +555,11 @@
       if (id === P.tab && prev && !sub) { W.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       if (prev) prev.y = W.scrollY;
       if (id === 'rooster' && sub) P.seg = sub === 'examens' ? 'examens' : 'lessen';
-      let push = false;
       if (id === 'resultaat') {
         const k = sub ? decodeURIComponent(sub) : P.resKey;
         if (k !== P.resKey && V.resultaat) V.resultaat.y = 0;
-        push = P.tab === 'studie' && !!sub;
         P.resKey = k;
-        if (!k) { id = 'studie'; push = false; }
+        if (!k) id = 'studie';
       }
       const first = !P.tab;
       P.tab = id;
@@ -582,10 +580,8 @@
       W.scrollTo(0, v.y || 0);
       watchTitle(v.el);
       let hash = '#' + id + (id === 'rooster' && P.seg === 'examens' ? '/examens' : '');
-      if (id === 'resultaat') { hash = '#resultaat/' + encodeURIComponent(P.resKey); P.resPushed = push || (P.resPushed && location.hash === hash); }
-      // a result is pushed on top of Studievoortgang, so swiping back (or the back button) returns there
-      if (push && location.hash !== hash) history.pushState(null, '', location.pathname + hash);
-      else if (location.hash !== hash || location.search) history.replaceState(null, '', location.pathname + hash);
+      if (id === 'resultaat') hash = '#resultaat/' + encodeURIComponent(P.resKey);
+      if (location.hash !== hash || location.search) history.replaceState(null, '', location.pathname + hash);
       if (id === 'updates') setTimeout(() => { if (P.tab === 'updates') { P.seen = Date.now(); store.set('p:seen', P.seen); badges(); } }, 1200);
     }
     function routeFromUrl(ignoreQuery) {
@@ -655,7 +651,6 @@
       stsync: () => ACTS.agsync(),
       strefresh: () => refreshAgenda(true, true),
       stsel: (b) => { P.stSel = Number(b.dataset.id) || 0; FILL.studie(V.studie.el); },
-      resback: () => { if (P.resPushed && P.tab === 'resultaat') { P.resPushed = false; history.back(); } else show('studie'); },
       resopen: (b) => { const k = b.dataset.k; P.stOpen[k] = !P.stOpen[k]; FILL.studie(V.studie.el); },
       // Outlook-app first (iOS lets a tap open another app); no app after a moment: Outlook on the web
       mail: () => {
@@ -714,7 +709,7 @@
     }, true);
     const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp|resultaat\/[^/]+)$/;
     W.addEventListener('hashchange', () => {
-      if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : '')); return; }
+      if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : P.tab === 'resultaat' ? '/' + encodeURIComponent(P.resKey || '') : '')); return; }
       const r = routeFromUrl(true);
       if (r.tab !== P.tab || r.sub) show(r.tab, r.sub);
     });
