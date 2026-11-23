@@ -678,3 +678,20 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .ks.fav{box-shadow:0 0 0 calc(3px * var(--k)) #ffcc00}
 .tm4 .kf.fav{box-shadow:inset 0 0 0 2px #ffcc00}
 .tm4 .kmap-pre{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:.35}
+/* KURT v3: full-screen map, list sheet, when-row in the seat sheet */
+html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
+.tm4 .kmap-cnt{position:absolute;left:8px;top:8px;padding:6px 11px;border-radius:10px;background:rgba(255,255,255,.94);color:#1c1c1e;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none}
+.tm4 .kmap-cnt b{color:#1f9a43;font-size:16px}
+.tm4 .kmap-cnt.none b{color:#8e8e93}
+.tm4 .kmap-list{position:absolute;right:8px;bottom:8px;height:40px;padding:0 16px;border-radius:20px;background:#0a6cd6;color:#fff;font-size:15px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tm4 .kl-sub{display:block;font-size:14px;font-weight:400;color:var(--sub);margin-top:2px}
+.tm4 .kb .kfree{margin:0 0 14px;max-height:46vh;overflow:auto}
+.tm4 .kb .kf{background:var(--card)}
+.tm4 .btn.kl-when{display:flex;width:100%}
+.tm4 .btn.kl-when .i{width:20px;height:20px}
+.tm4 .kb .fresh{margin:12px 0 0}
+.tm4 .kb-when{display:flex;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--fill);font-size:15px;text-align:left}
+.tm4 .kb-when .i{width:20px;height:20px;color:var(--accent)}
+.tm4 .kb-when span{flex:1}
+.tm4 .kb-when em{font-style:normal;color:var(--accent);font-weight:600}
+.tm4 .kfs .kr-seat{min-width:44px;height:44px;font-size:16px}

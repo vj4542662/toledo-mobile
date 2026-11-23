@@ -1,6 +1,12 @@
 {
- "version": "4.13.1",
+ "version": "4.14.0",
  "news": {
+  "4.14.0": [
+   "KURT: de plattegrond vult nu het hele scherm. Bovenaan zie je hoeveel plaatsen er vrij zijn, en met de knop Lijst zie je alle vrije stoelen.",
+   "KURT: bij een stoel (ook een favoriet) kies je nu zelf de dag en het uur, tot een week op voorhand.",
+   "KURT: favoriete bibliotheken staan bovenaan, je favoriete stoelen eronder.",
+   "KURT laadt sneller: wat je net bekeek opent meteen, en een bibliotheek begint al te laden zodra je ze aanraakt."
+  ],
   "4.13.1": [
    "Een nieuwe versie verschijnt nu echt meteen, niet pas na een paar minuten."
   ],
