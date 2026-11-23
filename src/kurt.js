@@ -15,7 +15,6 @@
       { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
       { id: 'meer', label: 'Meer', icon: 'grid', href: PORTAL + '?tm=meer' },
     ], 'meer');
-    document.body.classList.add('kurt');
     const main = $('#tm-main');
     const sec = document.createElement('section');
     sec.className = 'view on';
