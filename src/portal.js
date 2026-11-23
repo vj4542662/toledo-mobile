@@ -277,7 +277,7 @@
     // ---- Vandaag
     BUILD.vandaag = () => '<div class="lt"><h1>Vandaag</h1><p class="lt-sub" data-k="date"></p></div><div data-k="body"></div>';
     NAVS.vandaag = () => ({ title: 'Vandaag' });
-    const updateBanner = () => (P.upd ? `<button type="button" class="banner upd-banner" data-act="update"><img class="upn-ic" src="${TM_ICON}" alt=""><span class="main"><b>Update beschikbaar</b><br>Versie ${esc(P.upd.v)} staat klaar. Installeren duurt 10 seconden.</span><span class="act">Bekijk</span></button>` : '');
+    const updateBanner = () => (P.upd ? `<button type="button" class="banner upd-banner" data-act="update"><img class="upn-ic" src="${TM_LOGO}" alt=""><span class="main"><b>Update beschikbaar</b><br>Versie ${esc(P.upd.v)} staat klaar. Installeren duurt 10 seconden.</span><span class="act">Bekijk</span></button>` : '');
     // KU Loket published new exam results (in the last two weeks) that you haven't looked at in the app yet
     function resultsBanner(now) {
       const S = P.study && P.study.v && P.study.v.study;

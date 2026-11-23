@@ -688,3 +688,20 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .kci-msg p{margin:0}.tm4 .kci-msg p+p{margin-top:8px}
 .tm4 .kr-acts button[disabled]{opacity:.7}
 .tm4 .kr-acts .spin{display:inline-block;width:14px;height:14px;margin:0 4px 0 0;border:2px solid transparent;border-top-color:currentColor;border-right-color:currentColor;vertical-align:-2px}
+/* install page v2: pictures that look like Safari and the Userscripts window */
+.tm4 .ip-or{font-weight:400;color:var(--sub);font-size:14px}
+.tm4 .ip-bar .ip-hl{display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;padding:0}
+.tm4 .ip-bar .ip-hl .i{width:19px;height:19px}
+.tm4 .ip-dim .i{width:17px;height:17px}
+.tm4 .ip-note{margin:8px 0 0;font-size:13.5px;line-height:18px;color:var(--sub);font-weight:400}
+.tm4 .ip-us-pop{padding:0 0 10px;overflow:hidden;background:#f2f2f6;color:#1c1c1e;border-radius:14px}
+.tm4 .ip-us-h{padding:9px 12px;text-align:center;font-weight:600;font-size:14px}
+.tm4 .ip-us-green{padding:8px 10px;background:#8ee77a;color:#1c1c1e;text-align:center;font-size:13.5px;font-weight:600;box-shadow:0 0 0 3px #0a6cd6 inset}
+.tm4 .ip-us-green u{text-decoration:none;border-bottom:1px dotted #1c1c1e}
+.tm4 .ip-us-row{display:flex;justify-content:space-between;padding:10px 12px 0;font-size:14px}
+.tm4 .ip-us-row span{color:#b8a200;font-size:12px;font-weight:600}
+.tm4 .ip-us-name{padding:6px 12px 10px;font-size:15px;font-weight:600}
+.tm4 .ip-us-btns{display:flex;gap:8px;padding:0 10px}
+.tm4 .ip-us-btns span{flex:1;padding:8px 0;border-radius:8px;background:#8e8e93;color:#fff;text-align:center;font-weight:600;font-size:14px}
+.tm4 .ip-us-btns .ip-us-inst{background:#0a6cd6;box-shadow:0 0 0 3px rgba(10,108,214,.35)}
+@media (prefers-color-scheme:dark){.tm4 .ip-us-pop{background:#2f3237;color:#fff}.tm4 .ip-us-row span{color:#e5d94a}}

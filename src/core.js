@@ -115,6 +115,7 @@
   // through installing it in plain language. After the update it says what is new.
   const UPDATE_URL = 'https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js';
   const VERSION_URL = 'https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/version.json';
+  const TM_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAAinUlEQVR42u2deZgkV3HgI+K9zLqruvq+5h7NCSMhobVASCDACGO8IAkQCAG2vDaLYLExXi/I2GB7YX3Ahw1rLGyEsQ0rQFg2Zg1rm09ghBCgC3TMKfXM9Mz0WVXddVdlvhexf2T3qK85q2q6R6745o+Zb6qrM/OXES9eXA/hDb8Bbbl4hNqPoA2sLW1gbWkDawNrSxtYW9rA2sDa0gbWljawNrC2tIG1pQ2sDawtbWBtaQNrA2vLWhH93LgNXPQXWfg/J/8hbWCriAdBEAEBBIAFBRAEAFBkOUkJ/oIghBL8iAjIApZtYK0y34QiAFZQWIEQCAIKEIeUSZJxSBxkZx4EA9SZPCGPqcrkWW1P/ggyECsUBOCLCp6+GDgJIVhBZmJWgKKVvyFS2hkt7YqWdkTK69xqr+t1KKORFYqat48iYAR9wbpQxaoJP3SsHjlUjT1ZjR+sxkbrEc84IAjEQFajsAA/a1zbwM7d7gX6xFYxK1B2c6R8dXLmmmTuilhhXajaoX2NwoIG0AgaQQEQwYVf4SBHEQiAXNkRLWsUAjGCeeMc98JPVeIPFNMPFNJPVBLGd4EYyRIKy9pVOFyDZW4BKisERgPxtmjxtempn0tP74kVuh1PBGtCHlNACIN1CuX0qnGSZfAjGsUlDiETStHqvZX4N3O9X8/1PVFOAivQRiGvTWxrC9gcKiawOurUfz49fUvviZckc13a95gqrHxBBEAUhIaMl8wjFACNEiEbJs5b/cNC+u+mh/4p11fyQqCMojWHbQ0BU/OoukLVt/We+KXeY7uiJQYoW+0L0jynVggDsoBGiSmrUfZXYn87NfyFqeGpWjTAZgXbwBa4FSgiKMZJubV39o/+Sv/olnClwqpiVQDygl1JACZCNqbskVrkrsl1n5nYMFOPoPYRhdcANgW7XrS6NlChsNEA+Pa+Y399yeNv6RlzUApWW0CFQHiBXx0gBANYsjqp7avT06/vmqwIPVbuEKuUYlhtN3I1gRGKAIpxr0zlPr/tp78xdDhKNm8dAVC4mg8GAQjBApas7tL+Td0TL0nO7K/FjlcSQBxc9n84YBrFWu2g/M76g3dufWJrpJozTqBVa2S5CLD5gGWrd0TLt/SMucr8oNBlWWni1dqxrQ4wjWJ8d1cs/9Udj76j90SJdY2VXsmnEAABDIJPJ/8EgaZGvURBhjN/bYCtykoAXpOevjaV/VGxY6oWU8quip5daGAIQoDWuLf0j355x2NbwtWscZavVXPxJ0BNEiEbVTZKHCGOEIeIXRQEMIBWEADxrJ8bC1pARAghh4mjykbmvzZMQUwLjVDwGVy8tgFA0eqtkcpbesaO+aEnCp1EPL+ve45GOgiFmUTwo5uf+q2hkbJVBaOdxU4gA7BgmDitfSs45Yf21iPTvjNrHF8QERJku7Q/6NaGQrVO7deZyqxY8PTOpBUklIQyLnHJqmNeZMpzZ60uWx3sySLE3drbEK4OuHUHuWx1lYlQaIGqOSh5o0PIX9r2kz2xwm8f2QnIRHwhvUd9YWmpCPJd2x97S/f4tO8SysKnHGhVlGxU2yO1yJemh7410/NoKXnCDwErePahCJDElL8tXLk2lfvPnZM/k5gNIeetXhGbFVQondqvCn2/kP7nmd77C537q7GS1XPh42e/lnvd+mXR4mvSU6/pnNoSrlRZla1SC2y1RjGAOePcMfzMulD1Vw5dWmdFZC8Yswu0DyMUtiqt/Xt2PvLyVHbKd5coVvBY09rfV41/dnz93ZnB6Vo0iMQDMoGctHtzEQpBEAImUPbqRO6d/aM3dE04KHmr9YJvNoIpbepM92T6Pze5/oeFNLAKvhNQlnwtC4IgsAKBdKh2c/f47QNHdkdLs8axy14FX7DP8b412/2W/Vfkrb5gzC4EsIBWl+N9fddDVyXyGd9ZQssIJpSpC33yxKY/G9uU98JBfAHmcl0ru3CIQsFSZxUAvjiV/f0NB16eyuaMc/Jjndr/19nuDx3Z8XAxDSCorELh+aDUqWJjABDEXBJO/b2Dh//78IiLUrRKL2PW4/gPFlOv23tl1ndJXQhmLXc6AkuY0ubrux56USKfMSvQ6tT+U9XEzfsvv3tyfR1AayMAPOe5ncbTw8C3JsVEPFqNfXF62Ad8ZSprhAggTPZ3R7fd/vSesXpEaYPEwY+c8WsFEBG0sjVR98/03lfovCqZ2xiqlVktdI4UQtGqS8KVa1LZe7MDVdZE3GrXsbXAEASFQij/sOuha5MzK9Lq1v43Znpu2HflSDWuHT9AdY4+OgqgUiwA38v17atFb+qaRIS3HbrsrhObSRtUPJeVPscAIwJoZY9V41/JDOyJFy6NlkrLmJVYbQtXrkzOfm160Aq12mdsITAEIEAW9YXtP3l959S0cVeg5Xj35vpu3v/CqiilTCMxVpl/vk8VOn9cSXwlM/CtzJB26xawkbeeAZWyVdZfmx58XrzwglixvBKzPdHSxnD57zNDrY58thCYRrHG/f1Ne98zMDq5kpfRoc39hfQb9l3pAzbLOWZA0makkjhci5H2mxJlF0AitoLfyPZf15HdHKnWljErWP2ixCygfCfXr5VtXRykVWVuCsX47s39o3cMPzPtucs3WyHiE17o1oOX1ZiwqVsZFiRlSJnmfqcirrJ+68HLpn03RLxEjxyUaT/0oeFnbuw7Zny3dXrWEmCEYq3emZj935v2Fo2mZVcvghGy7x3ZNVaN6xY4VyzY9O+0glqZ0Uri1w7vjK7kxBNKmdWdm5/aHp+1doW7XqPAEAAFQ2T/ausTCWV8WZohsYJp7d+T7f+/mUHteEbWet3LwkVXO969U8P3ZPvTy+wtAtSZUtp8duuTDjIK4kUBjFCscT647tDViZlZq5cbB4VSZvWx41twWRXh2hcGQJQPH7sk2KHLsmV7xuiXJnO/ue5pa5xWKFmTgSkUa/QVHZnfHDqcXebEB+qVUubebN9TxTQ15hauDjBBUuZQMfWNXG9ypWVSo+SM88GhkUuT2VYYxmYCQwAR1MR/smG/PkVCnVDqQndOrseLuXQaEe7ODPIpHoIVDBF/fON+QoZmv5HNBEYobJxb+469LJXLmxWMIQNEiPdXY4+VUqLsRadeJ5VMyN5f6NxfjUfIykpmZtboV3Rk39p7nI3TXI+RmqhezNQRqn5waKS00tIFc3kT++Nih+87Ci9WDRMARVz13O8X0tFTvHaEUrbqg8MjCbfG3MzCFGqieonVv9o/ui1Srp76EhHgp5UEACJcxIIAAPjTcgJP/VgrrHZGSr/SPyqneH1XE1igXp3hyjv7Rgunvj4C8IWeqUXhIvQPlygZoByqxTwmOrX/VbD69v7RdKhqm6dkzQGmUMTqX+w9vjlcrZ1GvVDqTNO++9wANmscTxBP8XYiQI1pc7jy9t7jTVQyaop6WaGoW/+l3uMlq05zZQTgC1asAhC46IlBXcjK6VQn2HHe1nc84tRtk/bR1Bz1Mvrn05M7o6UKqzM3JcBzRIwgn+lVrli1O1J6TeeUNMldbAIwBgTit/WMnf51m/OvUEJ0uvpZhDVUl3imDwiejfkBvK33ODSphoAa/nlhS1tjhauTM6e3hwHaEHKHNkHyCgEIRKFoFIVCIAtVMMjW62f/t4VCAGr+d9F8yc2zl7H4InEeZlxZB1nOZH5KVl2dmNkVzzMrati+NFo1RQjM6tWpTFr7076rTwtMBFySYbemADVKfUnnKwqQJQAAYUAREosckEIBYkQOKjKa8qoGLwQGlk0I7HwF1YISHQYUQREFQX3OfK+ti2IFNoaqYeKqOcNragTTjv+y5MzeQicpYFlVYIHYs+sRFgAC2R4pWd+1II42m6PF50VLO6OlYbc24Na6HN9FRoC6UNmqWeOc8ELP1KJ7q/GD1fiJetgYB5AhqKU5386toAPDCFqjQQiUGQ5VLwmXd0ZL2yLlYbea0iZG1kXxBatMBaun/NBILfpUJb6/Gj9Sj9R9B/zQ86JFfXburgA0KynRKDABAORHSskaqzMGOgmgxnRdKndgcORlHdkrE7MbQ9WkMgqFAa3MVfsGywMhqPm+f48pa5wD1fj9hfQ3Z3p/VOywxjmPhruTDYPGOKT9F3VkX52eviaZ2xYup7UfpCWtIM9Vcc+NKwgMMqEYwYLVR+uRHxU7Hsh3vbojU2F1RlutUCpWPVxKATI3wTA0VuYWBHw7HO/hPT/ocTz/TM6rADgoMWURpMqqzmTnO19hSfxDnl3PCEEjh5FDxBVWj5aSX54e/Gp2IHMuDXcnGwb7wuU394zf3D12aawYIVtnqgkZmcsiz/fgLroMWNBrGyIOk5X5TsMz3q+LMu6Frnj8xSXjNJ5RaoKGKeLZeuSBYvqt3WO5MzmvCOAL5nxHAIJC6FN+fvGTsIIl1gULCuWF8fxLkjPvHzr8hanhOyfWT9eip2+4C/rMre/2h8u3rz/49t4T60PVGlOZVckqmitxPIWPu6zov8KqbBXML4FnjBRHlflRKVXywqoZNSZNKMIhBLHKoNzcPb6kOuXUdgnoHNtPEADnf8oTVbYqqc316embuibqAA+X0sKkVioLVChsNQG8Z2jk85c88QudU4hQsNoAEQAh4LlfydlfvwCGiD98bNvBSqIpVYvN2IcJgrb35bsPVGMrphta4IWLRvEFp323x/H+YsuT39r94x3RkvXdhXXwgXNhfff5scK/Pe9Hf7Z5b+DKGkE9v4todTwkQnZ/Nf7t2W5Qa2MfFlyWRq54oa9mB2IXMMsVrCgBtlekMv/+/Aff2n/U+i7Or0MIYH3ntoEj33n+gy9Jzkz7ri+o8cJl4axgTNl7Mv1VL6SRm/KCNKsuEQVgxAu/tWcshHIhO4EDA1Vh5RLf3DMe0f63Z/oCT0CY/mTzU/9r4wGPVeUUDYMtVS8HJW+cd43sLloNTUqxNyeAwABK2WPl5N9OD6WaVL55br4TihXM+e4Hhp758o5HNAgJ3r3j0d8cGsn4LgPoC54vtYIpbb4wNXSiklDKcrPutGkvlCAq+8kTm27pHosra+RCpyiDFWvSD93cPR4hywCv75ya8kN6NVLbAhAiPlaPfHJ8Eza18LJppdqBf1+oR3yUGzqnilar1QjiKoSS1buipa3hyoxx9CoVIljBLu3/1tHt38v1KW2aWLndzJgqCyrt/8XYpvvynWltVqtCVKGUrC41NTF/TmIE09r/1mz3XRMblfabW4PcEDC9eNsuAIJihN4z8rySVc7qpZUJhVaJVtA2kDPOe555nhWUZQ9ByWoAIwBQ9IJy/epiFRSRLFAyZfYVO957eFfHangfqy4iGCd7+8jukXJSLag0VQKg6NpC5QXlGhDRamnYHSeyIIscDCuoHe9LExs+dnxLr1v3/yMx8wV7nPqHj229d3Kddjy7eHgjiPyPsZxubI4ONfIuZRz10kLl5um81aQWqL4VVMr/0OGdd46v73O8/yDMfME+t37nxPqPHt2uF1sXJWK1umUq/7JCJecoaGCtaEjDBKCg1EeOZXtrPi9QcwFgAFL2XU9f+leT6/qcuhGU5y6qIN3V59Q/P7nu3U/vIWXtgtIVAmBFg9X67x3P5JVqcEPWEDCLWCEc8s0fHZ0SRJLFDggIkf3VQ5f+6dimXscDuAgm6p6Xl4Ei2Ot4nx7f+MsHLxViWaBBCEAAAvDxI1O9vq0S2sY2qI2YRPAQEWBG0U250rvGssZRC/3GYFQ1kX3fM8//jcM7Y2RDyOa5ZR6NYAg5pf0PHN3+3qf3EHFw4wuNodHq3WO5186WZxUBgIfYSJEfnbcRCH63QdACM4r+4Hj2ldmCcfRiZiAASvufPHbJDfuvyBqnS/tG8DmgaixoBbscb8boN+2//I+OblfKX1LEp0WMo1+ZLfze8eyMIi1gELxV0zCAOmGNKFhDPcS7npm4PF8xeomezfmN/y/bf83jL/5atr/L8aJkLl5sLGgEY8qktP9/poaufvzF/5gZVI63pLBFixhHXZ6v3PXMhIcY1LPUibzGYhUNeYkVwhIRARCARxAW+fKhE3uK1SXMAtOhtH/cC795/xU37XvhT8rJHseLkWHAi8UfkfnK0bgyXdp7rJy6cd8Vbz9w+XEvsjyVrEWM1pcXql8+dCIs4hEET6mGWENaBS8xKHAwRFmHtIggKIEqYcryvQdOXJ0vB7YRF4fXEC2R+Xpm8LonXnTboT2PllIxMt2O56JYQSO41kZYy7w+MaCL3O14UeIfFNO3HnzBtY9f9c/ZAdI+4qIUIM5bwutmivceOJ6yXCVUAgKgRbKOqivCBsqfzz9aTwJW4bij1fwSGjCLM99zYOx9G3u/0tcBxiqRk35R4IYo7XmCXxjf+DdTw9cmc2/oHn9VR2ZDuOoge0x1IZ+J5ys+VsvxC5L5LnFYWRe5znSkHv3Xme6vZgceKHSCVaD95YoV3KzR6q0TM584OiWAAS0AEAQtcCTkACEZsXjBgSEIIBwOuySBXyQBszqiAvjsyMQLyrWPrO+paaWM5QU9HkFbADmeFfz32e5/n+1JubWrErOvSmUuT+S3his9jucgV1lVWYmcVa1Ls/TJChJClGyYrBGc8kM/LMZ/WEx/L9/5UClV9EKAgsqSYwOnY6FikYjVKmz59w9PvnNytqjILogcCiCJPBNygmN7zjvFqxu5PRA4GHYYF2VTCYAB8prePTH7M6XqHRt6H0zFwLJiPolN5geOK20AIG+cf8n2/0tmAJQZcOt7YoWfTWWuS2V3RUsOSdEqj0m1EpvMNyantV9j9WQ58b1C53fynY+Vk+P1CLAKqpJVMAprRVREVqkX5csfG51+YamWdYhk0XqDIIx4IOI22Lhz/nWJBMCEu0q1b+87vqKCG8SEZYvw1z2pTw52ToYdsKKYAZAX58ufHXp3cgqiYMjxrkrMvqlr/PVdEwNuvWB1nakV+S0jGCJOKjNaD/9Trv+eTP+DxbQxzsL6cFk2CBABSABALBEo6q957xvL/eJ0XgkUFemV3AoEeMXOdQdiIWLhCw8sMIIhlu89NbrR8+srjd5lBBTosHzc1Z/vTf1dT2oy5AAAWA5ij7ysHW4RPKtBcH209Mt9x27rOzbo1nLGBYBmFTyxIKKktX+sHvnLifV/PTk8XoudLAWHlaY10vwZZRYRFAHAYM1723ThHdP5Yc/MKhIEkhU0OCRyJORcu2t9nbARp6OhjLMS8B31n4rVyyr1qlohZRCULpUVJSy/Kl++MVe6pOp5AJOO9hwlRMFnlAjBs3W/cxMLAZSypOyscb+b6/1ati9M9srErINSY2q8BdUIxpRVKHeOb7jt6Uu/mRkoCSltiBgWj1U8eYWCKISiSIjCzFcXqr8+lvvoaObnZ0oEUFRKnWJpYoS4le+mov/QkyKWRox7QzUdgd9xfyL6lmzxNK+MFvERM1qnDN82lX/bdH4k5D6QiHw3FX0oHj7hOlYrEAEWYkEAi4vWOURWjj3mRd596LJ7swMf37R3T6yYWVyCeB7Oerfj/bScfO/I7u/P9ICyQTZk2eIEAGAJbVBCb3lj1buyXLumUL2yVL2k5rkCJaKMo5WIPvXuSgCVwA/iEUAImmJWYQ07uYxtqXjf2TuKZ/mkEFEkLBJhYYBpR+2LuI/EIo/GQg/HI+PhZw3mkiApzg9FSjnen25+8h29J4JRsed66wxIIB3av2ty3fsP7yr6bpAKWZYXlpNGr6fuX1uovLRQ3V2pb6r7XcYiQJWwhiiIdHYKgwAv37nuYGMLWKMaxgDIMhJx9kVCV5RrZUI600UHS1cdsaoJQKIsVxer1+WrFmHK0d9PRO7uTn67I2qVAsskwLjIkVPaz1v1Swcuf6KS+Oj6g1VWFvDslzQG1Mgu8n8b2f2Z45tBW6V9s3QvBRbBaqUtXztTemO2+LJCZdAzCFBHrBPOaAUAGJjxs4hZMECM5ZFY6FDUxcZoQeNVU1qEtRque9flq2V1tpnvIOkQbAA8wrKiOmGY5dJK/Q3Z4ivy1SLh/mhI1NJy9GAar1L2B7m+p73IDd0TIGDP7kgdFnSIEeDWg5d9cXyjdr0l42oxoKWJQG6eLnzqyNR7JmYurdRJpKyoSmRwzq7QuWi2RUxa/lxf6sGOmLbMjQV/Gy9zQ0EsEL05WziP3SAuhIdQVVgn3FA3N+aKLy1Ujrv6SDQUvPWyGJujzeOFziersTd2TwjgGX91UEtKCG/af/k3M4OO6y1XLCYQRdfNlO4cmbx9crbT2LKiKqEAnoSE57VweIQfWteTdRQ03JPfKDBBQJEp13lpvrKlvrJzD+eodh5iTeHmuv+mbGGobh5ORMqOUswLS0cY0FF2XyF9oB55c8+4J3Sa9UwACCBMfMvBy76VGXSWVS0EKfy0sX98ZPJ/HssM+GZWK4PnrEwrqRckmL+fiHxmsJMatodN0TBQIqzIgtwwU64oajwAGJCrEfqELy5WXztT2hdxj8RCyi5a3xnQ0fapYmde8MauybLVp7KMLNjp+O8Z2X33xMaVaIF11FX5yt0Hx342X8lr8gh1k8aZM2Kc5WNDnXvjkSDWs/rAABFFDofd186Ueow12LQJIghQUqrT2jdniiXEH6eiJLLUiVD2hzM9vaHatalcaSVmRrDH8T49vuFjR3YuGYCKAArAanrHxOxdI+Npw3mtlDStulYAIiIjIeeO9b0+QFOq15tTqq1F6q4KW/652UqpGUq2EJtPaBBfN1NymL/bEael1atIJPfNdl+fnl4XqtUXdxRawaQyj5RSbztwuSw+9CvQY6voA6PTfziaqag5xWqiWMQOw58c7Px+OqZsE9QLmlWqbRHRype6k0dCOszc3HhfsHvNOPq3xnJ/dHiSFdGiFmRA5Kpxbh/ZHRxhtOh9RPEFbx/ZXbN6yYCrgNbvHp36nRPZrEPScE3ucvUKMx8N6S92J9EKN6k5pGnNEEqkEnJcyz83Wy4p1dxUVqANRaVeXqi4lu/rjGuWBVs01MoerySijn99R+akYTSCXY7/x2Ob757YoJ1FuSstYDV9YHT6jrHclKNVCw7gsIhpYz8x2PmdrqSyds0BA0QU2BdxXzdTSltrsfntRgRQVPTKfGVS0yOL9zQCSCiPlDtu6ppIaxOUV0SID9ejtx261AfgxQbcOPoXJ2b+cDSTcVQraAlAWGQ05Pzapj4Pm5lioCZeIjHnQ/rjA50xK7Y17WFKIKfVH45mrp4pGa1OrmcCgMT5evgTY5viygSzNqLKfnxsU8EL44JzAYK6s6tmS398dHpGE7XmcBuLGLPy8YHOfEhTU9eIprYbIZLhu3tT9ycjSWttC54EAggCI/z54ckuzyzsKmBB1OaL00NPVeJh4gjxk5XEl6aGUD/bkUAAQtTpmb8YmQQEiy2iBSlrv5eM3N2bIsOMa6bdaLmSgYAl/NC6bgtIramnIYEK0Zaa/5HRaaZnzY0AKOSKF/q76aEI2TDZL0wN1/yQWtANjgJM+NGj01vrfplItewKfcAPreu2jdWMthwYADCCMvbRZPTT/R2dxprWGEYtknXo1kzhZTOlhX0YLABk784MzBonZ5yvZPoXDlsI4oTXZ4tvyRayywrxmiU+YpexfzaQfiwVVdZysx9A8wuTGJEs/8lQ90PxcKI1hjFQKIv4u8ezjmWZd3AYkJQ9Vkk8XEr9tJwcq8aJ5rrBEYARIsZ++HjGw1adSREYwwcTkU8MdalmG8NWAQsMY03Rezf2eUi6NcNiFUBR0ZWl2hsyBVZ00vsgABT8x1zfvdk+lGfTPSQiWr15urCnUi83dWu/8MYdgTLRuzf11QmlVTfegvPDBEExT0TdaUU35Yql1jygQLbU/S91JU/aXgYElH3V2OOV5CJvHjFk+VNHJhMstjVjRBixw/Ltm/ru74y3SL2gdeeHWUTt89/2p/+8L93rW781xqGs6PmV+qtmS6IWdBSiVFhXWJ+sdVciougVs+VdVa9CLXl7fMQe3/xpf/prvSnts8WL7cC3wKAry3ds7P3njniPaQkzBGGAWzMFkEVNPgiysJBOAEHglmzhpM1uPi1j/74z8eENPcqybWXdawuBBX2YDPBftg78KBZuhdOoBEqKXlysbqnUWOHCFtDFDZC4sVq/plAtqea78j5ip7EPxMPv2tIPAtziseGtLV8XAGQpaLpl2+DeiNthm8/MIHYYvn62DIS0ku9HIkD0CzOlTsN+C3572tqnIu6t24bKRMgtn3TR8n4DRlCWp1z9xu3D+8JuR7NtI4IYhJcXKsArR8QtIll+zUzZOwXRRnQrbey+sPvGHcMZR9GCePRFDCx4ZMryiZBzw47hn0RD3U1lRgI1wt1Vr9MzvCzijACC2OP5W+tejZr5pviI3cY+GgvdsGN4zNXKMl+Qlo0L1NFjEZW1k66+Yefwfclon29Mk2LYCOAh9vh2Z9UDWhoPIwEg3Frz04ZNk7x5ATCIvb75t1T0hh3rJl2tbAvdwtUBNm+aZFapN20f+qvejm7fnizybXwDFGLZXakDLp1KGNQm76rWQ9ycFGIQL+7xzed6O27eNpRXRC1LTawysGA9QxYP4Ne39L9vY68WiVlpjhuCsKXuL4+0BmGXS6p+U5TLIMasaJH3b+z99S39FgAvyLq1asCCIAgCKMOfG+z8hR3DB8NOt28YoZHbRhALMOgZkKWFLoIIAv2+sdDQSNCgP6rHNwfDzut2DH92oIsMB7dzgWUVulIl2FP75uFE9NW71v9lX0fczqnaeZ/0YBE6LIPIShomKct8vqkvmVesCMun+9PX717/42RUGcOrdOrqarURz3nbRUXv39z/xm2DT0bcbmO0wPlgExBAh2V5qXsALMLM565gASpHoMc3T0bdG7cPfXBTf4mQjLWrdyLkqgGbW9JElOH70vHrd6//7XU9RUXdvlFwPtjUqXOF6hwD5wEqLdDtm5ymO9b3XL9z/f0dMWUMCvCqnt+pYVVlzjwariN8aqjrnq7kf52cuXW60OubkqIaEcnZzhI4TYJbztoeMgIDhpnTxo67+jP9XX/Z1zEVdsAwGbZr4KhVDWtAAl+ZjB139Yc39n2+t+Pt0/k3Zoubal6dqEJoEc9Izpz6YFtzpkNtGYARlUjcsiNyOOR+aiD5Nz3JsXAImJVvGZHXxtieNQFsXtUQRcg3R0POH2zo/fP+9I254s2ZwqWVesTaKlKN0CIiyNJSJwQCqREFReOyLNJRUYjBGXOL580xzk1jiLBExFaIfhiPfLU7+U/p+EzIAcvKGEa0a+kMYw1rSRZiy2n1uf7Oz/WkrizXXjtTenm+sq3mRY01iHXCOmKwliAIA5LApKOWzywhAYs4oxQKWAiSLggAJBISCVnRIjWiAxH326noN9KJR+JhIAQW5a85VGsR2FJsxljEhxLRh1KxPzD2BeXaNYXqC8vVHVVvXd2EhUHEINaIIizH3BVmlgSAjoV0RKTGEGEO0is1whOu3h9xH4pHHkhEHomFfUcBCzAHyWK7Vk8G17BWJcAGAGQZrZh5csASN+b5lfr2qrfeM9urXr9vNtb8p8POyr6gwN5IaFKrp8PuuKuOhNynw87+SGhvxC04OtAnYFa+EUBGsGv7EPdGD3y7gBcKKEAgc+t/kOhHBBZkjln2CE81ilCLxJnzSgnRXBulADCTAInIskEva1n0RXKdwVD8uZZkFKD5UAMjMkBJn27ysUGc1RpEiDlIiQWQAucQLirRcBGKzIX5F6xVcobUZPCBi5HQGop0NBdhgx9oA2tLG1hb2sDawNrSBtaWNrA2sLa0gbWlDawNrC1tYG1pA2sDa0sbWFvawNrA2tIG1pZzlP8Pkr3tyqLFayIAAAAASUVORK5CYII='; // Toledo Mobile's own icon, inline (other sites' images don't load on GitHub)
   const NEWS = __NEWS__; // { version: ['what changed, in plain words', …] } for the last versions
   const newerThan = (a, b) => {
     const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
@@ -128,7 +129,8 @@
     .reduce((all, v) => all.concat(news[v] || []), []).slice(0, 6);
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
-  const installUrl = (v) => UPDATE_URL + '?v=' + encodeURIComponent(v || Date.now());
+  // ?th= so the install page has the app's light/dark setting (GitHub's site can't read it)
+  const installUrl = (v) => UPDATE_URL + '?v=' + encodeURIComponent(v || Date.now()) + '&th=' + THEME;
   // raw.githubusercontent.com keeps a file for 5 minutes and ignores ?query, so right after a push it still hands out
   // the old version. GitHub's API is always fresh, but allows 60 calls an hour per network: use it first and fall
   // back to raw (at most 5 minutes behind) when it says to wait.
@@ -147,7 +149,7 @@
     const go = (u) => { if (!done) { done = true; location.href = u; } };
     setTimeout(() => go(installUrl(v)), 2500);
     ghApi('/commits/main', 'application/vnd.github.sha')
-      .then((sha) => { sha = String(sha).trim(); go(/^[0-9a-f]{40}$/.test(sha) ? `https://raw.githubusercontent.com/vj4542662/toledo-mobile/${sha}/toledo-mobile.user.js` : installUrl(v)); }, () => go(installUrl(v)));
+      .then((sha) => { sha = String(sha).trim(); go(/^[0-9a-f]{40}$/.test(sha) ? `https://raw.githubusercontent.com/vj4542662/toledo-mobile/${sha}/toledo-mobile.user.js?th=${THEME}` : installUrl(v)); }, () => go(installUrl(v)));
   }
   function checkUpdate(cb, force) {
     if (TEST && !W.__TM_UPD_TEST__) return;
@@ -200,7 +202,7 @@
       });
       requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('on')));
     }
-    put(n, `<img class="upn-ic" src="${TM_ICON}" alt=""><span class="upn-m"><b>Update beschikbaar</b><span>Tik om versie ${esc(info.v)} te installeren</span></span><button type="button" class="upn-x" aria-label="Later">${ico('close')}</button>`);
+    put(n, `<img class="upn-ic" src="${TM_LOGO}" alt=""><span class="upn-m"><b>Update beschikbaar</b><span>Tik om versie ${esc(info.v)} te installeren</span></span><button type="button" class="upn-x" aria-label="Later">${ico('close')}</button>`);
   }
   function hideNotice() { const n = $('#tm-upn'); if (n) { n.classList.remove('on'); setTimeout(() => n.remove(), 400); } }
 
@@ -210,7 +212,7 @@
     const news = newsBetween(info.news, VERSION, info.v);
     const { layer, close } = openLayer(`
       <div class="sg upd-c">
-        <img class="upd-logo" src="${TM_ICON}" alt="">
+        <img class="upd-logo" src="${TM_LOGO}" alt="">
         <h2>Nieuwe versie van Toledo Mobile</h2>
         <p class="upd-v">Versie ${esc(info.v)} <span>· je hebt nu ${esc(VERSION)}</span></p>
         ${news.length ? `<div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
@@ -243,10 +245,37 @@
     }, 900);
   }
 
+  function notYet(v) {
+    if ($('.upd-layer')) return;
+    const layer = document.createElement('div');
+    layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
+    layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Update"><div class="sg upd-c">
+      <span class="upd-ok warn">${ico('refresh')}</span>
+      <h2>De update is nog niet gelukt</h2>
+      <p class="upd-v">Je hebt nog versie ${esc(VERSION)}</p>
+      <div class="upd-how"><b>Wat vaak misgaat</b><ol><li>Na de <b>groene balk</b> komt nog een scherm. Tik daar onderaan op de blauwe knop <b>Install</b>.</li><li>Zie je die knop niet? Schuif het venster van Userscripts omhoog.</li></ol></div>
+      <button type="button" class="btn upd-go">Opnieuw proberen</button>
+      <button type="button" class="upd-later">Later</button></div></div>`;
+    document.body.appendChild(layer);
+    const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
+    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
+    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
+    scrim.addEventListener('click', close);
+    layer.querySelector('.upd-later').addEventListener('click', close);
+    layer.querySelector('.upd-go').addEventListener('click', (e) => { lsSet('tm4:upd-go', { v, from: VERSION, ts: Date.now() }); e.currentTarget.textContent = 'Even geduld…'; openInstall(v); });
+  }
+
   // every app page: check now and each time you come back to the app; onNew(info) lets the page add its own row
   function updateWatch(onNew) {
     if (TEST && !W.__TM_UPD_TEST__) return;
     const got = (info) => { updateNotice(info); if (onNew) onNew(info); };
+    // you tapped Installeren a moment ago but this is still the old version: say so, with the step people miss
+    const tried = lsJson('tm4:upd-go');
+    if (tried && !newerThan(tried.v, VERSION)) { try { localStorage.removeItem('tm4:upd-go'); } catch (_) {} }
+    else if (tried && Date.now() - tried.ts < 30 * 60e3) {
+      try { localStorage.removeItem('tm4:upd-go'); } catch (_) {}
+      setTimeout(() => notYet(tried.v), 900);
+    }
     setTimeout(() => checkUpdate(got), 1200);
     let lastCheck = Date.now();
     document.addEventListener('visibilitychange', () => {
@@ -268,18 +297,22 @@
       takeover('Toledo Mobile installeren');
       document.body.className = 'no-tabs';
       const step = (n, title, mock) => `<li class="ip-step"><span class="ip-n">${n}</span><div><b>${title}</b>${mock || ''}</div></li>`;
+      // pictures of what you really see: Safari's address bar, the Userscripts window (it follows the iPhone's own dark/light setting)
+      const bar = `<div class="ip-mock ip-bar"><span class="ip-hl">${ico('pagemenu')}</span><span class="ip-url">raw.githubusercontent.com</span><span class="ip-dim">${ico('refresh')}</span></div>`;
+      const pop = (inner) => `<div class="ip-mock ip-us-pop"><div class="ip-us-h">Userscripts</div>${inner}</div>`;
       document.body.innerHTML = `<main class="ip" data-tm4>
-        <img class="upd-logo" src="${TM_ICON}" alt="">
-        <h1>${fresh || !v ? 'Nog één stap' : 'Je bent helemaal mee'}</h1>
-        <p class="ip-sub">${fresh ? `Toledo Mobile ${esc(v)} staat klaar. Je hebt nu ${esc(VERSION)}.` : v ? `Je hebt al de nieuwste versie (${esc(VERSION)}). Je hoeft niets te doen.` : 'Volg deze stappen om Toledo Mobile bij te werken.'}</p>
+        <img class="upd-logo" src="${TM_LOGO}" alt="">
+        <h1>${fresh || !v ? 'Nog even installeren' : 'Je bent helemaal mee'}</h1>
+        <p class="ip-sub">${fresh ? `Versie ${esc(v)} staat klaar. Je hebt nu ${esc(VERSION)}.` : v ? `Je hebt de nieuwste versie (${esc(VERSION)}). Je hoeft niets meer te doen.` : 'Volg deze stappen om Toledo Mobile bij te werken.'}</p>
         ${fresh || !v ? `<ol class="ip-steps">
-          ${step(1, `Tik in de adresbalk op <span class="ip-k">aA</span> of op <span class="ip-k">${ico('pagemenu')}</span>`, '<div class="ip-mock ip-bar"><span class="ip-hl">aA</span><span class="ip-url">raw.githubusercontent.com</span><span class="ip-dim">↻</span></div>')}
-          ${step(2, 'Kies <b>Userscripts</b>', '<div class="ip-mock ip-list"><div class="ip-li">Lettergrootte</div><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div><div class="ip-li">Verberg werkbalk</div></div>')}
-          ${step(3, 'Tik op de blauwe tekst en dan op <b>Install</b>', '<div class="ip-mock ip-pop"><div class="ip-warn">Userscript Installed: <u>Tap to re-install</u></div><div class="ip-btn">Install</div></div>')}
-          ${step(4, 'Klaar! Ga terug naar Toledo', '')}
+          ${step(1, `Tik in de adresbalk links op <span class="ip-k">${ico('pagemenu')}</span> <span class="ip-or">(op oudere iPhones: <span class="ip-k">aA</span>)</span>`, bar)}
+          ${step(2, 'Tik op <b>Userscripts</b>', '<div class="ip-mock ip-list"><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div></div>')}
+          ${step(3, 'Tik op de <b>groene balk</b>', pop('<div class="ip-us-green">Userscript Installed: <u>Tap to re-install</u></div><div class="ip-us-row">Toledo Mobile<span>JS</span></div>'))}
+          ${step(4, 'Tik onderaan op de blauwe knop <b>Install</b>', pop('<div class="ip-us-name">Toledo Mobile</div><div class="ip-us-btns"><span>Cancel</span><span class="ip-us-inst">Install</span></div>') + '<p class="ip-note">Zie je de knop niet? Schuif het venster van Userscripts omhoog, hij staat helemaal onderaan.</p>')}
+          ${step(5, 'Klaar! Tik hieronder op <b>Terug naar Toledo</b>', '')}
         </ol>
-        <p class="ip-tip">Gaat Userscripts vanzelf open? Dan kan je meteen naar stap 3.</p>` : ''}
-        <a class="btn ip-back" href="${PORTAL}?tm=vandaag">Terug naar Toledo</a>
+        <p class="ip-tip">Gaat Userscripts vanzelf open? Begin dan bij stap 3.</p>` : ''}
+        <a class="btn ip-back" href="${PORTAL}?tm=vandaag&th=${THEME}">Terug naar Toledo</a>
       </main>`;
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
