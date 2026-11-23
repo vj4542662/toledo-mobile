@@ -479,3 +479,12 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .rp-more .gh{margin:12px 0 4px}
 .tm4 .rp-list{margin:0;font-size:13px;line-height:19px;color:var(--sub)}
 .tm4 .rp-foot{margin:16px 20px 0}
+
+/* ---------- Meer: KURT card ---------- */
+.tm4 .kurt{display:flex;align-items:center;gap:12px;margin:0 16px 16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#ff2d55,#c4124a);color:#fff;box-shadow:var(--shadow);text-decoration:none}
+.tm4 .kurt-ic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2)}
+.tm4 .kurt-ic .i{width:26px;height:26px;stroke:#fff}
+.tm4 .kurt-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.tm4 .kurt-t b{font-size:18px;line-height:23px;font-weight:700}
+.tm4 .kurt-t span{font-size:13.5px;line-height:18px;opacity:.88}
+.tm4 .kurt-go{flex:none;height:32px;line-height:32px;padding:0 13px;border-radius:16px;background:#fff;color:#c4124a;font-size:14.5px;font-weight:700}

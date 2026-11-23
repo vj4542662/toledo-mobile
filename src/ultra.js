@@ -16,10 +16,12 @@
     if (PATH_PK) {
       ss.del('tm4-classic-ultra');
       let h = location.hash || '';
+      // Blackboard's own app may already have rewritten the address (#/cijfers -> #%2Fcijfers) before we run
+      if (/^#%2F/i.test(h)) h = h.replace(/%2F/gi, '/').replace(/%3F/i, '?');
       const qs = h.includes('?') ? h.slice(h.indexOf('?')) : '';
       const resume = ss.get('tm4-resume') || '';
       ss.del('tm4-resume');
-      if (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers')) h = resume + qs;
+      if (!/^#\/cijfers/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers'))) h = resume.startsWith('#/cijfers') ? resume : resume + qs;
       if (/^#\/vak\//.test(h)) h = h.replace(/^#\/vak\/[^/?]*/, '#/c/' + PATH_PK);
       if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/cijfers/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
