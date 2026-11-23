@@ -468,12 +468,24 @@
       list.sort((x, y) => (y.b.length > 0) - (x.b.length > 0) || String(x.a.name).localeCompare(String(y.a.name)));
       GR = { lid, day, unit, list };
       const nFree = list.filter((x) => x.b.length).length;
+      // rooms with the same name ("Tulp 1" three times): name them by their code instead
+      const cnt = {};
+      list.forEach(({ a }) => { const k = nm(a.name); cnt[k] = (cnt[k] || 0) + 1; });
+      const card = ({ a, sl, b }) => {
+        const dup = cnt[nm(a.name)] > 1 && roomCode(a.name);
+        const title = dup ? roomCode(a.name) : nm(a.name);
+        const sub = [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} pers.`].filter(Boolean).join(' · ');
+        const free = sl.out.filter((x) => x.free);
+        return `<div class="card kg${b.length ? '' : ' none'}">
+          <div class="kg-h"><span class="kg-ic">${GROUP}</span><span class="kr-main"><b>${esc(title)}</b><span>${esc(sub)}</span></span><span class="kg-free">${free.length ? `${free.length} ${free.length === 1 ? 'uur' : 'uren'} vrij` : 'Volzet'}</span></div>
+          ${free.length ? `<div class="kg-hours">${free.map((x) => `<button type="button" class="kg-hr" data-act="groom" data-r="${a.id}" data-i="${x.i}">${hm(x.m)}</button>`).join('')}</div>` : ''}
+        </div>`;
+      };
+      const open = list.filter((x) => x.b.length), full = list.filter((x) => !x.b.length);
       let h = head + dayRow;
-      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen hebben nog vrije uren. Tik op een groen uur.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
-      h += list.map(({ a, sl, b }) => `<div class="card kg${b.length ? '' : ' none'}">
-          <div class="kg-h"><span class="kg-ic">${GROUP}</span><span class="kr-main"><b>${esc(nm(a.name))}</b><span>${esc([roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} personen`].filter(Boolean).join(' · '))}</span></span><span class="kg-free">${b.length ? b.map((x) => `${hm(x.s).replace(/:00$/, '')}–${hm(x.e).replace(/:00$/, '')}`).slice(0, 2).join(', ') + (b.length > 2 ? '…' : '') : 'Volzet'}</span></div>
-          <div class="kg-strip">${sl.out.map((x) => `<button type="button" class="kg-c${x.free ? ' free' : ''}" data-act="groom" data-r="${a.id}" data-i="${x.i}"${x.free ? '' : ' disabled'} aria-label="${hm(x.m)}${x.free ? ' vrij' : ' bezet'}">${x.free || x.m % 120 === 0 || sl.out.length <= 12 ? x.m / 60 : ''}</button>`).join('')}</div>
-        </div>`).join('');
+      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen hebben nog vrije uren. Tik op het uur waarop je wil beginnen.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
+      h += open.map(card).join('');
+      if (full.length) h += nFree ? `<details class="rp-more kg-full"><summary>${full.length} ${full.length === 1 ? 'lokaal' : 'lokalen'} volzet</summary>${full.map(card).join('')}</details>` : full.map(card).join('');
       h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
       put(sec, h);
       const on2 = sec.querySelector('.kg-days .on'); if (on2) on2.scrollIntoView({ block: 'nearest', inline: 'center' });
