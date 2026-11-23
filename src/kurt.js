@@ -470,17 +470,16 @@
       const n = hi - lo, slotM = (list[0] && list[0].sl.slot) || 60;
       GR.lo = lo; GR.n = n;
       const pct = (i) => ((i - lo) / n) * 100;
-      const ticks = [];
-      for (let i = lo; i <= hi; i++) if ((i * slotM) % 120 === 0) ticks.push(i);
       const nowI = day === ymd(Date.now()) ? (Date.now() - fromYmd(day)) / 60e3 / slotM : -1;
       const nowLine = nowI > lo && nowI < hi ? `<span class="kg-now" style="left:${pct(nowI).toFixed(2)}%"></span>` : '';
-      const axis = `<div class="kg-axis"><div class="kg-ax">${ticks.map((i) => `<span style="left:${pct(i).toFixed(2)}%">${(i * slotM) / 60}</span>`).join('')}</div></div>`;
+      const hrs = [];
+      for (let i = lo; i < hi; i++) hrs.push(i);
+      const axis = `<div class="kg-axis"><div class="kg-ax" style="--n:${n}">${hrs.map((i) => `<span data-i="${i}">${Math.floor((i * slotM) / 60)}</span>`).join('')}</div></div>`;
       const bar = ({ a, sl }) => {
         const st = {};
         sl.out.forEach((x) => { st[x.i] = x.free ? 'f' : 'b'; });
-        const runs = [];
-        for (let i = lo; i < hi; i++) { const v = st[i] || 'c'; const l = runs[runs.length - 1]; if (l && l.v === v) l.n++; else runs.push({ v, n: 1 }); }
-        return `<div class="kg-bar" data-act="gbar" data-r="${a.id}" style="--n:${n}">${runs.map((x) => `<span class="kg-s ${x.v}" style="flex:${x.n}"></span>`).join('')}${nowLine}</div>`;
+        const cells = hrs.map((i) => { const v = st[i] || 'c'; return `<span class="kg-s ${v}${st[i - 1] === v || (!st[i - 1] && v === 'c') ? '' : ' st'}${st[i + 1] === v || (!st[i + 1] && v === 'c') ? '' : ' en'}"></span>`; }).join('');
+        return `<div class="kg-bar" data-r="${a.id}">${cells}${nowLine}</div>`;
       };
       const rowOf = (it) => {
         const { a, b } = it;
@@ -491,12 +490,73 @@
       };
       const open = list.filter((x) => x.b.length), full = list.filter((x) => !x.b.length);
       let h = head + dayRow;
-      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen nog vrij. <span class="kg-key"><i></i>vrij</span> Tik op het groen om te reserveren.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
+      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen nog vrij. <span class="kg-key"><i></i>vrij</span> Schuif met je vinger over een balk om het uur te zien, en laat los op groen om te reserveren.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
       if (open.length) h += `<div class="group kg-list">${axis}${open.map(rowOf).join('')}</div>`;
       if (full.length) h += nFree ? `<details class="rp-more kg-full"><summary>${full.length} ${full.length === 1 ? 'lokaal' : 'lokalen'} volzet</summary><div class="group kg-list">${full.map(rowOf).join('')}</div></details>` : `<div class="group kg-list">${axis}${full.map(rowOf).join('')}</div>`;
       h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
       put(sec, h);
       const on2 = sec.querySelector('.kg-days .on'); if (on2) on2.scrollIntoView({ block: 'nearest', inline: 'center' });
+      scrub(slotM);
+    }
+
+    // slide a finger over a bar: the box under it grows, a label shows its hour and whether it is free,
+    // the same hour lights up in the scale and in every other room; let go on green to book that hour
+    function scrub(slotM) {
+      const tip = document.createElement('div');
+      tip.className = 'kg-tip'; tip.hidden = true;
+      sec.appendChild(tip);
+      let S = null;
+      const end = () => {
+        if (!S) return;
+        if (S.cell) S.cell.classList.remove('hot');
+        S.list.classList.remove('scrub');
+        S.col.hidden = true;
+        $$('.kg-ax span.hot', sec).forEach((x) => x.classList.remove('hot'));
+        tip.hidden = true;
+        S = null;
+      };
+      const paint = (x) => {
+        const rc = S.bar.getBoundingClientRect();
+        const k = Math.min(GR.n - 1, Math.max(0, Math.floor(((x - rc.left) / rc.width) * GR.n)));
+        const cell = S.bar.children[k];
+        if (S.cell !== cell) { if (S.cell) S.cell.classList.remove('hot'); cell.classList.add('hot'); S.cell = cell; }
+        const i = GR.lo + k;
+        S.i = i; S.free = cell.classList.contains('f');
+        const w = rc.width / GR.n, cx = rc.left + (k + 0.5) * w;
+        tip.innerHTML = `<b>${hm(i * slotM)} – ${hm((i + 1) * slotM)}</b><span>${S.free ? 'Vrij · laat los om te kiezen' : cell.classList.contains('b') ? 'Bezet' : 'Niet open'}</span>`;
+        tip.className = 'kg-tip' + (S.free ? ' f' : '');
+        tip.hidden = false;
+        tip.style.left = Math.min(innerWidth - 84, Math.max(84, cx)) + 'px';
+        tip.style.top = rc.top + 'px';
+        const lr = S.list.getBoundingClientRect();
+        S.col.style.left = (rc.left - lr.left + k * w) + 'px';
+        S.col.style.width = w + 'px';
+        S.col.hidden = false;
+        $$('.kg-ax span', sec).forEach((x) => x.classList.toggle('hot', Number(x.dataset.i) === i));
+      };
+      $$('.kg-list', sec).forEach((list) => {
+        const col = document.createElement('div');
+        col.className = 'kg-col'; col.hidden = true;
+        list.appendChild(col);
+        $$('.kg-bar', list).forEach((bar) => {
+          bar.addEventListener('pointerdown', (e) => {
+            if (!GR || !GR.n || (e.pointerType === 'mouse' && e.button !== 0)) return;
+            end();
+            S = { bar, list, col, cell: null };
+            list.classList.add('scrub');
+            try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+            paint(e.clientX);
+          });
+          bar.addEventListener('pointermove', (e) => { if (S && S.bar === bar) paint(e.clientX); });
+          bar.addEventListener('pointerup', () => {
+            if (!S || S.bar !== bar) return;
+            const { i, free } = S;
+            if (free) { S.cell.classList.add('pick'); setTimeout(() => { end(); pickRoom(bar.dataset.r, i); }, 120); } else end();
+          });
+          bar.addEventListener('pointercancel', end); // the page started to scroll up or down
+          bar.addEventListener('contextmenu', (e) => e.preventDefault());
+        });
+      });
     }
 
     // book a group room: until when, a subject and your group (KURT asks at least minParticipants people, you included)
@@ -927,9 +987,6 @@
       } else if (act === 'gday') {
         e.preventDefault();
         quiet = true; location.replace(K + '/#/g/' + b.dataset.l + '?d=' + b.dataset.d);
-      } else if (act === 'gbar') {
-        e.preventDefault();
-        if (GR && GR.n) { const rc = b.getBoundingClientRect(); const i = GR.lo + Math.floor(((e.clientX - rc.left) / rc.width) * GR.n); pickRoom(b.dataset.r, Math.max(GR.lo, i)); }
       } else if (act === 'groom') {
         e.preventDefault();
         if (!b.disabled) pickRoom(b.dataset.r);

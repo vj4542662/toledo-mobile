@@ -1,6 +1,10 @@
 {
- "version": "4.17.4",
+ "version": "4.18.0",
  "news": {
+  "4.18.0": [
+   "Groepswerkruimtes: schuif met je vinger over de balk van een lokaal. Het uur onder je vinger wordt groter, je ziet erboven welk uur het is en of het vrij is, en hetzelfde uur licht op bij alle lokalen. Laat los op groen om dat uur te kiezen.",
+   "Elk uur heeft nu zijn eigen vakje, met het uur er recht boven."
+  ],
   "4.17.4": [
    "Groepswerkruimtes: elk lokaal heeft nu één tijdbalk over de hele dag (groen = vrij), allemaal op dezelfde urenschaal. Zo zie je in één oogopslag welke lokalen vrij zijn op jouw uur. Tik op het groen om te reserveren."
   ],
@@ -42,11 +46,6 @@
   ],
   "4.13.1": [
    "Een nieuwe versie verschijnt nu echt meteen, niet pas na een paar minuten."
-  ],
-  "4.13.0": [
-   "KURT: je reservaties staan altijd bovenaan, met een vuilbakje om ze te verwijderen.",
-   "KURT: zet een ster bij een bibliotheek of een stoel, dan zie je meteen of je favoriete stoel vrij is.",
-   "KURT: dag en uur kies je nu met één knop, en de plattegronden laden sneller."
   ]
  }
 }

@@ -3,10 +3,14 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.17.4"
+VERSION = "4.18.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.18.0": [
+        "Groepswerkruimtes: schuif met je vinger over de balk van een lokaal. Het uur onder je vinger wordt groter, je ziet erboven welk uur het is en of het vrij is, en hetzelfde uur licht op bij alle lokalen. Laat los op groen om dat uur te kiezen.",
+        "Elk uur heeft nu zijn eigen vakje, met het uur er recht boven.",
+    ],
     "4.17.4": [
         "Groepswerkruimtes: elk lokaal heeft nu één tijdbalk over de hele dag (groen = vrij), allemaal op dezelfde urenschaal. Zo zie je in één oogopslag welke lokalen vrij zijn op jouw uur. Tik op het groen om te reserveren.",
     ],
