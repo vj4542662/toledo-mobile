@@ -511,7 +511,7 @@
       let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
       const mailApp = store.get('mailApp') !== 'web';
       // KURT (studyplace booking) matters most here: a big card on top
-      h += `<a class="kurt" href="${'https://www.kuleuven.be/kurt'}"><span class="kurt-ic">${ico('seat')}</span><span class="kurt-t"><b>Studieplek reserveren</b><span>KURT · bibliotheken en leercentra</span></span><span class="kurt-go">Reserveer</span></a>`;
+      h += `<a class="kurt" href="${'https://kurt3.ghum.kuleuven.be/'}"><span class="kurt-ic">${ico('seat')}</span><span class="kurt-t"><b>Studieplek reserveren</b><span>KURT · bibliotheken en leercentra</span></span><span class="kurt-go">Reserveer</span></a>`;
       h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#a2845e', 'LIMO', 'Bibliotheek zoeken')}</div>`;
       const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
       const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';

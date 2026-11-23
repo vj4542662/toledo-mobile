@@ -3,11 +3,11 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.10.2"
+VERSION = "4.11.0"
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
-app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'main.js'])
+app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION)
 
 classic = (src / 'classic-v3.js').read_text()
@@ -88,6 +88,7 @@ header = f"""// ==UserScript==
 // @match        https://webwsp.aps.kuleuven.be/sap/bc/ui2/flp*
 // @match        https://idp.kuleuven.be/idp/*
 // @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
+// @match        https://kurt3.ghum.kuleuven.be/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @run-at       document-start
@@ -101,6 +102,7 @@ header = f"""// ==UserScript==
   - A course opens on ultra.edu.kuleuven.cloud/ultra/app: content, announcements and grades. PDFs, files and weblectures open directly.
   - The timetable and exams come from KU Loket (same KU Leuven sign-in), read in a hidden frame.
   - Pages the app doesn't cover (submitting an assignment, tests, KU Loket apps) keep the phone layout of version 3.
+  - KURT (study places, kurt3.ghum.kuleuven.be) becomes an app screen: libraries with live occupancy, rooms with free seats, and the floor plan to tap a seat and book it.
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - While the app is open, Toledo, Blackboard and KU Loket get a small request every few minutes so their sessions don't time out.

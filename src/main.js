@@ -2,6 +2,7 @@
   if (!SITE) return;
   let mode = 'classic', target = '';
   if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
+  else if (SITE === 'kurt') mode = TOP && PHONE && params.get('tm') !== 'orig' && !/^\/(check-in|login|logout|signin|saml|api)\b/i.test(PATH) ? 'kurt' : 'none'; // study places
   else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
@@ -56,6 +57,7 @@
   if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'room') { whenRoot(roomPage); return; }
+  if (mode === 'kurt') { whenRoot(kurtApp); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }
   if (mode === 'plain') { classicPill(); return; }

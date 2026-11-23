@@ -1,7 +1,7 @@
   /* ================================================================== environment */
   const W = window;
   const VERSION = '__VERSION__';
-  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
+  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
   const PATH = W.__TM_PATH__ || location.pathname;
@@ -520,7 +520,7 @@
   function initPress() {
     if (W.__tm4press) return;
     W.__tm4press = true;
-    const SEL = '.row, .tile, .chip, .btn, .hero, .lesson[data-href], .exam[data-href], .ann, .teaser, .wd, .nb, .tabbar a, .sheet .sa, .frow, .more-row';
+    const SEL = '.row, .tile, .chip, .kz, .kf, .btn, .hero, .lesson[data-href], .exam[data-href], .ann, .teaser, .wd, .nb, .tabbar a, .sheet .sa, .frow, .more-row';
     let el = null, t = 0, x = 0, y = 0;
     const clear = () => { clearTimeout(t); if (el) { const e = el; setTimeout(() => e.classList.remove('pressed'), 110); } el = null; };
     document.addEventListener('touchstart', (ev) => {
