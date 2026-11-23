@@ -717,13 +717,15 @@
   }
   const card = (title, body, right) => `<div class="card">${title ? `<div class="card-h"><b>${esc(title)}</b>${right || ''}</div>` : ''}${body}</div>`;
 
+  const ST_COL = (k) => (/^(behaald|verworven)/i.test(k) ? '#30b955' : /^getolereerd/i.test(k) ? '#ff9500' : /^opgenomen/i.test(k) ? 'var(--accent)' : 'var(--fill2)');
   function creditsOf(s) {
     const pick = (list, re) => (list || []).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + v, 0);
-    const earned = pick(s.now, /verworven|behaald/i) || pick(s.prog, /^behaald/i);
-    const taking = pick(s.now, /opgenomen/i);
-    const failed = pick(s.prog, /niet behaald|niet verworven/i);
+    const list = s.now && s.now.length ? s.now : s.prog;
+    const earned = pick(list, /^(behaald|verworven|getolereerd)/i);
+    const taking = pick(list, /^opgenomen/i);
+    const failed = s.active ? pick(s.prog, /^niet (behaald|verworven)/i) : 0;
     const total = s.total || 0;
-    return { earned, taking, failed, total, rest: total ? Math.max(0, total - earned - taking) : 0 };
+    return { list, earned, taking, failed, total, rest: total ? Math.max(0, total - earned - taking) : 0 };
   }
   function yearAvg(y) {
     let a = 0, w = 0;
@@ -770,7 +772,8 @@
         <div class="st-kpis">${s.pct != null ? `<div class="kpi"><b>${esc(nl(s.pct, 2))}<small>%</small></b><span>Diplomapercentage</span></div>` : ''}
         ${cr.total ? `<div class="kpi"><b>${esc(nl(Math.round(((cr.earned) / cr.total) * 100), 0))}<small>%</small></b><span>van je opleiding verworven</span></div>` : ''}</div></div></div>`;
     // credits
-    const segs = [{ v: cr.earned, c: '#30b955', label: 'Verworven' }, { v: cr.taking, c: 'var(--accent)', label: s.active ? 'Dit jaar opgenomen' : 'Opgenomen' }];
+    const LBL = { behaald: 'Verworven', opgenomen: s.active ? 'Dit jaar opgenomen' : 'Opgenomen' };
+    const segs = cr.list.filter(([k]) => !/^niet/i.test(k)).map(([k, v]) => ({ v, c: ST_COL(k), label: LBL[k.toLowerCase()] || k }));
     if (cr.rest) segs.push({ v: cr.rest, c: 'var(--fill2)', label: 'Nog te doen' });
     h += card('Studiepunten', stackHtml(segs) + (cr.failed ? `<p class="card-note">${esc(spTxt(cr.failed))} nog niet verworven uit vorige zittijden.</p>` : ''), cr.total ? `<span>${esc(spTxt(cr.total))}</span>` : '');
     // averages per year
