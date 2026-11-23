@@ -642,3 +642,39 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .ip-btn{margin:10px auto 2px;width:60%;padding:8px;border-radius:9px;background:var(--accent);color:#fff;text-align:center;font-weight:600;box-shadow:0 0 0 4px rgba(10,108,214,.25)}
 .tm4 .ip-tip{margin:4px 8px 18px;color:var(--sub);font-size:14px;line-height:19px}
 .tm4 .ip-back{display:flex;width:100%;height:50px}
+/* KURT v2: favourites, time pill, trash */
+.tm4 .kstar{width:22px;height:22px}
+.tm4 .kstar.on{fill:#ffcc00;stroke:#e6a700}
+.tm4 .ko-empty{display:flex;gap:10px;align-items:center;font-size:14.5px;line-height:19px;color:var(--sub)}
+.tm4 .ko-empty .i{flex:none;width:26px;height:26px;color:var(--ter)}
+.tm4 .kr-top{position:relative}
+.tm4 .kr-main{flex:1}
+.tm4 .kr-del{flex:none;display:grid;place-items:center;width:40px;height:40px;margin:-6px -8px 0 0;border-radius:20px;color:var(--red)}
+.tm4 .kr-del .i{width:22px;height:22px}
+.tm4 .kr-del:active{background:var(--fill)}
+.tm4 .kfs{--inset:76px}
+.tm4 .kfs .kr-seat{min-width:44px;height:44px;font-size:16px}
+.tm4 .kr-seat.busy{background:var(--ter)}
+.tm4 .kfs-st{font-size:14px;color:var(--sub);white-space:nowrap}
+.tm4 .kfs-st em{font-style:normal;font-weight:600;color:var(--green)}
+.tm4 .kw{display:flex;align-items:center;gap:10px;width:calc(100% - 32px);margin:0 16px 12px;padding:10px 14px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);text-align:left}
+.tm4 .kw.sk{height:58px}
+.tm4 .kw > .i{color:var(--accent)}
+.tm4 .kw-t{flex:1;display:flex;flex-direction:column;min-width:0}
+.tm4 .kw-t b{font-size:17px}
+.tm4 .kw-t span{font-size:14px;color:var(--sub)}
+.tm4 .kw-ch{flex:none;color:var(--accent);font-size:15px;font-weight:600}
+.tm4 .kmap-wrap .kw{margin-bottom:8px}
+.tm4 .kw-h{font-size:19px;margin:2px 0 14px}
+.tm4 .btn.kw-now{display:flex;width:100%;background:var(--fill);color:var(--accent)}
+.tm4 .btn.kw-now.on{background:var(--accent);color:#fff}
+.tm4 .btn.kw-now .i{width:20px;height:20px}
+.tm4 .kw-body .kb-l{margin-top:16px}
+.tm4 .kw-days{margin:0 -16px;padding:0 16px 4px}
+.tm4 .kw-hours{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+.tm4 .kw-hr{height:42px;border-radius:11px;background:var(--fill);font-size:16px;font-weight:500;text-align:center}
+.tm4 .kw-hr.on{background:var(--accent);color:#fff;font-weight:600}
+.tm4 .kb-fav{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:21px;background:var(--fill)}
+.tm4 .ks.fav{box-shadow:0 0 0 calc(3px * var(--k)) #ffcc00}
+.tm4 .kf.fav{box-shadow:inset 0 0 0 2px #ffcc00}
+.tm4 .kmap-pre{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:.35}

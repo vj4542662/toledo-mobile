@@ -1,6 +1,11 @@
 {
- "version": "4.12.1",
+ "version": "4.13.0",
  "news": {
+  "4.13.0": [
+   "KURT: je reservaties staan altijd bovenaan, met een vuilbakje om ze te verwijderen.",
+   "KURT: zet een ster bij een bibliotheek of een stoel, dan zie je meteen of je favoriete stoel vrij is.",
+   "KURT: dag en uur kies je nu met één knop, en de plattegronden laden sneller."
+  ],
   "4.12.1": [
    "Toledo Mobile kijkt nu bij elk openen of er een nieuwe versie is."
   ],
