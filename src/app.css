@@ -722,11 +722,6 @@ html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row 
 .tm4 .kroute .i{width:14px;height:14px;color:var(--sub)}
 .tm4 .kroute a{color:var(--accent)}.tm4 .kroute i{font-style:normal;color:var(--ter)}
 .tm4 .kr-seat.kr-room{background:var(--accent)}.tm4 .kr-room .i{width:26px;height:26px;stroke-width:1.9}
-.tm4 .kg-home-t{display:flex;gap:12px;align-items:center}
-.tm4 .kg-home-t>.i{flex:none;width:44px;height:44px;padding:9px;border-radius:12px;background:var(--accent);color:#fff;stroke-width:1.9}
-.tm4 .kg-home-t span{display:flex;flex-direction:column}.tm4 .kg-home-t b{font-size:16px}.tm4 .kg-home-t span span{font-size:13.5px;color:var(--sub)}
-.tm4 .kg-libs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.tm4 .kg-libs .chip{display:inline-flex;align-items:center;height:34px;color:var(--accent);font-weight:600}
 .tm4 .kg-cta{display:flex;align-items:center;gap:12px;color:inherit}
 .tm4 .kg-cta .chev{flex:none;width:8px;height:14px;fill:none;stroke:var(--ter);stroke-width:2}
 .tm4 .kg-ic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
@@ -736,11 +731,6 @@ html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row 
 .tm4 .kg-days .chip{display:flex;flex-direction:column;justify-content:center;align-items:center;height:50px;min-width:62px;line-height:1.1}
 .tm4 .kg-days .chip small{font-size:11.5px;font-weight:500;opacity:.7}
 .tm4 .kg-sum{margin:12px 20px 0;font-size:14px;line-height:19px;color:var(--sub)}.tm4 .kg-sum b{color:var(--green)}
-.tm4 .card.kg{margin-top:10px;padding:12px 14px 14px}
-.tm4 .kg-h{display:flex;align-items:center;gap:12px}
-.tm4 .kg-h .kr-main{flex:1}
-.tm4 .kg-free{flex:none;padding:3px 9px;border-radius:8px;background:color-mix(in srgb,var(--green) 14%,transparent);font-size:13px;font-weight:600;color:var(--green);white-space:nowrap}
-.tm4 .kg.none .kg-free{background:var(--fill);color:var(--sub);font-weight:500}.tm4 .kg.none .kg-ic{filter:grayscale(1);opacity:.6}
 .tm4 .kb-when-s{pointer-events:none}
 .tm4 .kg-in{display:block;width:100%;height:44px;margin:0 0 12px;padding:0 12px;border:0;border-radius:10px;background:var(--fill);color:var(--text);font:inherit;font-size:16px}
 .tm4 .kg-pl span{color:var(--sub)}
@@ -754,7 +744,15 @@ html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row 
 .tm4 .kg-addb .spin{width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,.4);border-top-color:#fff}
 .tm4 .kg-mates{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.tm4 .kg-mates .chip{height:30px;padding:0 11px;font-size:14px;color:var(--accent);text-transform:capitalize}
 .tm4 .kb-go:disabled{opacity:.5}
-.tm4 .kg-hours{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-.tm4 .kg-hr{height:44px;border-radius:10px;background:var(--green);color:#fff;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
-.tm4 .kg-hr:active{opacity:.7}
-.tm4 .kg-full{margin:16px 0 0}.tm4 .kg-full summary{padding:4px 20px}.tm4 .kg-full .card.kg{padding:10px 14px}
+.tm4 .kg-list{margin-top:12px}
+.tm4 .kgr{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;text-align:left;color:inherit;background:none;border-bottom:.5px solid var(--sep,rgba(60,60,67,.18))}
+.tm4 .kgr:last-child{border-bottom:0}
+.tm4 .kgr .kr-main{flex:1}.tm4 .kgr .kr-main b{font-size:16px}.tm4 .kgr .kr-main span{font-size:13px}
+.tm4 .kgr em{margin-top:3px;font-style:normal;font-size:14px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums}
+.tm4 .kgr.none em{color:var(--sub);font-weight:500}
+.tm4 .kgr .chev{flex:none;width:8px;height:14px;fill:none;stroke:var(--ter);stroke-width:2}
+.tm4 .kg-full{margin:16px 0 0}.tm4 .kg-full summary{padding:4px 20px}
+.tm4 .kg-starts .chip{justify-content:center;font-variant-numeric:tabular-nums}
+.tm4 .kg-starts .chip.gap:not(:first-child){margin-left:10px}
+.tm4 .kb-ends .chip{text-align:center}
+.tm4 .kgr em i{font-style:normal;white-space:nowrap}
