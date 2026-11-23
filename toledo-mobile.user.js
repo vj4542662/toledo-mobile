@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Toledo Mobile
 // @namespace    https://toledo.kuleuven.be/portal
-// @version      4.7.3
+// @version      4.8.0
 // @description  KU Leuven Toledo as a real phone app: Vandaag, Vakken, Rooster, Updates and Meer, with course content, files and weblectures one tap away. Runs on your own Toledo session.
 // @match        https://toledo.kuleuven.be/portal*
 // @match        https://ultra.edu.kuleuven.cloud/ultra/*
@@ -30,11 +30,11 @@
   'use strict';
   if (window.__TM4__) return;
   window.__TM4__ = true;
-  const CSS = "html.tm4{-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light dark;\n--bg:#f2f2f7;--card:#fff;--raised:#fff;--text:#000;--sub:#6d6d72;--ter:#c3c3c8;--tabi:#9a9aa0;--sep:rgba(60,60,67,.18);\n--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.2);--press:rgba(0,0,0,.07);\n--accent:#0a6cd6;--red:#ff3b30;--orange:#ff9500;--green:#30b955;--bar:rgba(246,246,248,.84);--sheet:rgba(249,249,251,.97);\n--hero1:#17508a;--hero2:#0b2c52;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;\n--nav:44px;--tab:50px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}\nhtml.tm4.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--raised:#636366;--text:#fff;--sub:#98989f;--ter:#4a4a4e;--tabi:#8b8b90;\n--sep:rgba(84,84,88,.62);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.36);--press:rgba(255,255,255,.09);\n--accent:#409cff;--bar:rgba(20,20,22,.82);--sheet:rgba(44,44,46,.97);--hero1:#18497a;--hero2:#0a2342;--shadow:none}\n@media (prefers-color-scheme:dark){html.tm4:not(.light){--bg:#000;--card:#1c1c1e;--raised:#636366;--text:#fff;--sub:#98989f;--ter:#4a4a4e;--tabi:#8b8b90;\n--sep:rgba(84,84,88,.62);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.36);--press:rgba(255,255,255,.09);\n--accent:#409cff;--bar:rgba(20,20,22,.82);--sheet:rgba(44,44,46,.97);--hero1:#18497a;--hero2:#0a2342;--shadow:none}}\nhtml.tm4.light{color-scheme:light}\nhtml.tm4,html.tm4 body{margin:0;background:var(--bg);color:var(--text);font:17px/1.3 var(--font);-webkit-font-smoothing:antialiased}\nhtml.tm4 body{min-height:100vh;padding:calc(var(--st) + var(--nav)) 0 calc(var(--sb) + var(--tab) + 30px);-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}\nhtml.tm4 body.no-tabs{padding-bottom:calc(var(--sb) + 30px)}\nhtml.tm4 *,html.tm4 *::before,html.tm4 *::after{box-sizing:border-box}\nhtml.tm4 a{color:inherit;text-decoration:none}\nhtml.tm4 button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-appearance:none;appearance:none;text-align:inherit}\nhtml.tm4 [hidden]{display:none!important}\nhtml.tm4 body > :not([data-tm4]){display:none!important}\n.tm4 .i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}\n.tm4 .nav{position:fixed;z-index:60;top:0;left:0;right:0;height:calc(var(--st) + var(--nav));padding:var(--st) 4px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;\ntransition:background-color .2s,box-shadow .2s}\n.tm4 .nav.scrolled{background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 .5px 0 var(--sep)}\n.tm4 .nav-l{justify-self:start;display:flex;min-width:0}\n.tm4 .nav-r{justify-self:end;display:flex;min-width:0}\n.tm4 .nav-t{font-weight:600;font-size:17px;max-width:56vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s}\n.tm4 .nav.titled .nav-t,.tm4 .nav.always .nav-t{opacity:1;transform:none}\n.tm4 .nb{display:inline-flex;align-items:center;gap:3px;height:44px;padding:0 10px;color:var(--accent);font-size:17px;max-width:44vw;white-space:nowrap}\n.tm4 .nb span{overflow:hidden;text-overflow:ellipsis}\n.tm4 .nb .i{width:24px;height:24px}\n.tm4 .nb.back{padding-left:6px}\n.tm4 .nb.back .i{width:14px;height:22px;stroke-width:2.6}\n.tm4 .nb.pressed{opacity:.35}\n.tm4 .lt{padding:2px 20px 12px}\n.tm4 .lt h1{margin:0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:.2px;overflow-wrap:anywhere}\n.tm4 .lt h1.long{font-size:28px;line-height:33px}\n.tm4 .lt-sub{margin:3px 0 0;color:var(--sub);font-size:15px;line-height:20px}\n.tm4 [style*=\"--c:\"]{--cd:var(--cd-l,var(--c))}\n.tm4.dark [style*=\"--c:\"]{--cd:var(--cd-d,var(--c))}\n@media (prefers-color-scheme:dark){.tm4:not(.light) [style*=\"--c:\"]{--cd:var(--cd-d,var(--c))}}\n.tm4 .lt-kicker{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;padding:3px 9px;border-radius:7px;font-size:13px;font-weight:600;\ncolor:var(--cd,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 16%,transparent)}\n.tm4 .view{display:none}\n.tm4 .view.on{display:block}\n.tm4 .view.push{animation:tm-push .34s cubic-bezier(.2,.85,.25,1)}\n.tm4 .view.pop{animation:tm-pop .3s cubic-bezier(.2,.85,.25,1)}\n.tm4 .view.fade{animation:tm-fade .18s ease-out}\n@keyframes tm-push{from{transform:translate3d(32%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-pop{from{transform:translate3d(-14%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-fade{from{opacity:0}to{opacity:1}}\n.tm4 .appear{animation:tm-fade .22s ease-out}\n.tm4 #tm-main{transition:transform .34s cubic-bezier(.2,.85,.25,1),opacity .34s ease}\n.tm4.tm-leave-fwd #tm-main{transform:translate3d(-9%,0,0);opacity:.4}\n.tm4.tm-leave-back #tm-main{transform:translate3d(9%,0,0);opacity:.4}\n.tm4.tm-leaving #tm-main{pointer-events:none}\n.tm4.tm-arrive #tm-main{animation:tm-fade .2s ease-out}\n.tm4.tm-arrive-fwd #tm-main{animation:tm-push .36s cubic-bezier(.2,.85,.25,1)}\n.tm4.tm-arrive-back #tm-main{animation:tm-pop .32s cubic-bezier(.2,.85,.25,1)}\n.tm4 .nav::after{content:\"\";position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;opacity:0;pointer-events:none}\n.tm4.tm-leaving .nav::after{opacity:1;animation:tm-load 7s cubic-bezier(.08,.75,.2,1) forwards}\n@keyframes tm-load{0%{transform:scaleX(.02)}12%{transform:scaleX(.42)}100%{transform:scaleX(.94)}}\n@media (prefers-reduced-motion:reduce){.tm4.tm-leaving .nav::after{transform:scaleX(.6)}}\n@media (prefers-reduced-motion:reduce){.tm4 *,.tm4 *::before,.tm4 *::after{animation:none!important;transition:none!important}}\n.tm4 .sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 20px 9px}\n.tm4 .sh h2{margin:0;font-size:22px;line-height:27px;font-weight:700;letter-spacing:.1px}\n.tm4 .sh a,.tm4 .sh button{flex:none;font-size:16px;color:var(--accent)}\n.tm4 .gh{margin:24px 36px 7px;font-size:13px;line-height:18px;color:var(--sub);text-transform:uppercase;letter-spacing:.3px}\n.tm4 .gf{margin:7px 36px 0;font-size:13px;line-height:18px;color:var(--sub)}\n.tm4 .gf a,.tm4 .gf button{color:var(--accent)}\n.tm4 .group{margin:0 16px;background:var(--card);border-radius:12px;overflow:hidden;--inset:58px}\n.tm4 .group.plain{--inset:16px}\n.tm4 .group + .group{margin-top:16px}\n.tm4 .row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:9px 14px 9px 16px;transition:background-color .12s}\n.tm4 .row + .row::before,.tm4 .row + .sub::before,.tm4 .grp-h + .row::before,.tm4 .row + .grp-h::before,.tm4 .sub + .grp-h::before{content:\"\";position:absolute;top:0;right:0;left:var(--inset);height:.5px;background:var(--sep)}\n.tm4 .row.pressed,.tm4 .ann.pressed,.tm4 .lesson.pressed{background:var(--press);transition:none}\n.tm4 .ic{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--c,var(--accent));color:var(--ct,#fff)}\n.tm4 .ic .i{width:19px;height:19px;stroke-width:2}\n.tm4 .ic.soft{background:color-mix(in srgb,var(--c,var(--accent)) 16%,transparent);color:var(--cd,var(--c,var(--accent)))}\n.tm4 .ic.txt{font-size:12px;font-weight:700;letter-spacing:.2px}\n.tm4 .fi{flex:none;width:30px;height:30px;border-radius:7px;display:grid;place-items:center;background:var(--c);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px}\n.tm4 .main{flex:1;min-width:0}\n.tm4 .t{display:block;font-size:17px;line-height:22px;overflow-wrap:anywhere}\n.tm4 .t.b{font-weight:600}\n.tm4 .s{display:block;margin-top:1px;font-size:14px;line-height:19px;color:var(--sub);overflow:hidden;text-overflow:ellipsis}\n.tm4 .s.one{white-space:nowrap}\n.tm4 .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .end{flex:none;display:flex;align-items:center;gap:8px;color:var(--sub);font-size:15px}\n.tm4 .chev{width:8px;height:14px;fill:none;stroke:var(--ter);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}\n.tm4 .ext{width:15px;height:15px;stroke:var(--ter);stroke-width:2.2}\n.tm4 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none}\n.tm4 .row .dot.lead{position:absolute;left:5px;top:50%;margin-top:-4.5px;width:7px;height:7px}\n.tm4 .cap{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;background:var(--fill);color:var(--sub);font-size:13px;font-weight:600;white-space:nowrap}\n.tm4 .cap.blue{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}\n.tm4 .cap.red{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}\n.tm4 .cap.orange{background:color-mix(in srgb,var(--orange) 16%,transparent);color:#c46a00}\n.tm4.dark .cap.orange{color:var(--orange)}\n@media (prefers-color-scheme:dark){.tm4:not(.light) .cap.orange{color:var(--orange)}}\n.tm4 .row.sub{padding-left:58px;min-height:44px}\n.tm4 .row.sub .fi{width:26px;height:26px;font-size:8.5px}\n.tm4 .grp-h{position:relative;display:flex;align-items:center;gap:12px;padding:11px 16px 4px}\n.tm4 .grp-h .t{font-weight:600}\n.tm4 .row.off{opacity:.5}\n.tm4 .row.note .s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .more-row{display:block;width:100%;padding:13px 16px;color:var(--accent);font-size:16px;text-align:center}\n.tm4 .row + .more-row{border-top:.5px solid var(--sep)}\n.tm4 .tabbar{position:fixed;z-index:60;left:0;right:0;bottom:0;display:flex;height:calc(var(--tab) + var(--sb));padding:0 2px var(--sb);\nbackground:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 -.5px 0 var(--sep)}\n.tm4 .tabbar a{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding-top:1px;color:var(--tabi);font-size:10.5px;font-weight:500;letter-spacing:.1px}\n.tm4 .tabbar a.on{color:var(--accent)}\n.tm4 .tabbar .i{width:27px;height:27px;stroke-width:1.7}\n.tm4 .tabbar a.on .i{stroke-width:2.1}\n.tm4 .tabbar a.pressed{opacity:.55}\n.tm4 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:12px;font-weight:600;line-height:1}\n.tm4 .tabbar .badge{position:absolute;top:3px;left:calc(50% + 5px)}\n.tm4 .seg{position:relative;display:flex;margin:0 16px 14px;padding:2px;border-radius:9px;background:var(--fill)}\n.tm4 .seg button{position:relative;z-index:1;flex:1;height:30px;border-radius:7px;font-size:13.5px;font-weight:500;text-align:center;color:var(--text)}\n.tm4 .seg button.on{font-weight:600}\n.tm4 .seg .thumb{position:absolute;z-index:0;top:2px;bottom:2px;left:2px;border-radius:7px;background:var(--raised);\nbox-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);transition:transform .28s cubic-bezier(.3,.75,.25,1)}\n.tm4 .stick{position:sticky;z-index:20;top:calc(var(--st) + var(--nav));background:var(--bg);padding-top:2px}\n.tm4 .nav.scrolled ~ main .stick{background:transparent}\n.tm4 .search{display:flex;align-items:center;gap:6px;height:38px;margin:0 16px 14px;padding:0 8px;border-radius:10px;background:var(--fill);color:var(--sub)}\n.tm4 .search .i{width:19px;height:19px;stroke-width:2.2}\n.tm4 .search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--text);font:17px var(--font);-webkit-appearance:none;appearance:none}\n.tm4 .search input::placeholder{color:var(--sub)}\n.tm4 .search input::-webkit-search-cancel-button{display:none}\n.tm4 .search .clr{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sub);color:var(--bg);font-size:13px;font-weight:700;line-height:1}\n.tm4 .chips{display:flex;gap:8px;overflow-x:auto;padding:0 16px 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}\n.tm4 .chips::-webkit-scrollbar{display:none}\n.tm4 .chip{flex:none;height:34px;padding:0 14px;border-radius:17px;background:var(--fill);font-size:15px;font-weight:500;white-space:nowrap}\n.tm4 .chip.on{background:var(--text);color:var(--bg)}\n.tm4 .chip.pressed{opacity:.6}\n.tm4 .hero{position:relative;display:block;margin:2px 16px 0;padding:16px 16px 15px;border-radius:20px;color:#fff;overflow:hidden;\nbackground:linear-gradient(140deg,var(--hero1),var(--hero2));box-shadow:0 8px 24px rgba(11,44,82,.22)}\n.tm4 .hero::after{content:\"\";position:absolute;right:-40px;top:-60px;width:180px;height:180px;border-radius:50%;background:var(--c,#3a86d6);opacity:.35;filter:blur(30px)}\n.tm4 .hero > *{position:relative;z-index:1}\n.tm4 .hero.pressed{transform:scale(.985);transition:transform .12s}\n.tm4 .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}\n.tm4 .hero-lbl{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.9}\n.tm4 .hero-lbl i{width:8px;height:8px;border-radius:50%;background:var(--c,#7fc1ff);box-shadow:0 0 0 3px rgba(255,255,255,.18)}\n.tm4 .hero-lbl.live i{background:#4cd964;animation:tm-pulse 1.8s infinite}\n@keyframes tm-pulse{0%,100%{box-shadow:0 0 0 0 rgba(76,217,100,.55)}60%{box-shadow:0 0 0 7px rgba(76,217,100,0)}}\n.tm4 .hero-cd{font-size:14px;font-weight:600;padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.17);white-space:nowrap}\n.tm4 .hero-title{font-size:24px;line-height:29px;font-weight:700;letter-spacing:.1px}\n.tm4 .hero-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:15px;opacity:.92}\n.tm4 .hero-meta span{display:inline-flex;align-items:center;gap:5px}\n.tm4 .hero-meta .i{width:16px;height:16px;stroke-width:2}\n.tm4 .hero-prog{height:4px;margin-top:12px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}\n.tm4 .hero-prog i{display:block;height:100%;border-radius:2px;background:#fff}\n.tm4 .hero-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}\n.tm4 .hero-acts a,.tm4 .hero-acts button{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:17px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;font-weight:600}\n.tm4 .hero-acts a.pri{background:#fff;color:#0b2c52}\n.tm4 .hero-acts .i{width:17px;height:17px;stroke-width:2.1}\n@media (max-width:380px){.tm4 .hero-acts{gap:6px}.tm4 .hero-acts a,.tm4 .hero-acts button{padding:0 10px;gap:5px}}\n.tm4 .hero.calm{background:var(--card);color:var(--text);box-shadow:var(--shadow)}\n.tm4 .hero.calm::after{display:none}\n.tm4 .hero.calm .hero-cd{background:var(--fill)}\n.tm4 .tiles{display:flex;gap:10px;overflow-x:auto;padding:0 16px 2px;scroll-snap-type:x mandatory;scroll-padding:0 16px;scrollbar-width:none}\n.tm4 .tiles::-webkit-scrollbar{display:none}\n.tm4 .tile{flex:none;width:148px;height:92px;padding:11px 12px;border-radius:16px;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:space-between;\nbackground:color-mix(in srgb,var(--c) 15%,var(--card));box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--c) 30%,transparent)}\n.tm4 .tile.pressed{transform:scale(.97);transition:transform .12s}\n.tm4 .tile b{font-size:15px;line-height:19px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .tile span{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--cd,var(--c))}\n.tm4 .tile .cap{height:20px;padding:0 7px;font-size:12px;background:var(--c);color:var(--ct,#fff)}\n.tm4 .lesson{position:relative;display:flex;gap:12px;align-items:stretch;padding:12px 14px 12px 16px}\n.tm4 .lesson + .lesson::before{content:\"\";position:absolute;top:0;right:0;left:86px;height:.5px;background:var(--sep)}\n.tm4 .lesson .tm{flex:none;width:46px;text-align:right;padding-top:1px}\n.tm4 .lesson .tm b{display:block;font-size:15px;line-height:20px;font-weight:600;font-variant-numeric:tabular-nums}\n.tm4 .lesson .tm span{display:block;font-size:13px;line-height:18px;color:var(--sub);font-variant-numeric:tabular-nums}\n.tm4 .lesson .bar{flex:none;width:4px;border-radius:2px;background:var(--c,var(--accent))}\n.tm4 .lesson .main .t{font-weight:600}\n.tm4 .lesson .meta{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;font-size:14px;line-height:19px;color:var(--sub)}\n.tm4 .lesson .meta a{display:inline-flex;align-items:center;gap:4px;color:var(--accent)}\n.tm4 .lesson .meta .i{width:14px;height:14px;stroke-width:2.1}\n.tm4 .lesson.now{background:color-mix(in srgb,var(--c,var(--accent)) 9%,transparent)}\n.tm4 .lesson.past{opacity:.5}\n.tm4 .exam-tag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--red);color:#fff;font-size:11px;font-weight:700;vertical-align:2px;letter-spacing:.3px}\n.tm4 .lesson.exam-l .bar{background:var(--red)}\n.tm4 .now-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:8px;background:#30b955;color:#fff;font-size:11.5px;font-weight:700;vertical-align:2px;letter-spacing:.3px}\n.tm4 .wk-head{display:flex;align-items:center;justify-content:space-between;margin:0 10px 4px 20px}\n.tm4 .wk-head b{font-size:17px;font-weight:600}\n.tm4 .wk-head .btns{display:flex;align-items:center}\n.tm4 .wk-head button{display:grid;place-items:center;min-width:40px;height:40px;color:var(--accent);font-size:16px}\n.tm4 .wk-head button .i{width:22px;height:22px;stroke-width:2.2}\n.tm4 .wk-head .today-btn{padding:0 10px;font-weight:500}\n.tm4 .week{display:flex;padding:0 10px 10px;touch-action:pan-y}\n.tm4 .wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.tm4 .wd small{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase}\n.tm4 .wd b{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;transition:background-color .15s,color .15s}\n.tm4 .wd i{width:5px;height:5px;border-radius:50%;background:var(--sub);opacity:0}\n.tm4 .wd.has i{opacity:.7}\n.tm4 .wd.today b{color:var(--red);font-weight:600}\n.tm4 .wd.sel b{background:var(--text);color:var(--bg);font-weight:600}\n.tm4 .wd.today.sel b{background:var(--red);color:#fff}\n.tm4 .wd.we small,.tm4 .wd.we b{opacity:.55}\n.tm4 .wk-sticky{position:sticky;z-index:20;top:calc(var(--st) + var(--nav));background:var(--bg);padding-top:2px;box-shadow:0 .5px 0 var(--sep)}\n.tm4 .lt-next{display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--cd,var(--sub));font-weight:500}\n.tm4 .lt-next .i{width:16px;height:16px;stroke-width:2.1}\n.tm4 .day-title{scroll-margin-top:150px;margin:18px 20px 8px;font-size:15px;font-weight:600;color:var(--sub)}\n.tm4 .day-wrap{touch-action:pan-y;min-height:200px}\n.tm4 .slide-l{animation:tm-sl .24s cubic-bezier(.2,.85,.25,1)}\n.tm4 .slide-r{animation:tm-sr .24s cubic-bezier(.2,.85,.25,1)}\n@keyframes tm-sl{from{transform:translate3d(18%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-sr{from{transform:translate3d(-18%,0,0);opacity:0}to{transform:none;opacity:1}}\n.tm4 .exam{position:relative;display:flex;gap:14px;align-items:center;padding:13px 14px 13px 16px}\n.tm4 .exam + .exam::before{content:\"\";position:absolute;top:0;right:0;left:82px;height:.5px;background:var(--sep)}\n.tm4 .dt{flex:none;width:52px;padding:5px 0 6px;border-radius:12px;text-align:center;background:var(--fill)}\n.tm4 .dt small{display:block;font-size:11px;line-height:14px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.3px}\n.tm4 .dt b{display:block;font-size:24px;line-height:28px;font-weight:600;font-variant-numeric:tabular-nums}\n.tm4 .dt em{display:block;font-size:11px;line-height:13px;font-style:normal;color:var(--sub);text-transform:uppercase}\n.tm4 .exam .t{font-weight:600}\n.tm4 .exam .s a{display:inline-flex;align-items:center;gap:4px;color:var(--accent)}\n.tm4 .exam .s a .i{width:14px;height:14px;stroke-width:2.1}\n.tm4 .card{margin:0 16px;padding:16px;border-radius:14px;background:var(--card)}\n.tm4 .ann{display:block;margin:0 16px 12px;padding:14px 16px;border-radius:14px;background:var(--card);transition:background-color .12s}\n.tm4 .ann-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;color:var(--sub)}\n.tm4 .ann h3{margin:0;font-size:17px;line-height:22px;font-weight:600}\n.tm4 .ann .body{position:relative;margin-top:6px;font-size:16px;line-height:1.45;max-height:7.25em;overflow:hidden}\n.tm4 .ann.clamped .body::after{content:\"\";position:absolute;left:0;right:0;bottom:0;height:2.2em;background:linear-gradient(transparent,var(--card))}\n.tm4 .ann.open .body{max-height:none}\n.tm4 .ann.open .body::after{display:none}\n.tm4 .ann .more{display:none;margin-top:6px;color:var(--accent);font-size:15px;font-weight:500}\n.tm4 .ann.clamped .more{display:inline-block}\n.tm4 .ann.open .more{display:inline-block}\n.tm4 .ann.hl{box-shadow:0 0 0 2px var(--accent)}\n.tm4 .teaser{display:flex;gap:12px;align-items:flex-start;margin:0 16px 4px;padding:13px 14px;border-radius:14px;background:color-mix(in srgb,var(--c,var(--accent)) 11%,var(--card))}\n.tm4 .teaser .ic{background:var(--c,var(--accent))}\n.tm4 .teaser .t{font-weight:600;font-size:16px;line-height:21px}\n.tm4 .teaser .s{font-size:14.5px;line-height:19px;margin-top:2px;color:var(--text);opacity:.75}\n.tm4 .teaser.pressed{filter:brightness(.96)}\n.tm4 .rt{font-size:16.5px;line-height:1.5;overflow-wrap:anywhere}\n.tm4 .rt > :first-child{margin-top:0}\n.tm4 .rt > :last-child{margin-bottom:0}\n.tm4 .rt p{margin:0 0 11px}\n.tm4 .rt h3,.tm4 .rt h4,.tm4 .rt h5,.tm4 .rt h6{margin:18px 0 8px;font-size:18px;line-height:23px}\n.tm4 .rt ul,.tm4 .rt ol{margin:0 0 11px;padding-left:22px}\n.tm4 .rt li{margin:3px 0}\n.tm4 .rt a{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 35%,transparent);text-underline-offset:2px}\n.tm4 .rt img{max-width:100%;height:auto;border-radius:10px}\n.tm4 .rt table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14.5px;margin:0 0 11px}\n.tm4 .rt td,.tm4 .rt th{border:.5px solid var(--sep);padding:6px 8px;vertical-align:top}\n.tm4 .rt blockquote{margin:0 0 11px;padding-left:12px;border-left:3px solid var(--sep);color:var(--sub)}\n.tm4 .rt hr{border:0;border-top:.5px solid var(--sep);margin:14px 0}\n.tm4 .rt pre{white-space:pre-wrap;font-size:14px}\n.tm4 .rt .frow{display:flex;align-items:center;gap:12px;margin:10px 0;padding:11px 12px;border-radius:12px;background:var(--fill);text-decoration:none;color:var(--text)}\n.tm4 .rt .frow .t{font-size:16px;line-height:20px;font-weight:600}\n.tm4 .rt .frow .s{font-size:13.5px}\n.tm4 .rt .frow.pressed{background:var(--fill2)}\n.tm4 .rt .embed{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:var(--fill);color:var(--accent);text-decoration:none;font-weight:600}\n.tm4 .doc{margin:0 16px;padding:16px;border-radius:14px;background:var(--card)}\n.tm4 .empty{padding:44px 36px;text-align:center;color:var(--sub);font-size:15px;line-height:20px}\n.tm4 .empty .i{width:44px;height:44px;margin:0 auto 10px;stroke-width:1.5;color:var(--ter)}\n.tm4 .empty b{display:block;margin-bottom:4px;color:var(--text);font-size:17px;font-weight:600}\n.tm4 .empty.small{padding:22px 24px}\n.tm4 .banner{display:flex;align-items:center;gap:12px;margin:0 16px 14px;padding:12px 14px;border-radius:12px;background:var(--card);font-size:15px;line-height:20px}\n.tm4 .banner .i{width:22px;height:22px;color:var(--orange)}\n.tm4 .banner .main{flex:1}\n.tm4 .banner button,.tm4 .banner a.act{flex:none;color:var(--accent);font-weight:600}\n.tm4 .sk{border-radius:7px;background:linear-gradient(90deg,var(--fill) 25%,var(--fill2) 50%,var(--fill) 75%);background-size:300% 100%;animation:tm-sk 1.3s ease-in-out infinite}\n@keyframes tm-sk{from{background-position:100% 0}to{background-position:0 0}}\n.tm4 .sk-row{display:flex;align-items:center;gap:12px;padding:12px 16px}\n.tm4 .sk-row .sk.ic{width:30px;height:30px;border-radius:8px}\n.tm4 .sk-row .lines{flex:1}\n.tm4 .sk-row .lines .sk{height:13px}\n.tm4 .sk-row .lines .sk + .sk{margin-top:7px;width:55%;height:11px}\n.tm4 .spin{width:26px;height:26px;margin:0 auto;border-radius:50%;border:2.5px solid var(--fill2);border-top-color:var(--sub);animation:tm-spin .8s linear infinite}\n@keyframes tm-spin{to{transform:rotate(360deg)}}\n.tm4 .center{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:var(--sub)}\n.tm4 .center b{color:var(--text);font-size:19px}\n.tm4 .fresh{margin:18px 36px 0;font-size:13px;line-height:18px;color:var(--sub);text-align:center}\n.tm4 .fresh button,.tm4 .fresh a{color:var(--accent)}\n.tm4 .row .spin{width:18px;height:18px;margin:0;border-width:2px}\n.tm4 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:46px;padding:0 20px;border-radius:13px;background:var(--accent);color:#fff;font-size:17px;font-weight:600}\n.tm4 .btn.ghost{background:var(--fill);color:var(--accent)}\n.tm4 .btn.pressed{opacity:.7}\n.tm4 .btn .i{width:20px;height:20px;stroke-width:2.1}\n.tm4 .scrim{position:fixed;z-index:90;inset:0;background:rgba(0,0,0,.32);opacity:0;transition:opacity .25s}\n.tm4 .scrim.on{opacity:1}\n.tm4 .sheet{position:fixed;z-index:91;left:8px;right:8px;bottom:calc(8px + var(--sb));transform:translate3d(0,115%,0);transition:transform .34s cubic-bezier(.2,.9,.25,1)}\n.tm4 .sheet.on{transform:none}\n.tm4 .sheet .sg{overflow:hidden;border-radius:14px;background:var(--sheet);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px)}\n.tm4 .sheet .sg + .sg{margin-top:8px}\n.tm4 .sheet .sh-t{padding:14px 16px 12px;text-align:center;font-size:13px;line-height:18px;color:var(--sub)}\n.tm4 .sheet .sh-t b{display:block;color:var(--text);font-size:14px;font-weight:600;margin-bottom:2px}\n.tm4 .sheet .sa{display:block;width:100%;padding:17px 12px;text-align:center;font-size:19px;color:var(--accent);border-top:.5px solid var(--sep)}\n.tm4 .sheet .sh-t + .sa,.tm4 .sheet .sg > .sa:first-child{border-top:0}\n.tm4 .sheet .sa.red{color:var(--red)}\n.tm4 .sheet .sa.bold{font-weight:600}\n.tm4 .sheet .sa.pressed{background:var(--press)}\n.tm4 .toast{position:fixed;z-index:95;left:50%;bottom:calc(var(--tab) + var(--sb) + 18px);max-width:calc(100% - 40px);padding:11px 18px;border-radius:22px;background:rgba(28,28,30,.92);color:#fff;font-size:15px;line-height:20px;text-align:center;\ntransform:translate3d(-50%,16px,0);opacity:0;transition:opacity .22s,transform .22s;pointer-events:none}\n.tm4 .toast.on{opacity:1;transform:translate3d(-50%,0,0)}\n.tm4 .prof{display:flex;align-items:center;gap:14px;padding:14px 16px}\n.tm4 .avatar{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--hero1),var(--hero2));color:#fff;font-size:21px;font-weight:600}\n.tm4 .prof .t{font-size:20px;line-height:25px;font-weight:600}\n.tm4 .foot{margin:26px 20px 0;text-align:center;color:var(--sub);font-size:12.5px;line-height:18px}\n.tm4 .sync{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--sub);text-align:center;padding:24px}\n.tm4 .sync small{max-width:320px;font-size:12px;line-height:1.4;color:var(--sub);opacity:.75;word-break:break-word}\nhtml.tm4 > :not(head):not(body){display:none!important}\n.tm4 .udoc > * + *{margin-top:16px}";
+  const CSS = "html.tm4{-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light dark;\n--bg:#f2f2f7;--card:#fff;--raised:#fff;--text:#000;--sub:#6d6d72;--ter:#c3c3c8;--tabi:#9a9aa0;--sep:rgba(60,60,67,.18);\n--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.2);--press:rgba(0,0,0,.07);\n--accent:#0a6cd6;--red:#ff3b30;--orange:#ff9500;--green:#30b955;--bar:rgba(246,246,248,.84);--sheet:rgba(249,249,251,.97);\n--hero1:#17508a;--hero2:#0b2c52;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;\n--nav:44px;--tab:50px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}\nhtml.tm4.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--raised:#636366;--text:#fff;--sub:#98989f;--ter:#4a4a4e;--tabi:#8b8b90;\n--sep:rgba(84,84,88,.62);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.36);--press:rgba(255,255,255,.09);\n--accent:#409cff;--bar:rgba(20,20,22,.82);--sheet:rgba(44,44,46,.97);--hero1:#18497a;--hero2:#0a2342;--shadow:none}\n@media (prefers-color-scheme:dark){html.tm4:not(.light){--bg:#000;--card:#1c1c1e;--raised:#636366;--text:#fff;--sub:#98989f;--ter:#4a4a4e;--tabi:#8b8b90;\n--sep:rgba(84,84,88,.62);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.36);--press:rgba(255,255,255,.09);\n--accent:#409cff;--bar:rgba(20,20,22,.82);--sheet:rgba(44,44,46,.97);--hero1:#18497a;--hero2:#0a2342;--shadow:none}}\nhtml.tm4.light{color-scheme:light}\nhtml.tm4,html.tm4 body{margin:0;background:var(--bg);color:var(--text);font:17px/1.3 var(--font);-webkit-font-smoothing:antialiased}\nhtml.tm4 body{min-height:100vh;padding:calc(var(--st) + var(--nav)) 0 calc(var(--sb) + var(--tab) + 30px);-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}\nhtml.tm4 body.no-tabs{padding-bottom:calc(var(--sb) + 30px)}\nhtml.tm4 *,html.tm4 *::before,html.tm4 *::after{box-sizing:border-box}\nhtml.tm4 a{color:inherit;text-decoration:none}\nhtml.tm4 button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-appearance:none;appearance:none;text-align:inherit}\nhtml.tm4 [hidden]{display:none!important}\nhtml.tm4 body > :not([data-tm4]){display:none!important}\n.tm4 .i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}\n.tm4 .nav{position:fixed;z-index:60;top:0;left:0;right:0;height:calc(var(--st) + var(--nav));padding:var(--st) 4px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;\ntransition:background-color .2s,box-shadow .2s}\n.tm4 .nav.scrolled{background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 .5px 0 var(--sep)}\n.tm4 .nav-l{justify-self:start;display:flex;min-width:0}\n.tm4 .nav-r{justify-self:end;display:flex;min-width:0}\n.tm4 .nav-t{font-weight:600;font-size:17px;max-width:56vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s}\n.tm4 .nav.titled .nav-t,.tm4 .nav.always .nav-t{opacity:1;transform:none}\n.tm4 .nb{display:inline-flex;align-items:center;gap:3px;height:44px;padding:0 10px;color:var(--accent);font-size:17px;max-width:44vw;white-space:nowrap}\n.tm4 .nb span{overflow:hidden;text-overflow:ellipsis}\n.tm4 .nb .i{width:24px;height:24px}\n.tm4 .nb.back{padding-left:6px}\n.tm4 .nb.back .i{width:14px;height:22px;stroke-width:2.6}\n.tm4 .nb.pressed{opacity:.35}\n.tm4 .lt{padding:2px 20px 12px}\n.tm4 .lt h1{margin:0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:.2px;overflow-wrap:anywhere}\n.tm4 .lt h1.long{font-size:28px;line-height:33px}\n.tm4 .lt-sub{margin:3px 0 0;color:var(--sub);font-size:15px;line-height:20px}\n.tm4 [style*=\"--c:\"]{--cd:var(--cd-l,var(--c))}\n.tm4.dark [style*=\"--c:\"]{--cd:var(--cd-d,var(--c))}\n@media (prefers-color-scheme:dark){.tm4:not(.light) [style*=\"--c:\"]{--cd:var(--cd-d,var(--c))}}\n.tm4 .lt-kicker{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;padding:3px 9px;border-radius:7px;font-size:13px;font-weight:600;\ncolor:var(--cd,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 16%,transparent)}\n.tm4 .view{display:none}\n.tm4 .view.on{display:block}\n.tm4 .view.push{animation:tm-push .34s cubic-bezier(.2,.85,.25,1)}\n.tm4 .view.pop{animation:tm-pop .3s cubic-bezier(.2,.85,.25,1)}\n.tm4 .view.fade{animation:tm-fade .18s ease-out}\n@keyframes tm-push{from{transform:translate3d(32%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-pop{from{transform:translate3d(-14%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-fade{from{opacity:0}to{opacity:1}}\n.tm4 .appear{animation:tm-fade .22s ease-out}\n.tm4 #tm-main{transition:transform .34s cubic-bezier(.2,.85,.25,1),opacity .34s ease}\n.tm4.tm-leave-fwd #tm-main{transform:translate3d(-9%,0,0);opacity:.4}\n.tm4.tm-leave-back #tm-main{transform:translate3d(9%,0,0);opacity:.4}\n.tm4.tm-leaving #tm-main{pointer-events:none}\n.tm4.tm-arrive #tm-main{animation:tm-fade .2s ease-out}\n.tm4.tm-arrive-fwd #tm-main{animation:tm-push .36s cubic-bezier(.2,.85,.25,1)}\n.tm4.tm-arrive-back #tm-main{animation:tm-pop .32s cubic-bezier(.2,.85,.25,1)}\n.tm4 .nav::after{content:\"\";position:absolute;left:0;right:0;bottom:-1px;height:2.5px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;opacity:0;pointer-events:none}\n.tm4.tm-leaving .nav::after{opacity:1;animation:tm-load 7s cubic-bezier(.08,.75,.2,1) forwards}\n@keyframes tm-load{0%{transform:scaleX(.02)}12%{transform:scaleX(.42)}100%{transform:scaleX(.94)}}\n@media (prefers-reduced-motion:reduce){.tm4.tm-leaving .nav::after{transform:scaleX(.6)}}\n@media (prefers-reduced-motion:reduce){.tm4 *,.tm4 *::before,.tm4 *::after{animation:none!important;transition:none!important}}\n.tm4 .sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 20px 9px}\n.tm4 .sh h2{margin:0;font-size:22px;line-height:27px;font-weight:700;letter-spacing:.1px}\n.tm4 .sh a,.tm4 .sh button{flex:none;font-size:16px;color:var(--accent)}\n.tm4 .gh{margin:24px 36px 7px;font-size:13px;line-height:18px;color:var(--sub);text-transform:uppercase;letter-spacing:.3px}\n.tm4 .gf{margin:7px 36px 0;font-size:13px;line-height:18px;color:var(--sub)}\n.tm4 .gf a,.tm4 .gf button{color:var(--accent)}\n.tm4 .group{margin:0 16px;background:var(--card);border-radius:12px;overflow:hidden;--inset:58px}\n.tm4 .group.plain{--inset:16px}\n.tm4 .group + .group{margin-top:16px}\n.tm4 .row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:9px 14px 9px 16px;transition:background-color .12s}\n.tm4 .row + .row::before,.tm4 .row + .sub::before,.tm4 .grp-h + .row::before,.tm4 .row + .grp-h::before,.tm4 .sub + .grp-h::before{content:\"\";position:absolute;top:0;right:0;left:var(--inset);height:.5px;background:var(--sep)}\n.tm4 .row.pressed,.tm4 .ann.pressed,.tm4 .lesson.pressed{background:var(--press);transition:none}\n.tm4 .ic{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--c,var(--accent));color:var(--ct,#fff)}\n.tm4 .ic .i{width:19px;height:19px;stroke-width:2}\n.tm4 .ic.soft{background:color-mix(in srgb,var(--c,var(--accent)) 16%,transparent);color:var(--cd,var(--c,var(--accent)))}\n.tm4 .ic.txt{font-size:12px;font-weight:700;letter-spacing:.2px}\n.tm4 .fi{flex:none;width:30px;height:30px;border-radius:7px;display:grid;place-items:center;background:var(--c);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px}\n.tm4 .main{flex:1;min-width:0}\n.tm4 .t{display:block;font-size:17px;line-height:22px;overflow-wrap:anywhere}\n.tm4 .t.b{font-weight:600}\n.tm4 .s{display:block;margin-top:1px;font-size:14px;line-height:19px;color:var(--sub);overflow:hidden;text-overflow:ellipsis}\n.tm4 .s.one{white-space:nowrap}\n.tm4 .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .end{flex:none;display:flex;align-items:center;gap:8px;color:var(--sub);font-size:15px}\n.tm4 .chev{width:8px;height:14px;fill:none;stroke:var(--ter);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}\n.tm4 .ext{width:15px;height:15px;stroke:var(--ter);stroke-width:2.2}\n.tm4 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none}\n.tm4 .row .dot.lead{position:absolute;left:5px;top:50%;margin-top:-4.5px;width:7px;height:7px}\n.tm4 .cap{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;background:var(--fill);color:var(--sub);font-size:13px;font-weight:600;white-space:nowrap}\n.tm4 .cap.blue{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}\n.tm4 .cap.red{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}\n.tm4 .cap.orange{background:color-mix(in srgb,var(--orange) 16%,transparent);color:#c46a00}\n.tm4.dark .cap.orange{color:var(--orange)}\n@media (prefers-color-scheme:dark){.tm4:not(.light) .cap.orange{color:var(--orange)}}\n.tm4 .row.sub{padding-left:58px;min-height:44px}\n.tm4 .row.sub .fi{width:26px;height:26px;font-size:8.5px}\n.tm4 .grp-h{position:relative;display:flex;align-items:center;gap:12px;padding:11px 16px 4px}\n.tm4 .grp-h .t{font-weight:600}\n.tm4 .row.off{opacity:.5}\n.tm4 .row.note .s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .more-row{display:block;width:100%;padding:13px 16px;color:var(--accent);font-size:16px;text-align:center}\n.tm4 .row + .more-row{border-top:.5px solid var(--sep)}\n.tm4 .tabbar{position:fixed;z-index:60;left:0;right:0;bottom:0;display:flex;height:calc(var(--tab) + var(--sb));padding:0 2px var(--sb);\nbackground:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 -.5px 0 var(--sep)}\n.tm4 .tabbar a{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding-top:1px;color:var(--tabi);font-size:10.5px;font-weight:500;letter-spacing:.1px}\n.tm4 .tabbar a.on{color:var(--accent)}\n.tm4 .tabbar .i{width:27px;height:27px;stroke-width:1.7}\n.tm4 .tabbar a.on .i{stroke-width:2.1}\n.tm4 .tabbar a.pressed{opacity:.55}\n.tm4 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:12px;font-weight:600;line-height:1}\n.tm4 .tabbar .badge{position:absolute;top:3px;left:calc(50% + 5px)}\n.tm4 .seg{position:relative;display:flex;margin:0 16px 14px;padding:2px;border-radius:9px;background:var(--fill)}\n.tm4 .seg button{position:relative;z-index:1;flex:1;height:30px;border-radius:7px;font-size:13.5px;font-weight:500;text-align:center;color:var(--text)}\n.tm4 .seg button.on{font-weight:600}\n.tm4 .seg .thumb{position:absolute;z-index:0;top:2px;bottom:2px;left:2px;border-radius:7px;background:var(--raised);\nbox-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);transition:transform .28s cubic-bezier(.3,.75,.25,1)}\n.tm4 .stick{position:sticky;z-index:20;top:calc(var(--st) + var(--nav));background:var(--bg);padding-top:2px}\n.tm4 .nav.scrolled ~ main .stick{background:transparent}\n.tm4 .search{display:flex;align-items:center;gap:6px;height:38px;margin:0 16px 14px;padding:0 8px;border-radius:10px;background:var(--fill);color:var(--sub)}\n.tm4 .search .i{width:19px;height:19px;stroke-width:2.2}\n.tm4 .search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--text);font:17px var(--font);-webkit-appearance:none;appearance:none}\n.tm4 .search input::placeholder{color:var(--sub)}\n.tm4 .search input::-webkit-search-cancel-button{display:none}\n.tm4 .search .clr{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sub);color:var(--bg);font-size:13px;font-weight:700;line-height:1}\n.tm4 .chips{display:flex;gap:8px;overflow-x:auto;padding:0 16px 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}\n.tm4 .chips::-webkit-scrollbar{display:none}\n.tm4 .chip{flex:none;height:34px;padding:0 14px;border-radius:17px;background:var(--fill);font-size:15px;font-weight:500;white-space:nowrap}\n.tm4 .chip.on{background:var(--text);color:var(--bg)}\n.tm4 .chip.pressed{opacity:.6}\n.tm4 .hero{position:relative;display:block;margin:2px 16px 0;padding:16px 16px 15px;border-radius:20px;color:#fff;overflow:hidden;\nbackground:linear-gradient(140deg,var(--hero1),var(--hero2));box-shadow:0 8px 24px rgba(11,44,82,.22)}\n.tm4 .hero::after{content:\"\";position:absolute;right:-40px;top:-60px;width:180px;height:180px;border-radius:50%;background:var(--c,#3a86d6);opacity:.35;filter:blur(30px)}\n.tm4 .hero > *{position:relative;z-index:1}\n.tm4 .hero.pressed{transform:scale(.985);transition:transform .12s}\n.tm4 .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}\n.tm4 .hero-lbl{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.9}\n.tm4 .hero-lbl i{width:8px;height:8px;border-radius:50%;background:var(--c,#7fc1ff);box-shadow:0 0 0 3px rgba(255,255,255,.18)}\n.tm4 .hero-lbl.live i{background:#4cd964;animation:tm-pulse 1.8s infinite}\n@keyframes tm-pulse{0%,100%{box-shadow:0 0 0 0 rgba(76,217,100,.55)}60%{box-shadow:0 0 0 7px rgba(76,217,100,0)}}\n.tm4 .hero-cd{font-size:14px;font-weight:600;padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.17);white-space:nowrap}\n.tm4 .hero-title{font-size:24px;line-height:29px;font-weight:700;letter-spacing:.1px}\n.tm4 .hero-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:15px;opacity:.92}\n.tm4 .hero-meta span{display:inline-flex;align-items:center;gap:5px}\n.tm4 .hero-meta .i{width:16px;height:16px;stroke-width:2}\n.tm4 .hero-prog{height:4px;margin-top:12px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}\n.tm4 .hero-prog i{display:block;height:100%;border-radius:2px;background:#fff}\n.tm4 .hero-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}\n.tm4 .hero-acts a,.tm4 .hero-acts button{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:17px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;font-weight:600}\n.tm4 .hero-acts a.pri{background:#fff;color:#0b2c52}\n.tm4 .hero-acts .i{width:17px;height:17px;stroke-width:2.1}\n@media (max-width:380px){.tm4 .hero-acts{gap:6px}.tm4 .hero-acts a,.tm4 .hero-acts button{padding:0 10px;gap:5px}}\n.tm4 .hero.calm{background:var(--card);color:var(--text);box-shadow:var(--shadow)}\n.tm4 .hero.calm::after{display:none}\n.tm4 .hero.calm .hero-cd{background:var(--fill)}\n.tm4 .tiles{display:flex;gap:10px;overflow-x:auto;padding:0 16px 2px;scroll-snap-type:x mandatory;scroll-padding:0 16px;scrollbar-width:none}\n.tm4 .tiles::-webkit-scrollbar{display:none}\n.tm4 .tile{flex:none;width:148px;height:92px;padding:11px 12px;border-radius:16px;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:space-between;\nbackground:color-mix(in srgb,var(--c) 15%,var(--card));box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--c) 30%,transparent)}\n.tm4 .tile.pressed{transform:scale(.97);transition:transform .12s}\n.tm4 .tile b{font-size:15px;line-height:19px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}\n.tm4 .tile span{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--cd,var(--c))}\n.tm4 .tile .cap{height:20px;padding:0 7px;font-size:12px;background:var(--c);color:var(--ct,#fff)}\n.tm4 .lesson{position:relative;display:flex;gap:12px;align-items:stretch;padding:12px 14px 12px 16px}\n.tm4 .lesson + .lesson::before{content:\"\";position:absolute;top:0;right:0;left:86px;height:.5px;background:var(--sep)}\n.tm4 .lesson .tm{flex:none;width:46px;text-align:right;padding-top:1px}\n.tm4 .lesson .tm b{display:block;font-size:15px;line-height:20px;font-weight:600;font-variant-numeric:tabular-nums}\n.tm4 .lesson .tm span{display:block;font-size:13px;line-height:18px;color:var(--sub);font-variant-numeric:tabular-nums}\n.tm4 .lesson .bar{flex:none;width:4px;border-radius:2px;background:var(--c,var(--accent))}\n.tm4 .lesson .main .t{font-weight:600}\n.tm4 .lesson .meta{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;font-size:14px;line-height:19px;color:var(--sub)}\n.tm4 .lesson .meta a{display:inline-flex;align-items:center;gap:4px;color:var(--accent)}\n.tm4 .lesson .meta .i{width:14px;height:14px;stroke-width:2.1}\n.tm4 .lesson.now{background:color-mix(in srgb,var(--c,var(--accent)) 9%,transparent)}\n.tm4 .lesson.past{opacity:.5}\n.tm4 .exam-tag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--red);color:#fff;font-size:11px;font-weight:700;vertical-align:2px;letter-spacing:.3px}\n.tm4 .lesson.exam-l .bar{background:var(--red)}\n.tm4 .now-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:8px;background:#30b955;color:#fff;font-size:11.5px;font-weight:700;vertical-align:2px;letter-spacing:.3px}\n.tm4 .wk-head{display:flex;align-items:center;justify-content:space-between;margin:0 10px 4px 20px}\n.tm4 .wk-head b{font-size:17px;font-weight:600}\n.tm4 .wk-head .btns{display:flex;align-items:center}\n.tm4 .wk-head button{display:grid;place-items:center;min-width:40px;height:40px;color:var(--accent);font-size:16px}\n.tm4 .wk-head button .i{width:22px;height:22px;stroke-width:2.2}\n.tm4 .wk-head .today-btn{padding:0 10px;font-weight:500}\n.tm4 .week{display:flex;padding:0 10px 10px;touch-action:pan-y}\n.tm4 .wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.tm4 .wd small{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase}\n.tm4 .wd b{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;transition:background-color .15s,color .15s}\n.tm4 .wd i{width:5px;height:5px;border-radius:50%;background:var(--sub);opacity:0}\n.tm4 .wd.has i{opacity:.7}\n.tm4 .wd.today b{color:var(--red);font-weight:600}\n.tm4 .wd.sel b{background:var(--text);color:var(--bg);font-weight:600}\n.tm4 .wd.today.sel b{background:var(--red);color:#fff}\n.tm4 .wd.we small,.tm4 .wd.we b{opacity:.55}\n.tm4 .wk-sticky{position:sticky;z-index:20;top:calc(var(--st) + var(--nav));background:var(--bg);padding-top:2px;box-shadow:0 .5px 0 var(--sep)}\n.tm4 .lt-next{display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--cd,var(--sub));font-weight:500}\n.tm4 .lt-next .i{width:16px;height:16px;stroke-width:2.1}\n.tm4 .day-title{scroll-margin-top:150px;margin:18px 20px 8px;font-size:15px;font-weight:600;color:var(--sub)}\n.tm4 .day-wrap{touch-action:pan-y;min-height:200px}\n.tm4 .slide-l{animation:tm-sl .24s cubic-bezier(.2,.85,.25,1)}\n.tm4 .slide-r{animation:tm-sr .24s cubic-bezier(.2,.85,.25,1)}\n@keyframes tm-sl{from{transform:translate3d(18%,0,0);opacity:0}to{transform:none;opacity:1}}\n@keyframes tm-sr{from{transform:translate3d(-18%,0,0);opacity:0}to{transform:none;opacity:1}}\n.tm4 .exam{position:relative;display:flex;gap:14px;align-items:center;padding:13px 14px 13px 16px}\n.tm4 .exam + .exam::before{content:\"\";position:absolute;top:0;right:0;left:82px;height:.5px;background:var(--sep)}\n.tm4 .dt{flex:none;width:52px;padding:5px 0 6px;border-radius:12px;text-align:center;background:var(--fill)}\n.tm4 .dt small{display:block;font-size:11px;line-height:14px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.3px}\n.tm4 .dt b{display:block;font-size:24px;line-height:28px;font-weight:600;font-variant-numeric:tabular-nums}\n.tm4 .dt em{display:block;font-size:11px;line-height:13px;font-style:normal;color:var(--sub);text-transform:uppercase}\n.tm4 .exam .t{font-weight:600}\n.tm4 .exam .s a{display:inline-flex;align-items:center;gap:4px;color:var(--accent)}\n.tm4 .exam .s a .i{width:14px;height:14px;stroke-width:2.1}\n.tm4 .card{margin:0 16px;padding:16px;border-radius:14px;background:var(--card)}\n.tm4 .ann{display:block;margin:0 16px 12px;padding:14px 16px;border-radius:14px;background:var(--card);transition:background-color .12s}\n.tm4 .ann-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px;color:var(--sub)}\n.tm4 .ann h3{margin:0;font-size:17px;line-height:22px;font-weight:600}\n.tm4 .ann .body{position:relative;margin-top:6px;font-size:16px;line-height:1.45;max-height:7.25em;overflow:hidden}\n.tm4 .ann.clamped .body::after{content:\"\";position:absolute;left:0;right:0;bottom:0;height:2.2em;background:linear-gradient(transparent,var(--card))}\n.tm4 .ann.open .body{max-height:none}\n.tm4 .ann.open .body::after{display:none}\n.tm4 .ann .more{display:none;margin-top:6px;color:var(--accent);font-size:15px;font-weight:500}\n.tm4 .ann.clamped .more{display:inline-block}\n.tm4 .ann.open .more{display:inline-block}\n.tm4 .ann.hl{box-shadow:0 0 0 2px var(--accent)}\n.tm4 .teaser{display:flex;gap:12px;align-items:flex-start;margin:0 16px 4px;padding:13px 14px;border-radius:14px;background:color-mix(in srgb,var(--c,var(--accent)) 11%,var(--card))}\n.tm4 .teaser .ic{background:var(--c,var(--accent))}\n.tm4 .teaser .t{font-weight:600;font-size:16px;line-height:21px}\n.tm4 .teaser .s{font-size:14.5px;line-height:19px;margin-top:2px;color:var(--text);opacity:.75}\n.tm4 .teaser.pressed{filter:brightness(.96)}\n.tm4 .rt{font-size:16.5px;line-height:1.5;overflow-wrap:anywhere}\n.tm4 .rt > :first-child{margin-top:0}\n.tm4 .rt > :last-child{margin-bottom:0}\n.tm4 .rt p{margin:0 0 11px}\n.tm4 .rt h3,.tm4 .rt h4,.tm4 .rt h5,.tm4 .rt h6{margin:18px 0 8px;font-size:18px;line-height:23px}\n.tm4 .rt ul,.tm4 .rt ol{margin:0 0 11px;padding-left:22px}\n.tm4 .rt li{margin:3px 0}\n.tm4 .rt a{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 35%,transparent);text-underline-offset:2px}\n.tm4 .rt img{max-width:100%;height:auto;border-radius:10px}\n.tm4 .rt table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14.5px;margin:0 0 11px}\n.tm4 .rt td,.tm4 .rt th{border:.5px solid var(--sep);padding:6px 8px;vertical-align:top}\n.tm4 .rt blockquote{margin:0 0 11px;padding-left:12px;border-left:3px solid var(--sep);color:var(--sub)}\n.tm4 .rt hr{border:0;border-top:.5px solid var(--sep);margin:14px 0}\n.tm4 .rt pre{white-space:pre-wrap;font-size:14px}\n.tm4 .rt .frow{display:flex;align-items:center;gap:12px;margin:10px 0;padding:11px 12px;border-radius:12px;background:var(--fill);text-decoration:none;color:var(--text)}\n.tm4 .rt .frow .t{font-size:16px;line-height:20px;font-weight:600}\n.tm4 .rt .frow .s{font-size:13.5px}\n.tm4 .rt .frow.pressed{background:var(--fill2)}\n.tm4 .rt .embed{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:var(--fill);color:var(--accent);text-decoration:none;font-weight:600}\n.tm4 .doc{margin:0 16px;padding:16px;border-radius:14px;background:var(--card)}\n.tm4 .empty{padding:44px 36px;text-align:center;color:var(--sub);font-size:15px;line-height:20px}\n.tm4 .empty .i{width:44px;height:44px;margin:0 auto 10px;stroke-width:1.5;color:var(--ter)}\n.tm4 .empty b{display:block;margin-bottom:4px;color:var(--text);font-size:17px;font-weight:600}\n.tm4 .empty.small{padding:22px 24px}\n.tm4 .banner{display:flex;align-items:center;gap:12px;margin:0 16px 14px;padding:12px 14px;border-radius:12px;background:var(--card);font-size:15px;line-height:20px}\n.tm4 .banner .i{width:22px;height:22px;color:var(--orange)}\n.tm4 .banner .main{flex:1}\n.tm4 .banner button,.tm4 .banner a.act{flex:none;color:var(--accent);font-weight:600}\n.tm4 .sk{border-radius:7px;background:linear-gradient(90deg,var(--fill) 25%,var(--fill2) 50%,var(--fill) 75%);background-size:300% 100%;animation:tm-sk 1.3s ease-in-out infinite}\n@keyframes tm-sk{from{background-position:100% 0}to{background-position:0 0}}\n.tm4 .sk-row{display:flex;align-items:center;gap:12px;padding:12px 16px}\n.tm4 .sk-row .sk.ic{width:30px;height:30px;border-radius:8px}\n.tm4 .sk-row .lines{flex:1}\n.tm4 .sk-row .lines .sk{height:13px}\n.tm4 .sk-row .lines .sk + .sk{margin-top:7px;width:55%;height:11px}\n.tm4 .spin{width:26px;height:26px;margin:0 auto;border-radius:50%;border:2.5px solid var(--fill2);border-top-color:var(--sub);animation:tm-spin .8s linear infinite}\n@keyframes tm-spin{to{transform:rotate(360deg)}}\n.tm4 .center{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:var(--sub)}\n.tm4 .center b{color:var(--text);font-size:19px}\n.tm4 .fresh{margin:18px 36px 0;font-size:13px;line-height:18px;color:var(--sub);text-align:center}\n.tm4 .fresh button,.tm4 .fresh a{color:var(--accent)}\n.tm4 .row .spin{width:18px;height:18px;margin:0;border-width:2px}\n.tm4 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:46px;padding:0 20px;border-radius:13px;background:var(--accent);color:#fff;font-size:17px;font-weight:600}\n.tm4 .btn.ghost{background:var(--fill);color:var(--accent)}\n.tm4 .btn.pressed{opacity:.7}\n.tm4 .btn .i{width:20px;height:20px;stroke-width:2.1}\n.tm4 .scrim{position:fixed;z-index:90;inset:0;background:rgba(0,0,0,.32);opacity:0;transition:opacity .25s}\n.tm4 .scrim.on{opacity:1}\n.tm4 .sheet{position:fixed;z-index:91;left:8px;right:8px;bottom:calc(8px + var(--sb));transform:translate3d(0,115%,0);transition:transform .34s cubic-bezier(.2,.9,.25,1)}\n.tm4 .sheet.on{transform:none}\n.tm4 .sheet .sg{overflow:hidden;border-radius:14px;background:var(--sheet);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px)}\n.tm4 .sheet .sg + .sg{margin-top:8px}\n.tm4 .sheet .sh-t{padding:14px 16px 12px;text-align:center;font-size:13px;line-height:18px;color:var(--sub)}\n.tm4 .sheet .sh-t b{display:block;color:var(--text);font-size:14px;font-weight:600;margin-bottom:2px}\n.tm4 .sheet .sa{display:block;width:100%;padding:17px 12px;text-align:center;font-size:19px;color:var(--accent);border-top:.5px solid var(--sep)}\n.tm4 .sheet .sh-t + .sa,.tm4 .sheet .sg > .sa:first-child{border-top:0}\n.tm4 .sheet .sa.red{color:var(--red)}\n.tm4 .sheet .sa.bold{font-weight:600}\n.tm4 .sheet .sa.pressed{background:var(--press)}\n.tm4 .toast{position:fixed;z-index:95;left:50%;bottom:calc(var(--tab) + var(--sb) + 18px);max-width:calc(100% - 40px);padding:11px 18px;border-radius:22px;background:rgba(28,28,30,.92);color:#fff;font-size:15px;line-height:20px;text-align:center;\ntransform:translate3d(-50%,16px,0);opacity:0;transition:opacity .22s,transform .22s;pointer-events:none}\n.tm4 .toast.on{opacity:1;transform:translate3d(-50%,0,0)}\n.tm4 .prof{display:flex;align-items:center;gap:14px;padding:14px 16px}\n.tm4 .avatar{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--hero1),var(--hero2));color:#fff;font-size:21px;font-weight:600}\n.tm4 .prof .t{font-size:20px;line-height:25px;font-weight:600}\n.tm4 .foot{margin:26px 20px 0;text-align:center;color:var(--sub);font-size:12.5px;line-height:18px}\n.tm4 .sync{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--sub);text-align:center;padding:24px}\n.tm4 .sync small{max-width:320px;font-size:12px;line-height:1.4;color:var(--sub);opacity:.75;word-break:break-word}\nhtml.tm4 > :not(head):not(body){display:none!important}\n.tm4 .udoc > * + *{margin-top:16px}\n.tm4 .cap.green{background:color-mix(in srgb,var(--green) 16%,transparent);color:#1f8a3d}\n.tm4.dark .cap.green{color:#4cd964}\n@media (prefers-color-scheme:dark){.tm4:not(.light) .cap.green{color:#4cd964}}\n.tm4 .gh span{float:right;text-transform:none;letter-spacing:0}\n.tm4 .card{margin:16px 16px 0;padding:14px 16px 16px;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}\n.tm4 .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}\n.tm4 .card-h b{font-size:17px;font-weight:600}\n.tm4 .card-h span{color:var(--sub);font-size:15px;font-weight:500}\n.tm4 .card-note{margin:12px 0 0;color:var(--sub);font-size:13.5px;line-height:18px}\n.tm4 .card-note b{color:var(--text)}\n.tm4 .stack{display:flex;gap:3px;height:14px;border-radius:7px;overflow:hidden;background:var(--fill)}\n.tm4 .stack i{display:block;min-width:4px;border-radius:3px;transform-origin:0 50%;animation:tm-grow .7s cubic-bezier(.2,.85,.25,1) both}\n.tm4 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:11px;font-size:13.5px;color:var(--sub)}\n.tm4 .legend span{display:inline-flex;align-items:center;gap:6px}\n.tm4 .legend i{width:9px;height:9px;border-radius:50%}\n.tm4 .legend b{color:var(--text);font-weight:600}\n@keyframes tm-grow{from{transform:scaleX(0)}to{transform:none}}\n@keyframes tm-rise{from{transform:scaleY(0)}to{transform:none}}\n.tm4 .ring{position:relative;flex:none}\n.tm4 .ring svg{display:block;width:100%;height:100%}\n.tm4 .ring circle{transition:stroke-dasharray .8s cubic-bezier(.2,.85,.25,1)}\n.tm4 .ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1}\n.tm4 .ring-mid b{font-size:28px;font-weight:700;letter-spacing:-.5px}\n.tm4 .ring-mid small{margin-top:4px;font-size:11.5px;font-weight:600;opacity:.8}\n.tm4 .st-hero{position:relative;margin:2px 16px 0;padding:16px;border-radius:22px;color:#fff;overflow:hidden;background:linear-gradient(150deg,#1d5fa0,#0b2c52 70%);box-shadow:0 10px 28px rgba(11,44,82,.25)}\n.tm4 .st-hero.isp{background:linear-gradient(150deg,#5b3fb0,#24124f 72%);box-shadow:0 10px 28px rgba(45,20,95,.25)}\n.tm4 .st-hero::after{content:\"\";position:absolute;right:-50px;top:-70px;width:200px;height:200px;border-radius:50%;background:#4cd964;opacity:.22;filter:blur(34px)}\n.tm4 .st-hero > *{position:relative;z-index:1}\n.tm4 .st-top{display:flex;align-items:center;justify-content:space-between;gap:10px}\n.tm4 .st-hero .hero-lbl i{background:#4cd964}\n.tm4 .st-name{margin-top:8px;font-size:22px;line-height:27px;font-weight:700}\n.tm4 .st-spec{margin-top:3px;font-size:14.5px;line-height:19px;opacity:.85}\n.tm4 .st-row{display:flex;align-items:center;gap:18px;margin-top:14px}\n.tm4 .st-kpis{display:flex;flex-direction:column;gap:12px;min-width:0}\n.tm4 .kpi b{display:block;font-size:30px;line-height:32px;font-weight:700;letter-spacing:-.5px}\n.tm4 .kpi b small{font-size:17px;font-weight:600;opacity:.85}\n.tm4 .kpi span{display:block;margin-top:1px;font-size:13px;opacity:.8}\n.tm4 .vbars{display:flex;align-items:flex-end;gap:10px;height:150px}\n.tm4 .vb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;min-width:0}\n.tm4 .vb-v{font-size:13px;font-weight:600}\n.tm4 .vb-bar{flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;border-radius:8px;background:var(--fill)}\n.tm4 .vb-bar i{display:block;width:100%;border-radius:8px;transform-origin:50% 100%;animation:tm-rise .7s cubic-bezier(.2,.85,.25,1) both}\n.tm4 .vb-l{font-size:12px;color:var(--sub);white-space:nowrap}\n.tm4 .vbars.hist{height:120px;gap:8px}\n.tm4 .score{display:inline-flex;align-items:baseline;gap:1px;min-width:52px;justify-content:center;height:28px;padding:0 9px;border-radius:14px;background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc);font-size:17px;font-weight:700;line-height:28px}\n.tm4 .score small{font-size:11px;font-weight:600;opacity:.8}\n.tm4 .res{position:relative}\n.tm4 .res + .res::before{content:\"\";position:absolute;top:0;right:0;left:16px;height:.5px;background:var(--sep)}\n.tm4 .res.open{background:color-mix(in srgb,var(--fill) 40%,transparent)}\n.tm4 .res[role=button]{cursor:pointer}\n.tm4 .res .row{transition:none}\n.tm4 .res-d{padding:0 16px 14px;color:var(--sub);font-size:13.5px;line-height:18px;animation:tm-fade .2s ease-out}\n.tm4 .rk-box{margin-top:10px;padding:12px;border-radius:12px;background:var(--fill)}\n.tm4 .rk-line{margin:0 0 9px;color:var(--text);font-size:14px;line-height:19px}\n.tm4 .rk{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;height:24px}\n.tm4 .rk-c{font-weight:700;color:var(--sub)}\n.tm4 .rk-bar{height:9px;border-radius:5px;background:var(--fill)}\n.tm4 .rk-bar i{display:block;height:100%;border-radius:5px;background:var(--ter);transform-origin:0 50%;animation:tm-grow .6s cubic-bezier(.2,.85,.25,1) both}\n.tm4 .rk-v{min-width:92px;text-align:right;font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}\n.tm4 .rk-v small{display:inline-block;min-width:48px;margin-left:4px;font-size:12.5px}\n.tm4 .rk.me .rk-c,.tm4 .rk.me .rk-v{color:var(--accent);font-weight:700}\n.tm4 .rk.me .rk-bar i{background:var(--accent)}\n.tm4 .row.done .t{color:var(--sub)}\n.tm4 .row.plain-note{min-height:40px}\n.tm4 .row.failed .t{color:var(--red)}\n.tm4 .ptr{position:fixed;z-index:55;left:50%;top:calc(var(--st) + var(--nav) - 38px);width:36px;height:36px;margin-left:-18px;border-radius:50%;background:var(--card);\nbox-shadow:0 2px 12px rgba(0,0,0,.16);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.2,.85,.25,1),opacity .2s}\n.tm4 .ptr.drag{transition:none}\n.tm4 .ptr .spin{width:18px;height:18px;margin:0;border-width:2.2px;border-top-color:var(--accent);animation:none}\n.tm4 .ptr.busy .spin{animation:tm-spin .75s linear infinite}";
   const LOGIN_CSS = "html.tm4-login{--bg:#f2f2f7;--card:#fff;--text:#000;--sub:#6d6d72;--sep:rgba(60,60,67,.2);--fill:rgba(118,118,128,.12);--accent:#0a6cd6;--red:#ff3b30;\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;color-scheme:light;background:var(--bg)!important}\nhtml.tm4-login.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}\n@media (prefers-color-scheme:dark){html.tm4-login:not(.light){color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}}\nhtml.tm4-login body{background:var(--bg)!important;color:var(--text)!important;font-family:var(--font)!important;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}\nhtml.tm4-login .vw-100{width:100%!important}\nhtml.tm4-login .vh-100{height:auto!important;min-height:100vh;min-height:100dvh}\nhtml.tm4-login #background,html.tm4-login #footer{display:none!important}\nhtml.tm4-login .sidebar{width:100%!important;max-width:none!important;min-height:100vh;min-height:100dvh;background:var(--bg)!important;border:0!important;box-shadow:none!important;\npadding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important}\nhtml.tm4-login #language{width:100%;padding:8px 10px 0!important}\nhtml.tm4-login #language .nav-link{color:var(--sub)!important;font-size:14px!important;padding:6px 8px!important}\nhtml.tm4-login #content{width:100%!important;max-width:460px;margin:0 auto;justify-content:flex-start!important;padding:4vh 22px 28px!important}\nhtml.tm4-login #service-info{display:flex;flex-direction:column;align-items:center;text-align:center;margin:0 0 30px!important}\nhtml.tm4-login #serviceDescription,html.tm4-login #serviceDescription .description-logo-text{display:contents!important}\nhtml.tm4-login #serviceDescription .col-3{order:0;flex:none!important;width:auto!important;max-width:none!important;padding:0!important}\nhtml.tm4-login #serviceLogo{display:block;width:80px;height:80px;object-fit:contain;padding:12px;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.1)}\nhtml.tm4-login #service-info h5{order:1;margin:18px 0 6px!important;font:700 30px/36px var(--font)!important;letter-spacing:.2px;color:var(--text)!important}\nhtml.tm4-login #serviceDescription .col-9{order:2;flex:none!important;width:auto!important;max-width:30ch!important;padding:0!important;color:var(--sub)!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .auth-forms{display:flex;flex-direction:column}\nhtml.tm4-login .loginbutton{margin:0!important;padding:0!important}\nhtml.tm4-login .loginMethod:not(.hidden){display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;margin:0!important;padding:12px 18px!important;\nborder:0!important;border-radius:14px!important;font:600 16px/21px var(--font)!important;box-shadow:none!important;text-align:left!important;-webkit-tap-highlight-color:transparent;transition:transform .12s,opacity .12s}\nhtml.tm4-login .loginMethod:active{transform:scale(.98);opacity:.85}\nhtml.tm4-login .loginMethod br{display:none!important}\nhtml.tm4-login #btnnextauthlogin{background:var(--accent)!important;color:#fff!important}\nhtml.tm4-login #btnnextauthlogin img{flex:none;width:32px;height:32px;margin:0!important;padding:3px;border-radius:8px;background:#fff}\nhtml.tm4-login #btnPwdLogin{background:var(--card)!important;color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--sep)!important}\nhtml.tm4-login #btnPwdLogin i,html.tm4-login .loginMethod i{flex:none;margin:0!important;font-size:24px!important;color:inherit!important}\nhtml.tm4-login .form-check:not(.hidden){display:flex!important;align-items:center;gap:10px;min-height:36px;margin:10px 4px 0!important;padding:0!important}\nhtml.tm4-login .form-check-input{position:static!important;flex:none;width:22px!important;height:22px!important;margin:0!important;accent-color:var(--accent);background-color:var(--card)}\nhtml.tm4-login .form-check-label,html.tm4-login .text-muted{color:var(--sub)!important}\nhtml.tm4-login .form-check-label{font-size:15px!important;line-height:20px}\nhtml.tm4-login #orSeperator:not(.hidden){display:flex!important;align-items:center;gap:12px;margin:18px 4px!important;padding:0!important;color:var(--sub)!important;font-size:13px!important;text-transform:uppercase;letter-spacing:.4px;background:none!important}\nhtml.tm4-login #orSeperator::before,html.tm4-login #orSeperator::after{content:\"\"!important;flex:1;height:.5px;margin:0!important;border:0!important;background:var(--sep)!important;position:static!important;width:auto!important}\nhtml.tm4-login .input-group{margin:0 0 10px!important}\nhtml.tm4-login .form-control{height:52px!important;padding:0 14px!important;border:1px solid var(--sep)!important;border-radius:12px!important;background:var(--card)!important;color:var(--text)!important;\nfont:17px var(--font)!important;box-shadow:none!important;-webkit-appearance:none;appearance:none}\nhtml.tm4-login .form-control::placeholder{color:var(--sub)!important;opacity:1}\nhtml.tm4-login .form-control:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)!important;outline:0!important}\nhtml.tm4-login .btn-primary,html.tm4-login #pwdLoginBtn{min-height:52px;border:0!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font:600 17px var(--font)!important;box-shadow:none!important}\nhtml.tm4-login .form-group{margin-bottom:0!important}\nhtml.tm4-login #pwdLoginForm .form-group{margin-top:14px!important}\nhtml.tm4-login #btnGoToMain:not(.hidden){display:flex!important;align-items:center;gap:4px;margin:16px auto 0!important;color:var(--accent)!important;font:500 16px var(--font)!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml.tm4-login #revokeConsent{margin-top:14px!important}\nhtml.tm4-login .alert:not(.hidden){border:0!important;border-radius:12px!important;padding:12px 14px!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .alert-danger{background:color-mix(in srgb,var(--red) 13%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .alert-warning{background:color-mix(in srgb,#ff9500 15%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .help{margin-top:22px!important;text-align:center}\nhtml.tm4-login .help > a{color:var(--sub)!important;font-size:15px!important;text-decoration:none!important}\nhtml.tm4-login .help-links{margin:12px 0 0!important;padding:0!important;list-style:none!important;text-align:left;background:var(--card);border-radius:12px;overflow:hidden}\nhtml.tm4-login .help-links li{margin:0!important}\nhtml.tm4-login .help-links li + li a{border-top:.5px solid var(--sep)}\nhtml.tm4-login .help-links a{display:block;padding:13px 16px;color:var(--accent)!important;font-size:15px;text-decoration:none!important}\nhtml.tm4-login #content h1,html.tm4-login #content h2,html.tm4-login #content h3,html.tm4-login #content h4{color:var(--text)!important;font-family:var(--font)!important}\nhtml.tm4-login #content p{color:var(--text)}\nhtml.tm4-login #content .btn:not(.loginMethod):not(.close):not(#btnGoToMain){min-height:50px;border-radius:14px!important;font:600 17px var(--font)!important}\nhtml.tm4-login #content .btn-secondary,html.tm4-login #content .btn-light,html.tm4-login #content .btn-outline-primary{background:var(--card)!important;color:var(--accent)!important;border:1px solid var(--sep)!important}\nhtml.tm4-login #content a{color:var(--accent)}";
   /* ================================================================== environment */
   const W = window;
-  const VERSION = '4.7.3';
+  const VERSION = '4.8.0';
   const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
@@ -322,6 +322,26 @@
     W.addEventListener('click', fix, true);
   }
 
+  /* Blackboard's and KU Loket's own pages (the ones the app leaves alone) have no dark look of their own. In dark
+     mode they get a "smart invert": light becomes dark, colours keep their hue, and pictures, videos and embedded
+     documents are turned back so they look exactly as they should. */
+  function classicDark() {
+    if (THEME === 'light') return;
+    const css = 'html{filter:invert(1) hue-rotate(180deg)!important;background:#fff!important}'
+      + 'html :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]){filter:invert(1) hue-rotate(180deg)!important}'
+      + 'html picture img,html :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]) :is(img,video,iframe,canvas,picture,embed,object,[style*="background-image"]){filter:none!important}';
+    const st = document.createElement('style');
+    st.id = 'tm4-dark';
+    st.textContent = THEME === 'dark' ? css : `@media (prefers-color-scheme:dark){${css}}`;
+    const add = () => { const box = document.head || document.documentElement; if (box && !document.getElementById('tm4-dark')) box.appendChild(st); };
+    if (document.documentElement) add();
+    else { const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); add(); } }); mo.observe(document, { childList: true }); }
+    // keep it last, so later stylesheets can't win
+    const keep = () => { if (document.head && st.parentNode && st !== document.head.lastElementChild) document.head.appendChild(st); };
+    W.addEventListener('DOMContentLoaded', keep);
+    W.addEventListener('load', keep);
+  }
+
   const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
   /* ================================================================== shell */
@@ -539,6 +559,55 @@
     toastT = setTimeout(() => t.classList.remove('on'), 2300);
   }
 
+  /* pull down at the top of the page to refresh, like in an app. run() returns a promise (or nothing). */
+  function pullRefresh(run) {
+    if (W.__tm4ptr || !('ontouchstart' in W)) return;
+    W.__tm4ptr = true;
+    const ind = document.createElement('div');
+    ind.className = 'ptr';
+    ind.setAttribute('data-tm4', '');
+    ind.setAttribute('aria-hidden', 'true');
+    ind.innerHTML = '<span class="spin"></span>';
+    document.body.appendChild(ind);
+    const spin = ind.firstChild;
+    const GO = 72;
+    let y0 = 0, x0 = 0, pull = 0, on = false, busy = false;
+    const reset = () => { ind.classList.remove('drag', 'busy'); ind.style.transform = ''; ind.style.opacity = ''; spin.style.transform = ''; };
+    document.addEventListener('touchstart', (e) => {
+      on = false;
+      if (busy || W.scrollY > 0 || e.touches.length !== 1 || document.querySelector('.sheet') || (e.target.closest && e.target.closest('input, textarea, .tiles, .chips, .week'))) return;
+      on = true; pull = 0; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (!on) return;
+      const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+      if (W.scrollY > 2 || (pull < 10 && dx > Math.max(dy, 8))) { on = false; pull = 0; reset(); return; }
+      pull = Math.max(0, dy);
+      const d = Math.min(GO * 1.5, pull * 0.6);
+      ind.classList.add('drag');
+      ind.style.opacity = String(Math.min(1, pull / GO));
+      ind.style.transform = `translate3d(0,${d}px,0)`;
+      spin.style.transform = `rotate(${Math.round(pull * 3)}deg)`;
+    }, { passive: true });
+    const end = () => {
+      if (!on) return;
+      on = false;
+      if (pull * 0.6 < GO * 0.75) { reset(); pull = 0; return; }
+      pull = 0;
+      busy = true;
+      ind.classList.remove('drag');
+      ind.classList.add('busy');
+      ind.style.opacity = '1';
+      ind.style.transform = 'translate3d(0,52px,0)';
+      const t0 = Date.now();
+      let p; try { p = Promise.resolve(run()); } catch (_) { p = Promise.resolve(); }
+      const done = () => setTimeout(() => { busy = false; ind.style.opacity = '0'; ind.style.transform = ''; setTimeout(reset, 300); }, Math.max(0, 650 - (Date.now() - t0)));
+      Promise.race([p, new Promise((r) => setTimeout(r, 12000))]).then(done, done);
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', () => { if (on) { on = false; pull = 0; reset(); } }, { passive: true });
+  }
+
   /* ================================================================== building blocks */
   function row(o) {
     const isLink = !!o.href;
@@ -614,6 +683,169 @@
     $$('p, div, span', out).reverse().forEach((e) => { if (!e.textContent.trim() && !e.querySelector('img, a, br, hr, table')) e.remove(); });
     return out.innerHTML;
   }
+  /* ================================================================== study progress + ISP pages (portal) */
+  // Pure renderers: they take the data read from KU Loket (see studyData / ispData in loket.js) and return HTML.
+  const nl = (n, d = 1) => { if (n == null || !Number.isFinite(n)) return ''; const s = n.toFixed(d).replace('.', ','); return d ? s.replace(/,0+$/, '') : s; };
+  const spTxt = (n) => `${nl(n, 1)} sp`;
+  const acy = (y) => { const n = Number(y); return n ? `${n}–${n + 1}` : String(y || ''); };
+  const acyS = (y) => { const n = Number(y); return n ? `${String(n).slice(2)}–${String(n + 1).slice(2)}` : String(y || ''); };
+  const scoreOf = (c) => { const n = parseFloat(String(c.r || '').replace(',', '.')); return /^\d+([.,]\d+)?$/.test(String(c.r || '')) && (!c.sc || /20$/.test(c.sc)) ? n : null; };
+  const scoreCol = (n) => (n == null ? 'var(--sub)' : n >= 16 ? '#30b955' : n >= 14 ? '#0fa5a5' : n >= 12 ? '#0a84ff' : n >= 10 ? '#ff9500' : '#ff3b30');
+  const dNice = (s) => { const t = s ? fromYmd(s) : 0; return t ? `${new Date(t).getDate()} ${MONTHS_S[new Date(t).getMonth()]} ${new Date(t).getFullYear()}` : ''; };
+  const RESULT_WORD = { NA: 'Niet afgelegd', NI: 'Niet ingeschreven', VR: 'Vrijstelling', VZ: 'Vrijstelling', GR: 'Geslaagd', ND: 'Niet deelgenomen', GO: 'Gewettigd afwezig', TO: 'Tolerantie' };
+  const shortProg = (n) => String(n || '').replace(/\s*\((Leuven|Brussel|Kortrijk|Gent|Antwerpen|Kulak)[^)]*\)\s*$/i, '').trim();
+
+  // ring chart: segments [{v, c}] of a total, with something in the middle
+  function ringSvg(segs, total, { size = 112, w = 12, mid = '', track = 'var(--fill)' } = {}) {
+    const r = (size - w) / 2, C = 2 * Math.PI * r;
+    let off = 0;
+    const sum = total || segs.reduce((a, s) => a + s.v, 0) || 1;
+    const arcs = segs.filter((s) => s.v > 0).map((s) => {
+      const len = Math.max(0, (s.v / sum) * C - (segs.length > 1 ? 2 : 0));
+      const a = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${s.c}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>`;
+      off += (s.v / sum) * C;
+      return a;
+    }).join('');
+    return `<div class="ring" style="width:${size}px;height:${size}px"><svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${track}" stroke-width="${w}"/>${arcs}</svg><div class="ring-mid">${mid}</div></div>`;
+  }
+  // horizontal stacked bar with a legend underneath
+  function stackHtml(segs) {
+    const sum = segs.reduce((a, s) => a + s.v, 0) || 1;
+    return `<div class="stack">${segs.filter((s) => s.v > 0).map((s) => `<i style="flex:${s.v};background:${s.c}"></i>`).join('')}</div>`
+      + `<div class="legend">${segs.map((s) => `<span><i style="background:${s.c}"></i>${esc(s.label)} <b>${esc(spTxt(s.v))}</b></span>`).join('')}</div>`
+      + (sum ? '' : '');
+  }
+  const card = (title, body, right) => `<div class="card">${title ? `<div class="card-h"><b>${esc(title)}</b>${right || ''}</div>` : ''}${body}</div>`;
+
+  const ST_COL = (k) => (/^(behaald|verworven)/i.test(k) ? '#30b955' : /^getolereerd/i.test(k) ? '#ff9500' : /^opgenomen/i.test(k) ? 'var(--accent)' : 'var(--fill2)');
+  function creditsOf(s) {
+    const pick = (list, re) => (list || []).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + v, 0);
+    const list = s.now && s.now.length ? s.now : s.prog;
+    const earned = pick(list, /^(behaald|verworven|getolereerd)/i);
+    const taking = pick(list, /^opgenomen/i);
+    const failed = s.active ? pick(s.prog, /^niet (behaald|verworven)/i) : 0;
+    const total = s.total || 0;
+    return { list, earned, taking, failed, total, rest: total ? Math.max(0, total - earned - taking) : 0 };
+  }
+  function yearAvg(y) {
+    let a = 0, w = 0;
+    y.c.forEach((c) => { const n = scoreOf(c); if (n != null && c.sp) { a += n * c.sp; w += c.sp; } });
+    return w ? a / w : null;
+  }
+
+  // the course's place among everyone who took the exam (KU Loket's "situering": groups A to E)
+  function rankHtml(c) {
+    if (!c.rk || !c.rk.length) return '';
+    const all = c.rk.reduce((a, k) => a + k[3], 0);
+    let above = 0, mine = null;
+    for (const k of c.rk) { if (k[5]) { mine = k; break; } above += k[4]; }
+    const max = Math.max(...c.rk.map((k) => k[4]), 1);
+    const bars = c.rk.map((k) => `<div class="rk${k[5] ? ' me' : ''}"><span class="rk-c">${esc(k[0])}</span><span class="rk-bar"><i style="width:${Math.max(3, (k[4] / max) * 100).toFixed(1)}%"></i></span><span class="rk-v">${esc(nl(k[1]))}–${esc(nl(k[2]))}<small>${esc(nl(k[4]))}%</small></span></div>`).join('');
+    const line = mine ? `Je zit in groep <b>${esc(mine[0])}</b>${above + mine[4] <= 50 ? `: bij de beste ${esc(nl(above + mine[4], 0))}%` : ''} van ${all} studenten.` : `${all} studenten legden dit examen af.`;
+    return `<div class="rk-box"><p class="rk-line">${line}</p>${bars}</div>`;
+  }
+  function resultRow(c, key, open, current) {
+    const n = scoreOf(c);
+    const word = RESULT_WORD[String(c.r || '').toUpperCase()] || '';
+    const failed = /niet geslaagd/i.test(c.st);
+    const pill = current && !c.r ? '<span class="cap blue">Bezig</span>'
+      : n != null ? `<span class="score" style="--sc:${failed ? '#ff3b30' : scoreCol(n)}">${esc(nl(n))}<small>/20</small></span>`
+        : `<span class="cap${failed ? ' red' : ''}">${esc(c.r || c.st || '—')}</span>`;
+    const sub = [c.code, spTxt(c.sp), c.n > 1 ? `${c.n}e keer` : '', c.tol ? 'tolerantie' : ''].filter(Boolean).join(' · ');
+    const canOpen = !current || c.r;
+    const det = open ? `<div class="res-d">${[c.d ? `Bekendgemaakt op ${esc(dNice(c.d))}` : '', c.st ? esc(c.st) + (word && word !== c.st ? ` (${esc(word)})` : '') : ''].filter(Boolean).join(' · ')}${rankHtml(c)}</div>` : '';
+    return `<div class="res${open ? ' open' : ''}"${canOpen ? ` data-act="resopen" data-k="${esc(key)}" role="button"` : ''}><div class="row${failed ? ' failed' : ''}"><span class="main"><span class="t">${esc(c.t)}</span><span class="s">${esc(sub)}</span></span><span class="end">${pill}</span></div>${det}</div>`;
+  }
+
+  function studyHtml(S, sel, open, meta) {
+    if (!S || !S.length) return '';
+    const s = S[Math.min(sel, S.length - 1)];
+    const cr = creditsOf(s);
+    let h = '';
+    if (S.length > 1) h += segHtml(S.map((x, i) => ({ id: String(i), label: /^master/i.test(x.name) ? 'Master' : /^bachelor/i.test(x.name) ? 'Bachelor' : shortProg(x.name).split(' ')[0] })), String(sel), 'stsel');
+    // hero: credits ring + diploma percentage
+    const ringSegs = [{ v: cr.earned, c: '#4cd964' }, { v: cr.taking, c: '#7fc1ff' }];
+    const mid = cr.total ? `<b>${esc(nl(cr.earned, 0))}</b><small>van ${esc(nl(cr.total, 0))} sp</small>` : `<b>${esc(nl(cr.earned, 0))}</b><small>sp verworven</small>`;
+    h += `<div class="st-hero"><div class="st-top"><span class="hero-lbl"><i></i>${s.done ? 'Diploma behaald' : s.active ? 'Bezig' : 'Vorige opleiding'}</span>${s.done && s.doneYear ? `<span class="hero-cd">${esc(acy(s.doneYear))}</span>` : ''}</div>
+      <div class="st-name">${esc(shortProg(s.name))}</div>
+      <div class="st-row">${ringSvg(ringSegs, cr.total || cr.earned + cr.taking, { mid, track: 'rgba(255,255,255,.2)' })}
+        <div class="st-kpis">${s.pct != null ? `<div class="kpi"><b>${esc(nl(s.pct, 2))}<small>%</small></b><span>Diplomapercentage</span></div>` : ''}
+        ${cr.total ? `<div class="kpi"><b>${esc(nl(Math.round(((cr.earned) / cr.total) * 100), 0))}<small>%</small></b><span>van je opleiding verworven</span></div>` : ''}</div></div></div>`;
+    // credits
+    const LBL = { behaald: 'Verworven', opgenomen: s.active ? 'Dit jaar opgenomen' : 'Opgenomen' };
+    const segs = cr.list.filter(([k]) => !/^niet/i.test(k)).map(([k, v]) => ({ v, c: ST_COL(k), label: LBL[k.toLowerCase()] || k }));
+    if (cr.rest) segs.push({ v: cr.rest, c: 'var(--fill2)', label: 'Nog te doen' });
+    h += card('Studiepunten', stackHtml(segs) + (cr.failed ? `<p class="card-note">${esc(spTxt(cr.failed))} nog niet verworven uit vorige zittijden.</p>` : ''), cr.total ? `<span>${esc(spTxt(cr.total))}</span>` : '');
+    // averages per year
+    // every academic year you have results for, across all your studies (so the master continues where the bachelor ended)
+    const allYears = {};
+    S.forEach((x) => x.years.forEach((y) => { (allYears[y.y] = allYears[y.y] || []).push(...y.c); }));
+    const graded = Object.keys(allYears).sort().map((k) => ({ y: k, a: yearAvg({ c: allYears[k] }) })).filter((x) => x.a != null).slice(-6);
+    if (graded.length) {
+      let A = 0, W = 0;
+      s.years.forEach((y) => y.c.forEach((c) => { const n = scoreOf(c); if (n != null && c.sp) { A += n * c.sp; W += c.sp; } }));
+      const lo = 8, hi = 20;
+      const bars = graded.map((g) => `<div class="vb"><span class="vb-v">${esc(nl(g.a, 1))}</span><span class="vb-bar"><i style="height:${Math.max(6, ((g.a - lo) / (hi - lo)) * 100).toFixed(1)}%;background:${scoreCol(g.a)}"></i></span><span class="vb-l">${esc(acyS(g.y))}</span></div>`).join('');
+      h += card('Gemiddelde per academiejaar', `<div class="vbars">${bars}</div><p class="card-note">Gewogen naar studiepunten, op 20${S.length > 1 ? ', over al je opleidingen' : ''}. ${esc(shortProg(s.name))}: <b>${esc(nl(A / W, 2))}</b> gemiddeld.</p>`);
+      // spread of your own scores
+      const B = [['<10', 0, 10, '#ff3b30'], ['10–11', 10, 12, '#ff9500'], ['12–13', 12, 14, '#0a84ff'], ['14–15', 14, 16, '#0fa5a5'], ['16–17', 16, 18, '#30b955'], ['18–20', 18, 21, '#30b955']];
+      const cnt = B.map((b) => s.years.reduce((a, y) => a + y.c.filter((c) => { const n = scoreOf(c); return n != null && n >= b[1] && n < b[2]; }).length, 0));
+      const mx = Math.max(...cnt, 1);
+      h += card('Je scores', `<div class="vbars hist">${B.map((b, i) => `<div class="vb"><span class="vb-v">${cnt[i] || ''}</span><span class="vb-bar"><i style="height:${cnt[i] ? Math.max(8, (cnt[i] / mx) * 100).toFixed(1) : 0}%;background:${b[3]}"></i></span><span class="vb-l">${b[0]}</span></div>`).join('')}</div>`);
+    }
+    // results per year
+    s.years.forEach((y) => {
+      const cur = y.c.every((c) => !c.r);
+      const avg = yearAvg(y);
+      const sp = y.c.reduce((a, c) => a + c.sp, 0);
+      h += `<div class="gh">${esc(acy(y.y))}${cur ? ' · dit jaar' : ''}<span>${esc(spTxt(sp))}${avg != null ? ` · gem. ${esc(nl(avg, 1))}` : ''}</span></div>`;
+      const list = y.c.slice().sort((a, b) => (scoreOf(b) ?? -1) - (scoreOf(a) ?? -1) || a.t.localeCompare(b.t));
+      h += `<div class="group">${(cur ? y.c : list).map((c) => { const k = `${s.id}:${y.y}:${c.code}`; return resultRow(c, k, !!open[k], cur); }).join('')}</div>`;
+    });
+    h += `<p class="fresh">${meta || ''}<br><a href="https://www.kuleuven.be/kuloket/zr_1017?sap-language=NL">Open het studievoortgangsdossier in KU Loket</a></p>`;
+    return h;
+  }
+
+  const PER = { '001': 'jaarvak', '002': '1e semester', '003': '2e semester' };
+  const GCOL = ['#0a84ff', '#8e5bd8', '#ff9500', '#30b955', '#d6409f', '#0fa5a5'];
+  function ispHtml(I, S, meta) {
+    if (!I) return '';
+    const byId = {};
+    I.groups.forEach((g) => { byId[g.id] = g; });
+    const topOf = (id) => { let g = byId[id], guard = 0; while (g && g.l > 1 && byId[g.p] && guard++ < 10) g = byId[g.p]; return g; };
+    const tops = I.groups.filter((g) => g.l === 1);
+    const ok = I.courses.filter((c) => c.st === 'ok'), now = I.courses.filter((c) => c.st === 'now');
+    const sum = (l) => l.reduce((a, c) => a + c.sp, 0);
+    const st = (S || []).find((x) => shortProg(x.name) === shortProg(I.name)) || (S || []).find((x) => x.active);
+    const total = (st && st.total) || 0;
+    const earned = sum(ok), taking = sum(now), rest = total ? Math.max(0, total - earned - taking) : 0;
+    let h = `<div class="st-hero isp"><div class="st-top"><span class="hero-lbl"><i></i>ISP ${esc(acy(I.yr))}</span></div><div class="st-name">${esc(shortProg(I.name))}</div>${I.spec ? `<div class="st-spec">${esc(I.spec)}</div>` : ''}
+      <div class="st-row">${ringSvg([{ v: earned, c: '#4cd964' }, { v: taking, c: '#7fc1ff' }], total || earned + taking, { mid: `<b>${esc(nl(taking, 0))}</b><small>sp dit jaar</small>`, track: 'rgba(255,255,255,.2)' })}
+      <div class="st-kpis"><div class="kpi"><b>${esc(nl(earned, 0))}<small> sp</small></b><span>al verworven</span></div>${total ? `<div class="kpi"><b>${esc(nl(rest, 0))}<small> sp</small></b><span>nog te kiezen</span></div>` : `<div class="kpi"><b>${now.length}</b><span>vakken dit jaar</span></div>`}</div></div></div>`;
+    // this year by period
+    let [s1, s2, yy] = I.sem;
+    if (!s1 && !s2 && !yy) { s1 = sum(now.filter((c) => c.per === '002')); s2 = sum(now.filter((c) => c.per === '003')); yy = sum(now.filter((c) => c.per === '001')); }
+    h += card(`Dit jaar · ${acy(I.yr)}`, stackHtml([{ v: s1, c: '#0a84ff', label: '1e semester' }, { v: s2, c: '#8e5bd8', label: '2e semester' }, { v: yy, c: '#ff9500', label: 'Jaarvak' }]), `<span>${esc(spTxt(taking))}</span>`);
+    // per part of the programme
+    tops.forEach((g, gi) => {
+      const mine = I.courses.filter((c) => { const t = topOf(c.g); return t && t.id === g.id; });
+      const others = Object.entries(I.other).filter(([id]) => { const t = topOf(id); return t && t.id === g.id; }).reduce((a, [, n]) => a + n, 0);
+      if (!mine.length && !others) return;
+      const col = GCOL[gi % GCOL.length];
+      const o = sum(mine.filter((c) => c.st === 'ok')), n = sum(mine.filter((c) => c.st === 'now'));
+      h += `<div class="gh">${esc(g.t)}<span>${[o ? `${spTxt(o)} verworven` : '', n ? `${spTxt(n)} dit jaar` : ''].filter(Boolean).map(esc).join(' · ')}</span></div>`;
+      const rows = mine.slice().sort((a, b) => (a.st === 'now' ? 0 : 1) - (b.st === 'now' ? 0 : 1) || (a.per || '').localeCompare(b.per || '') || a.t.localeCompare(b.t)).map((c) => {
+        const sg = byId[c.g] && byId[c.g].l > 1 ? byId[c.g].t.replace(/^(Major|Minor|Electives)\s*[:-]\s*/i, '') : '';
+        const sub = [c.code, spTxt(c.sp), c.st === 'now' ? PER[c.per] || '' : c.yr ? acy(c.yr) : '', sg && sg.length < 40 ? sg : ''].filter(Boolean).join(' · ');
+        return row({ href: c.url || undefined, iconHtml: `<span class="ic soft" style="--c:${col}">${c.st === 'ok' ? ico('check') : ico('book')}</span>`, title: c.t, sub, chevron: false, cls: c.st === 'ok' ? 'done' : '',
+          end: c.st === 'now' ? '<span class="cap blue">Dit jaar</span>' : '<span class="cap green">Verworven</span>' });
+      }).join('');
+      h += `<div class="group">${rows}${others ? `<div class="row plain-note"><span class="main"><span class="s">Nog ${others} andere keuzemogelijkhe${others === 1 ? 'id' : 'den'} in deze groep</span></span></div>` : ''}</div>`;
+    });
+    h += `<p style="margin:22px 16px 0;text-align:center"><a class="btn ghost" href="https://www.kuleuven.be/kuloket/zr_0442?sap-language=NL">${ico('pencil')}ISP aanpassen in KU Loket</a></p>`;
+    h += `<p class="fresh">${meta || ''}</p>`;
+    return h;
+  }
   /* ================================================================== portal app (toledo.kuleuven.be/portal/) */
   function portalApp() {
     takeover('Toledo', [ULTRA, new URL(JOURNEY).origin, LOKET_ORIGIN]);
@@ -628,7 +860,36 @@
       links: cv('p:links') || [], mail: cv('p:mail'), agenda: store.get('p:agenda'),
       lu2pk: store.get('p:lu2pk') || {}, seen: store.get('p:seen') || Date.now() - 2 * 864e5,
       err: {}, ag: '', loadedAt: 0, authFail: false,
+      study: store.get('p:study'), stSel: 0, stOpen: {}, done: store.get('p:done') || {},
     };
+    // the course pages report which assignments you already handed in (?done=pk~contentId~…!pk~…)
+    {
+      const dn = params.get('done');
+      if (dn != null) {
+        String(dn).split('!').forEach((part) => {
+          const [pk, ...ids] = part.split('~');
+          if (/^_\d+_\d+$/.test(pk)) P.done[pk] = ids.filter((x) => /^_\d+_\d+$/.test(x));
+        });
+        store.set('p:done', P.done);
+      }
+    }
+    // your student number, handed over by the course pages (?rn=r0123456); Toledo itself only gives the login id
+    {
+      const rn = String(params.get('rn') || '').toLowerCase();
+      if (/^r\d{7}$/.test(rn)) store.set('p:rn', rn);
+    }
+    const isDone = (e) => {
+      const u = e.url || '';
+      const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
+      const cid = (/contentId=(_\d+_\d+)/.exec(u) || [])[1];
+      return !!(pk && cid && P.done[pk] && P.done[pk].includes(cid));
+    };
+    function saveStudy(v) {
+      if (!v || (!v.study && !v.isp)) return;
+      const old = (P.study && P.study.v) || {};
+      P.study = { ts: Date.now(), v: { study: v.study || old.study || null, isp: v.isp || old.isp || null } };
+      store.set('p:study', P.study);
+    }
 
     function saveAgenda(v) {
       const old = (P.agenda && P.agenda.v) || {};
@@ -639,7 +900,7 @@
     // agenda handed over by the KU Loket page (see syncPage)
     const syncM = /[#&]tmsync=([^&]*)/.exec(location.hash);
     if (syncM) {
-      try { const v = JSON.parse(decodeURIComponent(syncM[1])); if (v && (v.lessons || v.exams)) saveAgenda(v); } catch (_) {}
+      try { const v = JSON.parse(decodeURIComponent(syncM[1])); if (v && (v.lessons || v.exams)) saveAgenda(v); if (v) saveStudy(v); } catch (_) {}
     }
 
     const TABS = [
@@ -688,6 +949,8 @@
       const q = new URLSearchParams({ lu: lu || '', t: cleanTitle(e.title || ''), k: String(e.color || ''), f: from || P.tab || 'vakken', th: THEME });
       const nl = nextLesson(lu);
       if (nl) q.set('n', nextText(nl));
+      const dl = dlPks();
+      if (dl) q.set('dl', dl);
       const route = pk ? `#/c/${pk}${extra || ''}` : `#/vak/${encodeURIComponent(lu)}${extra || ''}`;
       const ultraOk = pk && Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
       if (/^ULTRA-/.test(lu || '') && !ultraOk) return `${JOURNEY}${encodeURIComponent(lu)}${route}?${q}`;
@@ -724,6 +987,8 @@
       }).sort((a, b) => a.start - b.start);
     }
     const deadlines = (now = Date.now()) => P.events.filter((e) => e.subType === 'due' && !e.dismissed && e.date > now - 3600e3).sort((a, b) => a.date - b.date);
+    // courses with a deadline coming up: the course pages check there whether you already handed it in
+    const dlPks = () => Array.from(new Set(deadlines().filter((e) => e.date - Date.now() < 21 * 864e5).map((e) => (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(e.url || '') || [])[1]).filter(Boolean))).slice(0, 10).join('.');
     const feed = () => P.events.filter((e) => e.subType !== 'due' && !e.dismissed).sort((a, b) => b.date - a.date);
     const newFor = (lu, now = Date.now()) => P.events.filter((e) => e.sourceId === lu && !e.read && !e.dismissed && e.subType !== 'due' && e.date > now - 7 * 864e5).length;
 
@@ -786,9 +1051,10 @@
     }
     function dueRow(e, now) {
       const hrs = (e.date - now) / 3600e3;
-      const tone = hrs < 48 ? 'red' : hrs < 120 ? 'orange' : '';
-      return row({ href: eventHref(e) || undefined, icon: 'pencil', style: colorVars(e.color), title: e.title || 'Deadline', clamp: true,
-        sub: cleanTitle(e.source), end: `<span class="cap ${tone}">${esc(dueLabel(e.date, now))}</span>`, attrs: ` data-ev="${esc(e.id)}"`, chevron: false });
+      const done = isDone(e);
+      const tone = done ? 'green' : hrs < 48 ? 'red' : hrs < 120 ? 'orange' : '';
+      return row({ href: eventHref(e) || undefined, icon: done ? 'check' : 'pencil', style: colorVars(e.color), title: e.title || 'Deadline', clamp: true, cls: done ? 'done' : '',
+        sub: cleanTitle(e.source) + (done ? ` · ${dueLabel(e.date, now)}` : ''), end: `<span class="cap ${tone}">${esc(done ? 'Ingeleverd' : dueLabel(e.date, now))}</span>`, attrs: ` data-ev="${esc(e.id)}"`, chevron: false });
     }
     function eventRow(e, now, timeOnly) {
       const src = e.subType === 'advalvas' ? 'Ad Valvas' : cleanTitle(e.source || '');
@@ -834,6 +1100,13 @@
     BUILD.vandaag = () => '<div class="lt"><h1>Vandaag</h1><p class="lt-sub" data-k="date"></p></div><div data-k="body"></div>';
     NAVS.vandaag = () => ({ title: 'Vandaag' });
     const updateBanner = () => (P.newVer ? `<div class="banner">${ico('refresh')}<span class="main">Nieuwe versie ${esc(P.newVer)} van Toledo Mobile. Tik op Updaten en daarna op Userscripts in de adresbalk.</span><button type="button" data-act="update">Updaten</button></div>` : '');
+    // KU Loket published new exam results (in the last two weeks) that you haven't looked at in the app yet
+    function resultsBanner(now) {
+      const S = P.study && P.study.v && P.study.v.study;
+      const s = S && S.find((x) => x.active);
+      if (!s || !s.last || store.get('p:resSeen') === s.last || now - fromYmd(s.last) > 14 * 864e5) return '';
+      return `<a class="banner" href="#studie">${ico('sparkle')}<span class="main"><b>Nieuwe examenresultaten</b><br>Bekendgemaakt op ${esc(dLong(fromYmd(s.last)))}.</span><span class="act" style="color:var(--accent);font-weight:600">Bekijk</span></a>`;
+    }
     function heroHtml(now) {
       const L = lessons();
       const live = L.find((l) => l.start <= now && l.end > now);
@@ -884,7 +1157,7 @@
       const d = new Date(now);
       const greet = d.getHours() < 6 ? 'Goedenacht' : d.getHours() < 12 ? 'Goedemorgen' : d.getHours() < 18 ? 'Goedemiddag' : 'Goedenavond';
       put($('[data-k="date"]', el), esc(`${greet}${P.user && P.user.givenName ? ', ' + P.user.givenName : ''} · ${dLong(now)}`));
-      let h = updateBanner() + authBanner() + agendaBanner() + heroHtml(now);
+      let h = updateBanner() + authBanner() + agendaBanner() + resultsBanner(now) + heroHtml(now);
       // rest of today
       const L = lessons();
       const hero = L.find((l) => l.start <= now && l.end > now) || L.find((l) => l.start > now);
@@ -899,7 +1172,7 @@
         }).join('')}</div>`;
       } else if (!P.enr.length && !P.loadedAt) h += `<div class="sh"><h2>Mijn vakken</h2></div><div class="tiles">${'<div class="tile sk" style="background:var(--fill)"></div>'.repeat(3)}</div>`;
       // deadlines
-      const dl = deadlines(now).filter((e) => e.date - now < 14 * 864e5);
+      const dl = deadlines(now).filter((e) => e.date - now < 14 * 864e5 && !isDone(e));
       if (dl.length) h += `<div class="sh"><h2>Deadlines</h2></div><div class="group">${dl.slice(0, 4).map((e) => dueRow(e, now)).join('')}</div>`;
       // updates
       const f = feed().slice(0, 4);
@@ -1049,16 +1322,47 @@
       const name = [u.givenName, u.familyName].filter(Boolean).join(' ');
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
       const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
-      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${u.userId ? ' · ' + esc(u.userId) : ''}</span></span></div></div>`;
-      h += `<div class="group">${link(MAIL, 'mail', '#0a84ff', 'Mail', 'Outlook', unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '')}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${link(L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', 'chart', '#5856d6', 'Cijfers', 'Alle vakken in Blackboard')}${link(L['KULOKET-PROGRESS'] || 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL', 'trend', '#34aadc', 'Studievoortgang', 'KU Loket')}${link(L['KULOKET-ISP'] || 'https://kuleuven.be/kuloket/zr_0442?sap-language=NL', 'idcard', '#00a79d', 'ISP', 'Individueel studieprogramma')}${link(L['KULOKET-STUDENT'] || 'https://www.kuleuven.be/kuloket', 'idcard', '#1d4f86', 'KU Loket', 'Studentendossier')}</div>`;
+      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
+      const mailApp = store.get('mailApp') !== 'web';
+      h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
+      const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
+      const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
+      const I0 = P.study && P.study.v && P.study.v.isp;
+      const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
+      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${link(L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', 'chart', '#5856d6', 'Cijfers', 'Alle vakken in Blackboard')}${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ act: 'loket', iconHtml: `<span class="ic" style="--c:#1d4f86">${ico('grid')}</span>`, title: 'KU Loket', sub: 'Studietracker, uurrooster en meer' })}</div>`;
       h += `<div class="gh">Tools</div><div class="group">${link(L['KALTURA-MYMEDIA'] || ULTRA + '/ultra/tools', 'video', '#8e5bd8', 'My Media', 'Kaltura-video\'s')}${link(L.KURT || 'https://bib.kuleuven.be/faciliteiten/reserveren', 'seat', '#ff2d55', 'KURT', 'Studieplek reserveren')}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#a2845e', 'LIMO', 'Bibliotheek zoeken')}${link(L['KUL-ONEDRIVE'] || 'https://onedrive.kuleuven.be', 'cloud', '#0078d4', 'OneDrive')}${link(L['KUL-MS-OFFICE-365'] || 'https://office.com', 'grid', '#d83b01', 'Microsoft 365')}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
+      h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
       if (P.newVer) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar ' + P.newVer, sub: 'Daarna op Userscripts in de adresbalk tikken' })}</div>`;
       h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie en stuurt niets door.</p>`;
       put($('[data-k="body"]', el), h);
     };
+
+    // ---- Studievoortgang + ISP (from KU Loket, opened from Meer)
+    const stMeta = () => {
+      if (P.st === 'loading') return 'Bijwerken…';
+      const t = P.study && P.study.ts;
+      if (!t) return '';
+      return `Bijgewerkt ${dayDiff(t, Date.now()) === 0 ? 'vandaag ' + hhmm(t) : dShort(t) + ' ' + hhmm(t)} · <button type="button" data-act="strefresh">Bijwerken</button>`;
+    };
+    function stEmpty(what) {
+      if (P.st === 'loading' || (!P.study && !P.st)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
+      return empty(what === 'isp' ? 'idcard' : 'trend', what === 'isp' ? 'ISP nog niet geladen' : 'Studievoortgang nog niet geladen', 'Deze gegevens komen uit KU Loket.' + (P.stLogin ? ' KU Loket wil dat je even opnieuw aanmeldt.' : ''), '<p style="margin-top:14px"><button type="button" class="btn" data-act="stsync">Laden uit KU Loket</button></p>');
+    }
+    BUILD.studie = () => '<div class="lt"><h1>Studievoortgang</h1></div><div data-k="body"></div>';
+    NAVS.studie = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Studievoortgang', right: `<button type="button" class="nb" data-act="strefresh" aria-label="Vernieuwen">${P.st === 'loading' ? '<span class="spin" style="width:20px;height:20px;border-width:2px"></span>' : ico('refresh')}</button>` });
+    FILL.studie = (el) => {
+      const S = P.study && P.study.v && P.study.v.study;
+      put($('[data-k="body"]', el), S && S.length ? studyHtml(S, P.stSel, P.stOpen, stMeta()) : stEmpty('studie'));
+    };
+    BUILD.isp = () => '<div class="lt"><h1>Mijn ISP</h1></div><div data-k="body"></div>';
+    NAVS.isp = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Mijn ISP', right: NAVS.studie().right });
+    FILL.isp = (el) => {
+      const v = P.study && P.study.v;
+      put($('[data-k="body"]', el), v && v.isp ? ispHtml(v.isp, v.study, stMeta()) : stEmpty('isp'));
+    };
+    const SUBVIEW = { studie: 'meer', isp: 'meer' };
 
     /* ---------------- view switching ---------------- */
     function view(id) {
@@ -1096,8 +1400,10 @@
       const v = view(id);
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
-      setTabOn(id);
+      setTabOn(SUBVIEW[id] || id);
       render(id);
+      if (SUBVIEW[id]) refreshAgenda(false, true);
+      if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
       W.scrollTo(0, v.y || 0);
@@ -1110,10 +1416,10 @@
       // links from the course pages say where to go in ?tm= (the site's own app can rewrite #..., not ?...)
       const q = ignoreQuery ? '' : new URLSearchParams(location.search).get('tm') || '';
       let h = location.hash.replace(/^#\/?/, '').split('&')[0];
-      const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer' };
+      const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer', studie: 'studie', isp: 'isp' };
       if (qmap[q] && h.split('/')[0] !== qmap[q].split('/')[0]) h = qmap[q];
       const [a, b] = h.split('/');
-      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer' };
+      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp' };
       return { tab: map[a] || 'vandaag', sub: b || '' };
     }
     function badges() {
@@ -1169,7 +1475,34 @@
         sheet({ title: 'Alles als gelezen markeren?', msg: `${todo.length} update${todo.length === 1 ? '' : 's'} worden ook in Toledo als gelezen gemarkeerd.`, actions: [{ label: 'Markeer als gelezen', run: () => { markRead(todo); dirty('updates', 'vandaag', 'vakken'); setNav(NAVS.updates()); toast('Alles gelezen'); } }] });
       },
       agrefresh: () => refreshAgenda(true),
-      agsync: () => { goTo(LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster')); },
+      agsync: () => { goTo(LOKET + '?tm=sync&back=' + encodeURIComponent(P.tab === 'rooster' && P.seg === 'examens' ? 'rooster/examens' : P.tab || 'rooster') + (SUBVIEW[P.tab] || studyStale() ? '&x=study' : '')); },
+      stsync: () => ACTS.agsync(),
+      strefresh: () => refreshAgenda(true, true),
+      stsel: (b) => { P.stSel = Number(b.dataset.id) || 0; FILL.studie(V.studie.el); },
+      resopen: (b) => { const k = b.dataset.k; P.stOpen[k] = !P.stOpen[k]; FILL.studie(V.studie.el); },
+      // Outlook-app first (iOS lets a tap open another app); no app after a moment: Outlook on the web
+      mail: () => {
+        if (store.get('mailApp') === 'web') { goTo(MAIL); return; }
+        let away = false;
+        const seen = () => { if (document.visibilityState === 'hidden') away = true; };
+        document.addEventListener('visibilitychange', seen);
+        W.addEventListener('pagehide', () => { away = true; }, { once: true });
+        location.href = 'ms-outlook://emails';
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', seen);
+          if (away) return;
+          toast('Outlook-app niet gevonden, Outlook op het web openen…');
+          setTimeout(() => goTo(MAIL), 900);
+        }, 2600);
+      },
+      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
+      loket: () => sheet({ title: 'KU Loket', actions: [
+        { label: 'Studietracker', href: 'https://kuleuven.be/kuloket/zr_0184?sap-language=NL' },
+        { label: 'Uurrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL' },
+        { label: 'Examenrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0363' },
+        { label: 'ISP aanpassen', href: 'https://www.kuleuven.be/kuloket/zr_0442?sap-language=NL' },
+        { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
+      ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
       theme: (b) => {
         const t = b.dataset.id;
@@ -1202,7 +1535,7 @@
         if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
-    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer)$/;
+    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp)$/;
     W.addEventListener('hashchange', () => {
       if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : '')); return; }
       const r = routeFromUrl(true);
@@ -1239,7 +1572,7 @@
         swr('p:mail', () => papi('emails/unread'), (v) => { P.mail = v; dirty('meer'); }).catch(() => {}),
       ];
       jobs[0].catch(onFail('user'));
-      Promise.allSettled(jobs).then(() => { mark(); dirty('vandaag', 'vakken', 'updates', 'rooster', 'meer'); });
+      return Promise.allSettled(jobs).then(() => { mark(); dirty('vandaag', 'vakken', 'updates', 'rooster', 'meer'); });
     }
 
     /* KU Loket lives on another origin of the same site: a hidden frame reads the timetable there
@@ -1247,28 +1580,39 @@
     // force = you pressed "vernieuwen": if the hidden frame can't do it quickly (or KU Loket first wants you to
     // sign in), the app opens KU Loket itself for a moment and comes straight back with the timetable.
     let bridgeBusy = false;
-    function refreshAgenda(force) {
+    const studyStale = () => !P.study || Date.now() - P.study.ts > 6 * 3600e3;
+    // force: you asked for it (button), so when the hidden frame can't, KU Loket opens for a moment.
+    // study: also read study progress + ISP (opening those pages, or when that copy is older than 6 hours).
+    // quiet: pulled to refresh: try the hidden frame, never leave the page.
+    function refreshAgenda(force, study, quiet) {
       const a = P.agenda;
-      if (!force && a && Date.now() - a.ts < 30 * 60e3) return;
-      if (bridgeBusy) { if (force) ACTS.agsync(); return; }
-      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return; }
+      const wantStudy = !!study && (force || studyStale());
+      if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
+      if (bridgeBusy) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return Promise.resolve(); }
       const fail = store.get('p:bridgefail') || { n: 0, ts: 0 };
-      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force) ACTS.agsync(); return; }
+      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      const withSt = wantStudy || studyStale();
       bridgeBusy = true;
       P.ag = 'loading';
-      dirty('vandaag', 'rooster');
+      if (withSt) P.st = 'loading';
+      dirty('vandaag', 'rooster', 'studie', 'isp');
+      if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
       if (P.tab === 'rooster') setNav(NAVS.rooster());
       const f = document.createElement('iframe');
-      f.src = LOKET + '?tm=bridge';
+      f.src = LOKET + '?tm=bridge' + (withSt ? '&x=study' : '');
       f.title = 'KU Loket';
       f.setAttribute('aria-hidden', 'true');
       f.setAttribute('data-tm4', '');
       f.tabIndex = -1;
       f.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
-      let timer = 0, done = false;
+      let timer = 0, done = false, settle = () => {};
+      const settled = new Promise((r) => { settle = r; });
       const finish = (ok, login) => {
         if (done) return;
         done = true;
+        settle();
+        if (withSt) { P.st = ok ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
         clearTimeout(timer);
         W.removeEventListener('message', onMsg);
         setTimeout(() => f.remove(), 50);
@@ -1277,17 +1621,17 @@
         P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
         else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
-        dirty('vandaag', 'rooster');
-        if (P.tab === 'rooster') setNav(NAVS.rooster());
-        if (!ok && force) ACTS.agsync();
-        else if (ok && force) toast('Rooster bijgewerkt');
+        dirty('vandaag', 'rooster', 'studie', 'isp', 'meer');
+        if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
+        if (!ok && force && !quiet) ACTS.agsync();
+        else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');
       };
       const onMsg = (e) => {
         if (e.origin !== LOKET_ORIGIN || !e.data || e.data.tm4 !== 'agenda') return;
-        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); finish(true); return; }
+        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); saveStudy(e.data.data); finish(true); return; }
         if (e.data.pending) {
           // KU Loket wants you to sign in first: that needs the real page
-          if (force) { finish(false, true); return; }
+          if (force && !quiet) { finish(false, true); return; }
           // show the "Laden" button right away; the frame may still get through by itself, so give it a little longer
           if (P.ag === 'loading') {
             P.ag = 'failed';
@@ -1302,8 +1646,9 @@
         finish(false);
       };
       W.addEventListener('message', onMsg);
-      timer = setTimeout(() => finish(false), force ? 7000 : 10000);
+      timer = setTimeout(() => finish(false), (force && !quiet ? 7000 : 10000) + (withSt ? 8000 : 0));
       document.body.appendChild(f);
+      return settled;
     }
 
     /* ---------------- start ---------------- */
@@ -1317,6 +1662,10 @@
     setTimeout(() => checkUpdate((v) => { P.newVer = v; dirty('vandaag', 'meer'); }), 1500);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
+    pullRefresh(() => {
+      if (SUBVIEW[P.tab]) return refreshAgenda(true, true, true);
+      return Promise.all([loadAll(true), refreshAgenda(true, false, true)]);
+    });
     keepAlive('portal', [[PORTAL_ORIGIN + '/portal/api/user'], [LOKET_ORIGIN + '/sap/bc/ui2/start_up', 'no-cors']]);
     const wake = () => {
       if (document.visibilityState !== 'visible') return;
@@ -1492,9 +1841,15 @@
       }));
     }
     function getMe() {
-      const c = store.get('me');
+      const c = store.get('me2');
       if (c && Date.now() - c.ts < 7 * 864e5) return Promise.resolve(c.v);
-      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName').then((v) => { store.set('me', { ts: Date.now(), v }); return v; }));
+      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName,studentId').then((v) => { store.set('me2', { ts: Date.now(), v }); return v; }));
+    }
+    // your student number (r0123456): the portal only knows your login id, so it is handed over on the way back
+    function rnParam() {
+      const c = store.get('me2');
+      const d = c && c.v && /^\d{7,8}$/.test(c.v.studentId || '') ? String(c.v.studentId).slice(-7) : '';
+      return d && store.get('rnSent') !== d ? '&rn=r' + d : '';
     }
     const num = (n) => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
     function gradeText(x, c) {
@@ -1776,6 +2131,11 @@
           loadAnn();
           if (st.tab === 'cijfers') loadGrades(); else setTimeout(() => { if (!st.grades) loadGrades(); }, 2500);
         },
+        refresh() {
+          st.at = Date.now(); st.gAt = 0;
+          ['ROOT'].concat((st.root || []).filter((it) => it.k === 'folder').map((it) => it.id)).forEach((id) => kidsMem.delete(`c:${pk}:${id}`));
+          return Promise.allSettled([loadRoot(), loadAnn(), st.tab === 'cijfers' ? fetchGrades(pk).then((v) => { st.grades = v; drawGrades(); }) : null]);
+        },
         act(n, b) {
           if (n === 'seg') { setTab(b.dataset.id); return true; }
           if (n === 'clr') { inp.value = ''; st.q = ''; clr.hidden = true; drawSearch(); inp.focus(); return true; }
@@ -1851,6 +2211,7 @@
         el,
         title: () => st.title || 'Map',
         show() { if (Date.now() - st.at > 120e3) { st.at = Date.now(); load(); } },
+        refresh() { st.at = Date.now(); return fetchChildren(pk, id).then((v) => { st.items = v; draw(); }, () => {}); },
       };
       if (!st.title) fetchItem(pk, id).then((it) => { st.title = it.t; st.desc = it.d || ''; draw(); if (U.cur === view) setNav(navFor(view)); }).catch(() => {});
       draw();
@@ -1953,6 +2314,7 @@
         return;
       }
       if ([...r.q.keys()].length) saveCtx(r.pk, r.q);
+      if (r.q.get('dl') != null) store.set('dlpks', { ts: Date.now(), v: String(r.q.get('dl')).split('.').filter((x) => /^_\d+_\d+$/.test(x)).slice(0, 10) });
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
@@ -1982,12 +2344,39 @@
       history.pushState({ tm: 1, d: U.depth, back }, '', hash);
       render('push');
     }
+    /* Which upcoming deadlines did you already hand in? The portal can't ask Blackboard itself (another site), so the
+       course page checks the courses the portal named (?dl=) and tells it on the way back (?done=). */
+    const doneMap = () => (store.get('done') || {}).v || {};
+    function scanDone() {
+      const dl = store.get('dlpks');
+      const pks = Array.from(new Set(((dl && Date.now() - dl.ts < 7 * 864e5 && dl.v) || []).concat(PATH_PK ? [PATH_PK] : [])));
+      const st = store.get('done') || { ts: 0, v: {} };
+      if (!pks.length || Date.now() - st.ts < 10 * 60e3) return;
+      st.ts = Date.now();
+      store.set('done', st);
+      pks.reduce((chain, pk) => chain.then(() => fetchGrades(pk).then((g) => {
+        const cur = store.get('done') || { ts: Date.now(), v: {} };
+        cur.v[pk] = g.filter((x) => x.cid && (x.g || x.st === 'NeedsGrading' || x.st === 'Graded')).map((x) => x.cid);
+        store.set('done', cur);
+      }, () => {})), Promise.resolve());
+    }
+    const doneParam = () => {
+      const m = doneMap();
+      const s2 = Object.keys(m).slice(0, 12).map((pk) => [pk].concat(m[pk].slice(0, 40)).join('~')).join('!');
+      return s2 ? '&done=' + encodeURIComponent(s2) : '';
+    };
     function leave(tab) {
       const f = getCtx(parse().pk).f || 'vakken';
       saveScroll();
       setTabOn(tab);
-      if (fromPortal && f === tab && history.length > U.depth + 1) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : ''), { dir: 'back' });
+      // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
+      const done = doneParam();
+      const rn = rnParam();
+      const known = !rn && (!done || store.get('doneSent') === done);
+      if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
+      if (done) store.set('doneSent', done);
+      if (rn) store.set('rnSent', rn.slice(-7));
+      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -2070,6 +2459,8 @@
 
     if (!history.state || !history.state.tm) history.replaceState({ tm: 1, d: 0 }, '', location.hash);
     render('none');
+    setTimeout(() => { scanDone(); getMe().catch(() => {}); }, 2500);
+    pullRefresh(() => (U.cur && U.cur.refresh ? U.cur.refresh() : null));
     keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };
     document.addEventListener('visibilitychange', wake);
@@ -2116,6 +2507,76 @@
     return { lessons, exams, range: [ymd(from), ymd(to)] }; // null = could not be read this time (keep the old copy)
   }
 
+  /* ================================================================== KU Loket: study progress + ISP (read only) */
+  const sapGet = (svc, path) => api(`${LOKET_ORIGIN}/sap/opu/odata/sap/${svc}/${path}${path.includes('?') ? '&' : '?'}$format=json&sap-client=200`);
+  const odRes = (v) => { const d = v && v.d; return Array.isArray(d) ? d : d && Array.isArray(d.results) ? d.results : d ? [d] : []; };
+  const arrOf = (v) => (Array.isArray(v) ? v : v && Array.isArray(v.results) ? v.results : []);
+  const numOf = (v) => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  const sapDate = (v) => { const m = /^(\d{2})[.-](\d{2})[.-](\d{4})$/.exec(String(v || '').trim()) || /^(\d{4})(\d{2})(\d{2})$/.exec(String(v || '').trim()); if (!m) return ''; return m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2]}-${m[1]}`; };
+  // "Studievoortgangsdossier" (zr_1017) and "Mijn resultaten" (zr_1018): every study, its credits and every result
+  async function studyData() {
+    const HOME = 'ZC_ES_SVD_HOME_SRV', AW = 'ZC_ES_SVD_AW_SRV';
+    const list = odRes(await sapGet(HOME, 'StudySet?$top=50')).filter((s) => s.studyId);
+    list.sort((a, b) => (b.isActive === true) - (a.isActive === true) || String(b.acjaarLaatsteInschrijving).localeCompare(String(a.acjaarLaatsteInschrijving)));
+    const out = await Promise.all(list.slice(0, 4).map(async (s) => {
+      const id = s.studyId, acj = s.acjaarDiplomaObtained || '0000';
+      const hk = `StudySet(studyId='${id}',acjaarDiplomaObtained='${acj}')`;
+      const ak = `StudySet(studyId='${id}',acYearZittijd='9999',peridZittijd='999',studyIdZittijd='${id}',acjaarDiplomaObtained='${acj}',multipleStudyRecords=false)`;
+      const [kn, prog, akn, aprog, years] = await Promise.allSettled([
+        sapGet(HOME, hk + '/toKeyNumbers'), sapGet(HOME, hk + '/toStudyProgress'), sapGet(AW, ak + '/toKeyNumber'), sapGet(AW, ak + '/toStudyProgress'),
+        sapGet(AW, ak + '/toAcyearTotal?$expand=toResultTotal/toRanking'),
+      ]);
+      const ok = (x) => (x.status === 'fulfilled' ? odRes(x.value) : []);
+      const pct = ok(kn).find((k) => /diploma/i.test(k.keyName || ''));
+      const total = numOf(String((ok(akn)[0] || {}).posStudyPoints || '').replace(/[^\d.,]/g, ''));
+      return {
+        id, name: String(s.oplName || '').trim(), inst: String(s.instName || '').trim(), active: !!s.isActive,
+        done: s.diplomaObtained === 'DiplomaBehaald', doneYear: acj !== '0000' ? acj : '', pct: pct ? numOf(pct.keyValue) : null, total,
+        last: sapDate(s.datumLaatsteVrijgave),
+        prog: ok(prog).map((p) => [String(p.status || '').trim(), numOf(p.credits) || 0]),
+        now: ok(aprog).map((p) => [String(p.status || '').trim(), numOf(p.credits) || 0]),
+        years: ok(years).map((y) => ({
+          y: String(y.academicYear || ''),
+          c: arrOf(y.toResultTotal).map((r) => {
+            const rk = arrOf(r.toRanking).map((k) => [String(k.code || ''), numOf(k.lowGrade), numOf(k.highGrade), numOf(k.numberOfStudents) || 0, numOf(k.percentage) || 0, k.myRanking === 'X' ? 1 : 0]);
+            return { code: String(r.moduleCode || '').trim(), t: String(r.moduleDescription || '').trim(), sp: numOf(r.studyPoints) || 0, r: String(r.resultTotal || '').trim(),
+              sc: String(r.resultTotalScale || '').trim(), st: String(r.awStatus || '').trim(), d: sapDate(r.releaseDate), n: Number(r.numberOfBookings) || 1, sit: String(r.situeringsCode || '').trim(),
+              tol: !!r.tolerance, rk: rk.length ? rk : undefined };
+          }),
+        })).filter((y) => y.c.length).sort((a, b) => b.y.localeCompare(a.y)),
+      };
+    }));
+    return out;
+  }
+  // "Jouw individueel studieprogramma" (zr_0442): what you obtained and what you take this year, per part of the programme
+  async function ispData() {
+    const ISP = 'ZC_ISP_ST_OPO_SRV';
+    const reg = odRes(await sapGet(ISP, "RegistrationSet?$filter=page%20eq%20%27boekOpo%27")).sort((a, b) => (a.ispPrio || 9) - (b.ispPrio || 9))[0];
+    if (!reg) return null;
+    const pid = reg.programmeId, yr = reg.academicYear;
+    const [tree, spt] = await Promise.allSettled([
+      sapGet(ISP, `IndividualStudyProgrammeSet?$filter=${encodeURIComponent(`programmeId eq '${pid}' and academicYear eq '${yr}'`)}`),
+      sapGet(ISP, `RegistrationSet(page='boekOpo',programmeId='${pid}',academicYear='${yr}')/toStudyPointTotal`),
+    ]);
+    const nodes = tree.status === 'fulfilled' ? odRes(tree.value) : [];
+    const groups = nodes.filter((n) => n.otype === 'CG').map((n) => ({ id: String(n.nodeId), p: String(n.parentNodeId || ''), t: String(n.title || '').trim(), l: Number(n.hierarchyLevel) || 0 }));
+    const other = {};
+    const courses = [];
+    nodes.filter((n) => n.otype === 'SM').forEach((n) => {
+      const b = String(n.bookingStatus || '');
+      const g = String(n.parentNodeId || '');
+      if (b === 'credit' || /^booked/.test(b)) {
+        if (courses.some((c) => c.code === n.ectsCode && c.st === (b === 'credit' ? 'ok' : 'now'))) return;
+        courses.push({ g, code: String(n.ectsCode || '').trim(), t: String(n.title || '').trim(), sp: numOf(n.credits) || 0, per: String(n.offerPeriod || ''),
+          ph: [Number(n.startPhase) || 0, Number(n.endPhase) || 0], url: n.ectsURL ? 'https://' + String(n.ectsURL).replace(/^https?:\/\//, '') : '', st: b === 'credit' ? 'ok' : 'now', yr: String(n.academicYear || ''), must: n.opoObligated === 'X' });
+      } else if (/bookable/.test(b)) other[g] = (other[g] || 0) + 1;
+    });
+    const t = (spt.status === 'fulfilled' ? odRes(spt.value)[0] : null) || {};
+    const sp = nodes.find((n) => n.otype === 'SP');
+    return { name: String(reg.programmeDescription || '').trim(), yr, spec: sp ? String(sp.description || '').trim() : '', deadline: sapDate(reg.deadlineDate),
+      sem: [numOf(t.firstPeriod) || 0, numOf(t.secondPeriod) || 0, numOf(t.wholeYear) || 0], groups, courses, other };
+  }
+
   /* what went wrong, in a few words: shown small under an error, so a screenshot says what happened */
   function why(e) {
     if (!e) return 'onbekend';
@@ -2134,6 +2595,16 @@
     else document.addEventListener('DOMContentLoaded', () => setTimeout(fn, 250), { once: true });
   };
 
+  // the timetable first; study progress and ISP along with it when the app asks (?x=study). Those never make it fail.
+  function withStudy(p) {
+    if (params.get('x') !== 'study' && !/(^|&)x=study\b/.test(ss.get('tm4-sync-x') || '')) return p;
+    return p.then((data) => Promise.allSettled([studyData(), ispData()]).then(([a, b]) => {
+      if (a.status === 'fulfilled') data.study = a.value;
+      if (b.status === 'fulfilled') data.isp = b.value;
+      return data;
+    }));
+  }
+
   /* runs inside the hidden KU Loket frame that the app opens. Read first, stop the page only when that worked. */
   function bridge() {
     let sent = false;
@@ -2147,7 +2618,7 @@
     let tries = 0;
     const attempt = () => {
       tries++;
-      loketData().then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); }, (e) => {
+      withStudy(loketData()).then((data) => { try { W.stop(); } catch (_) {} post({ ok: true, data }); }, (e) => {
         if (e && e.auth) { post({ ok: false, pending: 'login', why: why(e) }); return; }
         whenParsed(() => {
           if (sent) return;
@@ -2169,6 +2640,7 @@
   }
   function syncPage() {
     const back = syncBack();
+    if (params.get('x') === 'study') ss.set('tm4-sync-x', 'x=study');
     let prev = {};
     try { prev = JSON.parse(ss.get('tm4-sync') || '{}'); } catch (_) {}
     const reloads = prev.ts && Date.now() - prev.ts < 10 * 60e3 ? prev.reloads || 0 : 0;
@@ -2176,7 +2648,7 @@
     // cover whatever KU Loket shows meanwhile, without touching it (its sign-in step has to keep running)
     const dark = isDark();
     const cover = document.createElement('style');
-    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"Rooster bijwerken\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
+    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"${/^(studie|isp)/.test(back) ? 'KU Loket openen' : 'Rooster bijwerken'}\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
     (document.head || document.documentElement).appendChild(cover);
     let gone = false;
     W.addEventListener('pagehide', () => { gone = true; });
@@ -2186,6 +2658,7 @@
     const again = () => location.replace(`${LOKET}?tm=sync&back=${encodeURIComponent(back)}`);
     const fail = (title, text, detail) => {
       ss.del('tm4-sync');
+      ss.del('tm4-sync-x');
       takeover('Rooster bijwerken', [PORTAL_ORIGIN]);
       document.body.classList.add('no-tabs');
       document.body.innerHTML = `<div class="sync" data-tm4>${ico('warn')}<b style="color:var(--text);font-size:19px">${esc(title)}</b><span>${esc(text)}</span><button type="button" class="btn" id="tm4-retry">Opnieuw proberen</button><a class="btn ghost" href="${PORTAL}?tm=${back.split('/')[0]}">Terug naar Toledo</a>${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
@@ -2194,8 +2667,9 @@
     let tries = 0;
     const attempt = () => {
       tries++;
-      loketData().then((data) => {
+      withStudy(loketData()).then((data) => {
         ss.del('tm4-sync');
+        ss.del('tm4-sync-x');
         try { W.stop(); } catch (_) {}
         location.replace(`${PORTAL}?tm=${back.split('/')[0]}#${back}&tmsync=${encodeURIComponent(JSON.stringify(data))}`);
       }, (e) => {
@@ -2435,8 +2909,21 @@
   }
 
   /* KU Leuven sign-in page (idp.kuleuven.be): a new look, and the Authenticator app opened straight from your tap */
+  /* "Stale Request": the KU Leuven login page you came back to (back button, or a tab reopened later) was already used.
+     Nothing to do there: start again from where you were going, which signs you in afresh (usually without a password). */
+  function staleLogin() {
+    const check = () => {
+      const b = document.body;
+      if (!b || !/stale request|verouderd verzoek|verlopen aanvraag/i.test(b.innerText || '')) return;
+      const ref = hostOf(document.referrer);
+      const to = /^webwsp\./.test(ref) ? LOKET : /kuleuven\.cloud$/.test(ref) ? ULTRA + '/ultra/course' : PORTAL + '?tm=vandaag';
+      cover('Opnieuw verbinden\u2026');
+      setTimeout(() => location.replace(to), 150);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check, { once: true }); else check();
+  }
   function loginSkin(again) {
-    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); }
+    if (!again) { forgetDevice(); fastAuthenticator(); emptyAfterApp(); nudgeSamlPost(); staleLogin(); }
     const r = document.documentElement;
     r.classList.add('tm4-login');
     const st = document.createElement('style');
@@ -2491,7 +2978,15 @@
   };
   if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
   if (mode === 'bridge') { bridge(); return; }
-  if (mode === 'cover') { whenRoot(() => cover('Openen\u2026')); return; }
+  if (mode === 'cover') {
+    // came back here with the back button: this page would only send you forward again, so step over it
+    const back = () => { try { return (performance.getEntriesByType('navigation')[0] || {}).type === 'back_forward'; } catch (_) { return false; } };
+    if (back() && history.length > 1) { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); history.back(); return; }
+    W.addEventListener('pageshow', (e) => { if (e.persisted && history.length > 1) history.back(); });
+    whenRoot(() => cover('Openen\u2026'));
+    return;
+  }
+  if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }

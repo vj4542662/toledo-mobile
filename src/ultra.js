@@ -163,9 +163,15 @@
       }));
     }
     function getMe() {
-      const c = store.get('me');
+      const c = store.get('me2');
       if (c && Date.now() - c.ts < 7 * 864e5) return Promise.resolve(c.v);
-      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName').then((v) => { store.set('me', { ts: Date.now(), v }); return v; }));
+      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName,studentId').then((v) => { store.set('me2', { ts: Date.now(), v }); return v; }));
+    }
+    // your student number (r0123456): the portal only knows your login id, so it is handed over on the way back
+    function rnParam() {
+      const c = store.get('me2');
+      const d = c && c.v && /^\d{7,8}$/.test(c.v.studentId || '') ? String(c.v.studentId).slice(-7) : '';
+      return d && store.get('rnSent') !== d ? '&rn=r' + d : '';
     }
     const num = (n) => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
     function gradeText(x, c) {
@@ -447,6 +453,11 @@
           loadAnn();
           if (st.tab === 'cijfers') loadGrades(); else setTimeout(() => { if (!st.grades) loadGrades(); }, 2500);
         },
+        refresh() {
+          st.at = Date.now(); st.gAt = 0;
+          ['ROOT'].concat((st.root || []).filter((it) => it.k === 'folder').map((it) => it.id)).forEach((id) => kidsMem.delete(`c:${pk}:${id}`));
+          return Promise.allSettled([loadRoot(), loadAnn(), st.tab === 'cijfers' ? fetchGrades(pk).then((v) => { st.grades = v; drawGrades(); }) : null]);
+        },
         act(n, b) {
           if (n === 'seg') { setTab(b.dataset.id); return true; }
           if (n === 'clr') { inp.value = ''; st.q = ''; clr.hidden = true; drawSearch(); inp.focus(); return true; }
@@ -522,6 +533,7 @@
         el,
         title: () => st.title || 'Map',
         show() { if (Date.now() - st.at > 120e3) { st.at = Date.now(); load(); } },
+        refresh() { st.at = Date.now(); return fetchChildren(pk, id).then((v) => { st.items = v; draw(); }, () => {}); },
       };
       if (!st.title) fetchItem(pk, id).then((it) => { st.title = it.t; st.desc = it.d || ''; draw(); if (U.cur === view) setNav(navFor(view)); }).catch(() => {});
       draw();
@@ -624,6 +636,7 @@
         return;
       }
       if ([...r.q.keys()].length) saveCtx(r.pk, r.q);
+      if (r.q.get('dl') != null) store.set('dlpks', { ts: Date.now(), v: String(r.q.get('dl')).split('.').filter((x) => /^_\d+_\d+$/.test(x)).slice(0, 10) });
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
@@ -653,12 +666,39 @@
       history.pushState({ tm: 1, d: U.depth, back }, '', hash);
       render('push');
     }
+    /* Which upcoming deadlines did you already hand in? The portal can't ask Blackboard itself (another site), so the
+       course page checks the courses the portal named (?dl=) and tells it on the way back (?done=). */
+    const doneMap = () => (store.get('done') || {}).v || {};
+    function scanDone() {
+      const dl = store.get('dlpks');
+      const pks = Array.from(new Set(((dl && Date.now() - dl.ts < 7 * 864e5 && dl.v) || []).concat(PATH_PK ? [PATH_PK] : [])));
+      const st = store.get('done') || { ts: 0, v: {} };
+      if (!pks.length || Date.now() - st.ts < 10 * 60e3) return;
+      st.ts = Date.now();
+      store.set('done', st);
+      pks.reduce((chain, pk) => chain.then(() => fetchGrades(pk).then((g) => {
+        const cur = store.get('done') || { ts: Date.now(), v: {} };
+        cur.v[pk] = g.filter((x) => x.cid && (x.g || x.st === 'NeedsGrading' || x.st === 'Graded')).map((x) => x.cid);
+        store.set('done', cur);
+      }, () => {})), Promise.resolve());
+    }
+    const doneParam = () => {
+      const m = doneMap();
+      const s2 = Object.keys(m).slice(0, 12).map((pk) => [pk].concat(m[pk].slice(0, 40)).join('~')).join('!');
+      return s2 ? '&done=' + encodeURIComponent(s2) : '';
+    };
     function leave(tab) {
       const f = getCtx(parse().pk).f || 'vakken';
       saveScroll();
       setTabOn(tab);
-      if (fromPortal && f === tab && history.length > U.depth + 1) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : ''), { dir: 'back' });
+      // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
+      const done = doneParam();
+      const rn = rnParam();
+      const known = !rn && (!done || store.get('doneSent') === done);
+      if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
+      if (done) store.set('doneSent', done);
+      if (rn) store.set('rnSent', rn.slice(-7));
+      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -741,6 +781,8 @@
 
     if (!history.state || !history.state.tm) history.replaceState({ tm: 1, d: 0 }, '', location.hash);
     render('none');
+    setTimeout(() => { scanDone(); getMe().catch(() => {}); }, 2500);
+    pullRefresh(() => (U.cur && U.cur.refresh ? U.cur.refresh() : null));
     keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };
     document.addEventListener('visibilitychange', wake);
