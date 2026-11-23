@@ -176,17 +176,26 @@
       const cap = num(d.capacity);
       const examCap = (res.find((r) => /examencapaciteit/i.test(r.description || '')) || {}).quantity;
       document.title = room || 'Lokaal';
+      // KU Leuven room codes: "<building> <floor>.<room>", e.g. PDS 01.30 = building PDS, 1st floor, room 30
+      const code = /^(\S+)\s+(-?\d{1,2})\.(\w+)$/.exec(room.trim());
+      const fl = code ? parseInt(code[2], 10) : NaN;
+      const floor = isNaN(fl) ? '' : fl === 0 ? 'Gelijkvloers' : fl < 0 ? `Kelder ${fl}` : `${fl}e verdieping`;
+      const rno = code ? code[3].replace(/^0+(?=\w)/, '') : '';
+      const kulag = code && fl >= 0 && /^\d{1,4}$/.test(code[3]) && /^\d+-\d+$/.test(d.buildingNr || '') ? `https://www.kuleuven.be/kulag/nl/lokaal/${d.buildingNr}-${String(fl).padStart(2, '0')}${code[3].padStart(4, '0')}/onderwijs` : '';
       let h = `<div class="lt"><h1>${esc(room || 'Lokaal')}</h1><p class="lt-sub">${esc([name, bld].filter(Boolean).join(' · '))}</p></div>`;
+      if (code) h += `<div class="rp-code"><div><small>Gebouw</small><b>${esc(code[1])}</b><span>${esc(bld || d.buildingName || '')}</span></div><div><small>Verdieping</small><b>${esc(code[2])}</b><span>${esc(floor)}</span></div><div><small>Lokaal</small><b>${esc(code[3])}</b><span>nr. ${esc(rno)} op die verdieping</span></div></div>`;
       if (photos.length) h += `<div class="rp-photos">${photos.map((m, i) => `<a href="${esc(m.url)}" class="rp-ph"><img src="${esc(m.url)}" alt="Foto ${i + 1} van ${esc(room)}" loading="${i < 2 ? 'eager' : 'lazy'}" decoding="async"></a>`).join('')}</div>${photos.length > 1 ? `<p class="rp-cnt">${photos.length} foto's · veeg opzij</p>` : ''}`;
       else if (!fresh) h += '<div class="rp-photos"><div class="rp-ph sk"></div></div>';
       if (addr) {
         h += `<div class="sh"><h2>Locatie</h2></div><div class="card rp-loc">
           <div class="rp-mapw"><span>${ico('pin')}Kaart laden…</span><iframe class="rp-map" src="https://maps.google.com/maps?q=${q}&z=17&output=embed" loading="lazy" referrerpolicy="no-referrer" title="Kaart van ${esc(street || bld)}"></iframe></div>
           <div class="rp-addr">${ico('pin')}<span><b>${esc(street || bld)}</b><br>${esc(city)}</span></div>
-          ${d.access ? `<div class="rp-note">${ico('info')}<span>${esc(d.access)}</span></div>` : ''}
+          ${code ? `<div class="rp-note">${ico('info')}<span>Ga naar gebouw <b>${esc(code[1])}</b>, ${fl === 0 ? 'blijf op het <b>gelijkvloers</b>' : fl < 0 ? `ga naar <b>kelder ${fl}</b>` : `ga naar de <b>${fl}e verdieping</b>`} en zoek lokaal <b>${esc(room)}</b>.</span></div>` : ''}
+          ${d.access ? `<div class="rp-note">${ico('info')}<span>Toegang: ${esc(d.access)}</span></div>` : ''}
           <div class="rp-acts"><a class="pri" href="https://www.google.com/maps/search/?api=1&query=${q}">Google Maps</a><a href="https://maps.apple.com/?q=${q}">Apple Kaarten</a>${d.locationUrl ? `<a href="${esc(d.locationUrl)}">KU Leuven-kaart</a>` : ''}</div>
         </div>`;
       }
+      if (kulag) h += `<div class="group" style="margin-top:12px">${row({ href: kulag, icon: 'help', soft: true, title: 'Route binnen het gebouw', sub: 'Ingang, lift en deuren (KULag)', external: true })}</div>`;
       if (docs.length) h += `<div class="group" style="margin-top:12px">${docs.map((m, i) => row({ href: m.url, icon: 'doc', soft: true, title: docs.length > 1 ? `Plan ${i + 1}` : 'Plan', sub: 'PDF', external: true })).join('')}</div>`;
       // the rest: small
       const facts = [['Soort', d.type], ['Plaatsen', cap], ['Plaatsen bij examens', examCap && num(examCap)], ['Oppervlakte', d.surface], ['Gebouw', d.buildingNr]].filter((x) => x[1]);
