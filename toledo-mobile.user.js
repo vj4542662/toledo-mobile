@@ -24,7 +24,8 @@
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - While the app is open, Toledo, Blackboard and KU Loket get a small request every few minutes so their sessions don't time out.
-  Everything uses your own session in your own browser; nothing is sent anywhere else.
+  Everything uses your own session in your own browser. The only thing sent elsewhere: once a day a random,
+  anonymous install id plus the version number, so the author can count how many people use the script.
 */
 (() => {
   'use strict';
@@ -155,6 +156,28 @@
         try { localStorage.setItem('tm4:upd', JSON.stringify({ ts: Date.now(), v: m[1] })); } catch (_) {}
         if (newerThan(m[1], VERSION)) cb(m[1]);
       }, () => {});
+  }
+
+  /* Anonymous user count: at most once a day, a random install id (made once on this phone, never the
+     r-number, name or login) and the script version go to the Google Form below. Nothing else is sent.
+     Empty COUNT_FORM = counting off. */
+  const COUNT_FORM = '';            // https://docs.google.com/forms/d/e/<id>/formResponse
+  const COUNT_FIELDS = ['', ''];    // ['entry.<id veld>', 'entry.<versie veld>']
+  function countUser() {
+    if (TEST || !COUNT_FORM) return;
+    try {
+      const today = ymd(Date.now());
+      if (localStorage.getItem('tm4:cnt') === today) return;
+      let id = localStorage.getItem('tm4:anon');
+      if (!id) {
+        const a = new Uint8Array(9); crypto.getRandomValues(a);
+        id = Array.from(a, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 14);
+        localStorage.setItem('tm4:anon', id);
+      }
+      const body = new URLSearchParams([[COUNT_FIELDS[0], id], [COUNT_FIELDS[1], VERSION]]);
+      fetch(COUNT_FORM, { method: 'POST', mode: 'no-cors', credentials: 'omit', body })
+        .then(() => { try { localStorage.setItem('tm4:cnt', today); } catch (_) {} }, () => {});
+    } catch (_) {}
   }
 
   /* ================================================================== storage + network */
@@ -1674,6 +1697,7 @@
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
     setTimeout(() => checkUpdate((v) => { P.newVer = v; dirty('vandaag', 'meer'); }), 1500);
+    setTimeout(countUser, 4000);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
     pullRefresh(() => {
