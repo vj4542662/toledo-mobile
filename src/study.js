@@ -100,7 +100,7 @@
       const asc = st.rk.slice().reverse(); // E (lowest) left, A (best) right
       // where you are on one line, every group as wide as its share of students
       const strip = `<div class="pos"><div class="pos-bar">${asc.map((k) => `<i class="${k[5] ? 'me' : ''}" style="flex:${Math.max(0.5, st.pc(k)).toFixed(2)};--g:${grpCol(k)}"><span>${esc(k[0])}</span></i>`).join('')}</div>
-        ${st.better != null ? `<div class="pos-me" style="left:${Math.min(96, Math.max(4, st.better)).toFixed(1)}%"><b>Jij · ${esc(nl(n))}</b></div>` : ''}
+        ${st.better != null ? `<div class="pos-me" style="left:${Math.min(98, Math.max(2, st.better)).toFixed(1)}%"><b style="transform:translateX(-${Math.min(90, Math.max(10, st.better)).toFixed(0)}%)">Jij · ${esc(nl(n))}</b></div>` : ''}
         <div class="pos-ax"><span>lager</span><span>hoger</span></div></div>`;
       const line = st.mine
         ? (st.top <= 50 ? `Je hoort bij de beste <b>${esc(nl(Math.ceil(st.top), 0))}%</b> van wie slaagde.` : `Ongeveer <b>${esc(nl(st.better, 0))}%</b> van wie slaagde, scoorde lager dan jij.`)
@@ -114,12 +114,12 @@
     // compared with...
     const cmp = [];
     const dif = (a) => { const d = Math.round((n - a) * 10) / 10; return d === 0 ? '<span class="cmp-d">gelijk</span>' : `<span class="cmp-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : '−'}${esc(nl(Math.abs(d)))}</span>`; };
-    if (st && st.med) cmp.push(['De middelste geslaagde student', `groep ${st.med[0]} · ${rangeTxt(st.med)}`, n != null ? (n > st.med[2] ? '<span class="cmp-d up">hoger</span>' : n < st.med[1] ? '<span class="cmp-d down">lager</span>' : '<span class="cmp-d">gelijk</span>') : '']);
+    if (st && st.med) cmp.push(['Middelste geslaagde student', `groep ${st.med[0]} · ${rangeTxt(st.med)}`, n != null ? (n > st.med[2] ? '<span class="cmp-d up">hoger</span>' : n < st.med[1] ? '<span class="cmp-d down">lager</span>' : '<span class="cmp-d">gelijk</span>') : '']);
     const ya = yearAvg(y);
     if (ya != null && n != null) cmp.push([`Je gemiddelde in ${acy(y.y)}`, nl(ya, 1), dif(ya)]);
     let A = 0, W = 0;
     s.years.forEach((yr) => yr.c.forEach((x) => { const v = scoreOf(x); if (v != null && x.sp) { A += v * x.sp; W += x.sp; } }));
-    if (W && n != null && s.years.length > 1) cmp.push([`Je gemiddelde in ${shortProg(s.name).split(' ').slice(0, 3).join(' ')}`, nl(A / W, 1), dif(A / W)]);
+    if (W && n != null && s.years.length > 1) cmp.push([`Je gemiddelde in ${/^master/i.test(s.name) ? 'je master' : /^bachelor/i.test(s.name) ? 'je bachelor' : 'deze opleiding'}`, nl(A / W, 1), dif(A / W)]);
     if (cmp.length) h += `<div class="gh">Vergeleken met</div><div class="group">${cmp.map(([a, b, d]) => `<div class="row kv"><span class="main"><span class="t">${esc(a)}</span><span class="s">${esc(b)}</span></span><span class="end">${d}</span></div>`).join('')}</div>`;
     // the facts
     const word = RESULT_WORD[String(c.r || '').toUpperCase()] || '';

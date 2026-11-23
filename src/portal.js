@@ -516,7 +516,7 @@
     };
     // one result with its statistics (#resultaat/<study>:<year>:<code>), opened from Studievoortgang
     BUILD.resultaat = () => '<div data-k="body"></div>';
-    NAVS.resultaat = () => ({ back: { label: 'Studievoortgang', href: '#studie', act: 'resback' }, title: 'Resultaat' });
+    NAVS.resultaat = () => ({ back: { label: 'Terug', href: '#studie', act: 'resback' }, title: 'Resultaat' });
     FILL.resultaat = (el) => {
       const S = P.study && P.study.v && P.study.v.study;
       const h = S && S.length ? resultHtml(S, P.resKey) : '';
