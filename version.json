@@ -1,6 +1,9 @@
 {
- "version": "4.18.0",
+ "version": "4.19.0",
  "news": {
+  "4.19.0": [
+   "Groepswerkruimtes eenvoudiger: kies bovenaan je beginuur en hoelang, en je ziet meteen welke lokalen dan vrij zijn, met een knop Kies. Lokalen die korter vrij zijn of bezet zijn, staan apart."
+  ],
   "4.18.0": [
    "Groepswerkruimtes: schuif met je vinger over de balk van een lokaal. Het uur onder je vinger wordt groter, je ziet erboven welk uur het is en of het vrij is, en hetzelfde uur licht op bij alle lokalen. Laat los op groen om dat uur te kiezen.",
    "Elk uur heeft nu zijn eigen vakje, met het uur er recht boven."
@@ -43,9 +46,6 @@
    "KURT: bij een stoel (ook een favoriet) kies je nu zelf de dag en het uur, tot een week op voorhand.",
    "KURT: favoriete bibliotheken staan bovenaan, je favoriete stoelen eronder.",
    "KURT laadt sneller: wat je net bekeek opent meteen, en een bibliotheek begint al te laden zodra je ze aanraakt."
-  ],
-  "4.13.1": [
-   "Een nieuwe versie verschijnt nu echt meteen, niet pas na een paar minuten."
   ]
  }
 }
