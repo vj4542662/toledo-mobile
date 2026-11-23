@@ -171,7 +171,8 @@ html.tm4 body > :not([data-tm4]){display:none!important}
 .tm4 .hero-meta .i{width:16px;height:16px;stroke-width:2}
 .tm4 .hero-prog{height:4px;margin-top:12px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}
 .tm4 .hero-prog i{display:block;height:100%;border-radius:2px;background:#fff}
-.tm4 .hero-acts{display:flex;gap:8px;margin-top:14px}
+.tm4 .hero-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+@media (max-width:380px){.tm4 .hero-acts{gap:6px}.tm4 .hero-acts a,.tm4 .hero-acts button{padding:0 10px;gap:5px}}
 .tm4 .hero-acts a,.tm4 .hero-acts button{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:17px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;font-weight:600}
 .tm4 .hero-acts a.pri{background:#fff;color:#0b2c52}
 .tm4 .hero-acts .i{width:17px;height:17px;stroke-width:2.1}

@@ -232,7 +232,16 @@
       switch (it.k) {
         case 'folder': {
           const fi = folderInfo(pk, it);
-          if (isDocPage(pk, it)) return row({ href: `#/c/${pk}/f/${it.id}`, attrs: ` data-nav="1" data-title="${esc(it.t)}"`, iconHtml: lead('doc'), title: it.t, sub: path != null ? path : it.d || 'Document', dot: fi.fresh > 0 });
+          if (isDocPage(pk, it)) {
+            // a Document page that only holds a file or a few files (no text of its own): open them straight from the list
+            const kids = (cachedKids(pk, it.id) || { v: [] }).v;
+            const files = kids.flatMap((k) => k.files || []);
+            if (kids.length && kids.every((k) => k.ub && !k.x) && files.length && files.length <= 8) {
+              const sn = kids.map((k) => k.sn || '').filter(Boolean).join(' ');
+              return itemRow({ id: it.id, p: it.p, t: it.t, m: it.m, k: 'doc', x: false, files, sn }, pk, o);
+            }
+            return row({ href: `#/c/${pk}/f/${it.id}`, attrs: ` data-nav="1" data-title="${esc(it.t)}"`, iconHtml: lead('doc'), title: it.t, sub: path != null ? path : it.d || 'Document', dot: fi.fresh > 0 });
+          }
           return row({ href: `#/c/${pk}/f/${it.id}`, attrs: ` data-nav="1" data-title="${esc(it.t)}"`, iconHtml: lead('folder'), title: it.t, sub: path != null ? path : fi.sub, dot: fi.fresh > 0 });
         }
         case 'file':
@@ -376,7 +385,7 @@
         if (!st.grades) return;
         if (!st.grades.length) { put(box, empty('chart', 'Geen cijfers', 'Er zijn nog geen beoordelingen voor dit vak.')); return; }
         const rowG = (g) => row({ href: g.cid ? deepLink(pk, { id: g.cid }) : undefined, title: g.t,
-          sub: g.g ? '' : g.due ? `Deadline ${dShort(g.due)} ${hhmm(g.due)}` : STATUS[g.st] || 'Nog geen cijfer',
+          sub: g.g ? '' : STATUS[g.st] || (g.due ? `Deadline ${dShort(g.due)} ${hhmm(g.due)}` : 'Nog geen cijfer'),
           end: g.g ? `<b style="color:var(--text);font-size:17px;font-weight:600">${esc(g.g)}</b>` : '<span>—</span>', chevron: false, cls: '' });
         const done = st.grades.filter((g) => g.g), open = st.grades.filter((g) => !g.g);
         let h = '';
@@ -501,7 +510,13 @@
       const load = () => {
         const c = cachedKids(pk, id);
         if (c && !st.items) { st.items = c.v; draw(); }
-        fetchChildren(pk, id).then((v) => { st.items = v; draw(); }, (e) => { if (e.auth) return relogin(); if (!st.items) put($('[data-k="list"]', el), errorBox()); });
+        fetchChildren(pk, id).then((v) => {
+          st.items = v;
+          draw();
+          // Document pages in this folder: look inside, so one that only holds a file opens it in one tap
+          const todo = v.filter((it) => it.k === 'folder' && it.ud && !cachedKids(pk, it.id)).slice(0, 12);
+          if (todo.length) Promise.allSettled(todo.map((it) => fetchChildren(pk, it.id))).then(draw);
+        }, (e) => { if (e.auth) return relogin(); if (!st.items) put($('[data-k="list"]', el), errorBox()); });
       };
       const view = {
         el,
