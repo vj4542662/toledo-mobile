@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.15.0"
+VERSION = "4.16.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.16.0": [
+        "Studieplek: inchecken en uitchecken gebeurt nu in de app zelf. Na het inchecken verandert de knop in Uitchecken, en uitchecken vraagt eerst of je het zeker weet.",
+    ],
     "4.15.0": [
         "De hele app laadt sneller: Toledo Mobile zelf is een derde kleiner geworden.",
         "Vandaag en je vakken openen vlotter, ook met een vol lessenrooster.",

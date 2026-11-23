@@ -683,3 +683,8 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .kb-when span{flex:1}
 .tm4 .kb-when em{font-style:normal;color:var(--accent);font-weight:600}
 .tm4 .kfs .kr-seat{min-width:44px;height:44px;font-size:16px}
+.tm4 .upd-ok.warn{background:var(--orange,#ff9500)}
+.tm4 .kci-msg{margin:4px 0 8px;padding:12px 14px;border-radius:12px;background:var(--fill);font-size:15px;line-height:21px;text-align:left}
+.tm4 .kci-msg p{margin:0}.tm4 .kci-msg p+p{margin-top:8px}
+.tm4 .kr-acts button[disabled]{opacity:.7}
+.tm4 .kr-acts .spin{display:inline-block;width:14px;height:14px;margin:0 4px 0 0;border:2px solid transparent;border-top-color:currentColor;border-right-color:currentColor;vertical-align:-2px}

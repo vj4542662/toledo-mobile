@@ -28,7 +28,7 @@
       const r = await fetch(K + '/api' + p, { method, credentials: 'include', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
       const txt = await r.text();
       let j = null; try { j = txt ? JSON.parse(txt) : null; } catch (_) {}
-      if (!r.ok) { const e = new Error((typeof j === 'string' && j) || (j && (j.message || j.title || j.error)) || txt.slice(0, 200) || 'HTTP ' + r.status); e.status = r.status; throw e; }
+      if (!r.ok) { const e = new Error((typeof j === 'string' && j) || (j && (j.detail || j.message || j.title || j.error)) || txt.slice(0, 200) || 'HTTP ' + r.status); e.status = r.status; throw e; }
       return j;
     };
     let ME = store.get('kurt:me');
@@ -155,6 +155,40 @@
       })));
       return { tiles, extra };
     }
+    /* ---------- check in / check out (KURT's own /check-in page does the same: POST /validations/) */
+    // a booking says "Booked" until you check in; remember our own check-ins too, KURT may be slow to show them
+    const ciMap = () => { const m = store.get('kurt:ci') || {}; Object.keys(m).forEach((k) => { if (Date.now() - m[k] > 20 * 3600e3) delete m[k]; }); return m; };
+    const isIn = (r) => !/checked[ -]?out|uitgecheckt/i.test(r.status || '') && (/checked[ -]?in|ingecheckt/i.test(r.status || '') || !!ciMap()[r.id]);
+    const setIn = (id, on) => { const m = ciMap(); if (on) m[id] = Date.now(); else delete m[id]; store.set('kurt:ci', m); };
+    // KURT's messages are a little markdown: keep bold and line breaks, drop links to its own pages
+    const md = (t) => esc(String(t || '')).replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+    function ciDone(ok, title, sub, msgs) {
+      const { layer, close } = openLayer(`<div class="sg upd-c">
+        <span class="upd-ok${ok ? '' : ' warn'}">${ico(ok ? 'check' : 'warn')}</span>
+        <h2>${esc(title)}</h2>
+        ${sub ? `<p class="upd-v">${esc(sub)}</p>` : ''}
+        ${msgs && msgs.length ? `<div class="kci-msg">${msgs.map((m) => `<p>${md(m)}</p>`).join('')}</div>` : ''}
+        <button type="button" class="btn upd-go">Klaar</button></div>`, 'upd-layer', title);
+      layer.querySelector('.upd-go').addEventListener('click', close);
+    }
+    async function validate(b, action) {
+      const { r: rid, id, n } = b.dataset;
+      const label = b.textContent;
+      b.disabled = true; b.innerHTML = `<span class="spin"></span> ${action === 10 ? 'Inchecken' : 'Uitchecken'}…`;
+      let res;
+      try { res = await send('POST', '/validations/', { resourceId: Number(rid), action }); }
+      catch (err) { b.disabled = false; b.textContent = label; ciDone(false, action === 10 ? 'Inchecken lukte niet' : 'Uitchecken lukte niet', n, [err.message || 'Probeer het straks opnieuw.']); return; }
+      const st = res && res.status, msgs = (res && res.messages) || [];
+      if (st === 10 || st === 13) setIn(id, true);
+      if (st === 14) setIn(id, false);
+      store.del('kurt:res'); memoClear(); show();
+      if (st === 10) ciDone(true, 'Ingecheckt', n, msgs);
+      else if (st === 13) ciDone(true, 'Je bent al ingecheckt', n, msgs);
+      else if (st === 14) ciDone(true, 'Uitgecheckt', n, msgs);
+      else if (st === 11) ciDone(false, 'Geen reservatie op deze plaats', n, msgs);
+      else ciDone(false, action === 10 ? 'Inchecken lukte niet' : 'Uitchecken lukte niet', n, msgs);
+    }
+
     function locRow(loc, x) {
       const l = (x && x.l) || {};
       const o = x && x.o;
@@ -206,11 +240,13 @@
             const hit = r.locationId ? locs.find((l) => l.id === r.locationId) : pre && locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre));
             const lid = hit ? hit.id : r.locationId;
             const unit = hit ? hit.unit : '';
+            const cin = live && isIn(r);
+            const dn = esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime + '–' + (r.endTime === '00:00' ? '24:00' : r.endTime));
             return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top"><span class="kr-seat">${esc(seatNo(r.resourceName))}</span><span class="kr-main"><b>${esc(nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span><button type="button" class="kr-del" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime)}" aria-label="Reservatie verwijderen">${TRASH}</button></div>
-              <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
-              <div class="kr-acts">${live ? `<a class="pri" href="${esc(ORIG('/check-in/' + r.resourceId))}">Inchecken</a>` : ''}${lid ? `<a href="#/l/${esc(lid)}">Naar de locatie</a>` : ''}</div></div>`;
+              <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · <em>ingecheckt</em>' : live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
+              <div class="kr-acts">${live ? `<button type="button" class="${cin ? 'red' : 'pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>` : ''}${lid ? `<a href="#/l/${esc(lid)}">Naar de locatie</a>` : ''}</div></div>`;
           }).join('');
-          h += `<p class="ko-hint">${ico('info')}Check in met de QR-code op je plek. 3 keer niet komen opdagen in 14 dagen = een week geen reservaties.</p>`;
+          h += `<p class="ko-hint">${ico('info')}Check in met de knop Inchecken of met de QR-code op je plek, binnen het eerste halfuur. 3 keer niet komen opdagen in 14 dagen = een week geen reservaties.</p>`;
         }
         if (!tiles) { h += `<div class="sh"><h2>Bibliotheken</h2></div>${skGroup(6)}`; put(sec, h); watchTitle(sec); return; }
         const all = tiles.flatMap((t) => t.locations);
@@ -678,6 +714,12 @@
         store.set('kurt:fav', f.includes(id) ? f.filter((x) => x !== id) : [id].concat(f).slice(0, 6));
         b.innerHTML = STAR(!f.includes(id));
         toast(f.includes(id) ? 'Uit je favorieten' : 'Bij je favorieten op Studieplek');
+      } else if (act === 'checkin') {
+        e.preventDefault();
+        if (!b.disabled) validate(b, 10);
+      } else if (act === 'checkout') {
+        e.preventDefault();
+        sheet({ title: 'Uitchecken?', msg: b.dataset.n + '. Je plaats komt meteen vrij voor iemand anders.', actions: [{ label: 'Uitchecken', red: true, run: () => validate(b, 20) }] });
       } else if (act === 'cancel') {
         e.preventDefault();
         const id = b.dataset.id;
