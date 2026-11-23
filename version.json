@@ -1,6 +1,9 @@
 {
- "version": "4.12.0",
+ "version": "4.12.1",
  "news": {
+  "4.12.1": [
+   "Toledo Mobile kijkt nu bij elk openen of er een nieuwe versie is."
+  ],
   "4.12.0": [
    "Updates gaan nu veel makkelijker: je krijgt meteen een melding bovenaan als er een nieuwe versie is.",
    "Eén knop om te installeren, met duidelijke stappen in plaats van een pagina vol code.",

@@ -127,7 +127,7 @@
     if (TEST && !W.__TM_UPD_TEST__) return;
     const st = lsJson('tm4:upd');
     if (st && st.v && newerThan(st.v, VERSION)) cb(st);
-    if (!force && st && Date.now() - st.ts < 10 * 60e3) return;
+    if (!force && st && Date.now() - st.ts < 2 * 60e3) return; // version.json is tiny: look (almost) every time the app opens
     const get = (u) => fetch(u + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
     get(VERSION_URL)
       .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {} }; })
@@ -223,9 +223,9 @@
     setTimeout(() => checkUpdate(got), 1200);
     let lastCheck = Date.now();
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState !== 'visible' || Date.now() - lastCheck < 60e3) return;
+      if (document.visibilityState !== 'visible' || Date.now() - lastCheck < 30e3) return;
       lastCheck = Date.now();
-      checkUpdate(got);
+      checkUpdate(got, true);
     });
   }
 
