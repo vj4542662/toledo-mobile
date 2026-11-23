@@ -3,7 +3,7 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.9.1"
+VERSION = "4.9.2"
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
@@ -104,7 +104,8 @@ header = f"""// ==UserScript==
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - While the app is open, Toledo, Blackboard and KU Loket get a small request every few minutes so their sessions don't time out.
-  Everything uses your own session in your own browser; nothing is sent anywhere else.
+  Everything uses your own session in your own browser. The only thing sent elsewhere: once a day a random,
+  anonymous install id plus the version number, so the author can count how many people use the script.
 */
 """
 classic = ("\n/* ===== version 3 phone layout, for the Blackboard and KU Loket pages the app does not replace ===== */\n"

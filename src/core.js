@@ -123,6 +123,28 @@
       }, () => {});
   }
 
+  /* Anonymous user count: at most once a day, a random install id (made once on this phone, never the
+     r-number, name or login) and the script version go to the Google Form below. Nothing else is sent.
+     Responses land in Jeremy's Google Sheet "Toledo Mobile teller (antwoorden)". */
+  const COUNT_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLScZnz2fJF-pcGFdCVv62XxfteYcr3z4qYNWW-S8uYggqJ1Vhg/formResponse';
+  const COUNT_FIELDS = ['entry.262291636', 'entry.1600337097']; // id, versie
+  function countUser() {
+    if (TEST || !COUNT_FORM) return;
+    try {
+      const today = ymd(Date.now());
+      if (localStorage.getItem('tm4:cnt') === today) return;
+      let id = localStorage.getItem('tm4:anon');
+      if (!id) {
+        const a = new Uint8Array(9); crypto.getRandomValues(a);
+        id = Array.from(a, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 14);
+        localStorage.setItem('tm4:anon', id);
+      }
+      const body = new URLSearchParams([[COUNT_FIELDS[0], id], [COUNT_FIELDS[1], VERSION]]);
+      fetch(COUNT_FORM, { method: 'POST', mode: 'no-cors', credentials: 'omit', body })
+        .then(() => { try { localStorage.setItem('tm4:cnt', today); } catch (_) {} }, () => {});
+    } catch (_) {}
+  }
+
   /* ================================================================== storage + network */
   const NS = 'tm4:';
   const store = {

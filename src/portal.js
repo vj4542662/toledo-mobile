@@ -868,6 +868,7 @@
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
     setTimeout(() => checkUpdate((v) => { P.newVer = v; dirty('vandaag', 'meer'); }), 1500);
+    setTimeout(countUser, 4000);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
     pullRefresh(() => {
