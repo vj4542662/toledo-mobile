@@ -1,7 +1,7 @@
   /* ================================================================== environment */
   const W = window;
   const VERSION = '__VERSION__';
-  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt' }[location.hostname];
+  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt', 'raw.githubusercontent.com': 'install' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
   const PATH = W.__TM_PATH__ || location.pathname;
@@ -103,26 +103,159 @@
   }
 
   /* ================================================================== updates */
-  // Userscripts on iPhone never updates by itself. Check GitHub now and then and offer the new version in the app.
+  // Userscripts on iPhone never updates by itself. The app checks GitHub (a tiny version.json) when it opens and
+  // whenever you come back to it, shows a notification at the top as soon as there is a new version, and walks you
+  // through installing it in plain language. After the update it says what is new.
   const UPDATE_URL = 'https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js';
+  const VERSION_URL = 'https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/version.json';
+  const NEWS = __NEWS__; // { version: ['what changed, in plain words', …] } for the last versions
   const newerThan = (a, b) => {
     const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
     for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
     return false;
   };
-  function checkUpdate(cb) {
-    if (TEST) return;
-    let st = null; try { st = JSON.parse(localStorage.getItem('tm4:upd') || 'null'); } catch (_) {}
-    if (st && st.v && newerThan(st.v, VERSION)) cb(st.v);
-    if (st && Date.now() - st.ts < 3 * 3600e3) return;
-    fetch(UPDATE_URL + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
-      .then((r) => (r.ok ? r.text() : ''))
-      .then((t) => {
-        const m = /@version\s+([\d.]+)/.exec(t);
-        if (!m) return;
-        try { localStorage.setItem('tm4:upd', JSON.stringify({ ts: Date.now(), v: m[1] })); } catch (_) {}
-        if (newerThan(m[1], VERSION)) cb(m[1]);
+  // what changed between version `from` (exclusive) and `to` (inclusive), newest first
+  const newsBetween = (news, from, to) => Object.keys(news || {})
+    .filter((v) => newerThan(v, from) && !newerThan(v, to))
+    .sort((a, b) => (newerThan(a, b) ? -1 : 1))
+    .reduce((all, v) => all.concat(news[v] || []), []).slice(0, 6);
+  const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+  // the address that makes Userscripts offer the update (?v= so Safari and GitHub's cache hand over the new file)
+  const installUrl = (v) => UPDATE_URL + '?v=' + encodeURIComponent(v || Date.now());
+  function checkUpdate(cb, force) {
+    if (TEST && !W.__TM_UPD_TEST__) return;
+    const st = lsJson('tm4:upd');
+    if (st && st.v && newerThan(st.v, VERSION)) cb(st);
+    if (!force && st && Date.now() - st.ts < 10 * 60e3) return;
+    const get = (u) => fetch(u + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
+    get(VERSION_URL)
+      .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {} }; })
+      .catch(() => get(UPDATE_URL).then((t) => { const m = /@version\s+([\d.]+)/.exec(t); return m ? { v: m[1], news: {} } : null; }))
+      .then((info) => {
+        if (!info) return;
+        info.ts = Date.now();
+        lsSet('tm4:upd', info);
+        if (newerThan(info.v, VERSION) && (!st || st.v !== info.v)) cb(info);
       }, () => {});
+  }
+
+  // the notification at the top of the app
+  function updateNotice(info) {
+    if (!document.body || !info || !newerThan(info.v, VERSION)) return;
+    const later = lsJson('tm4:upd-later');
+    if (later && later.v === info.v && Date.now() - later.ts < 20 * 3600e3) return;
+    let n = $('#tm-upn');
+    if (!n) {
+      n = document.createElement('div');
+      n.id = 'tm-upn'; n.className = 'upn'; n.setAttribute('data-tm4', ''); n.setAttribute('role', 'alert');
+      document.body.appendChild(n);
+      n.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const cur = lsJson('tm4:upd') || info;
+        if (e.target.closest('.upn-x')) { lsSet('tm4:upd-later', { v: cur.v, ts: Date.now() }); hideNotice(); return; }
+        hideNotice();
+        updateSheet(cur);
+      });
+      requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('on')));
+    }
+    put(n, `<img class="upn-ic" src="${TM_ICON}" alt=""><span class="upn-m"><b>Update beschikbaar</b><span>Tik om versie ${esc(info.v)} te installeren</span></span><button type="button" class="upn-x" aria-label="Later">${ico('close')}</button>`);
+  }
+  function hideNotice() { const n = $('#tm-upn'); if (n) { n.classList.remove('on'); setTimeout(() => n.remove(), 400); } }
+
+  // the update screen: what is new, three simple steps and one big button
+  function updateSheet(info) {
+    if (!info || $('.upd-layer')) return;
+    const news = newsBetween(info.news, VERSION, info.v);
+    const layer = document.createElement('div');
+    layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
+    layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Update">
+      <div class="sg upd-c">
+        <img class="upd-logo" src="${TM_ICON}" alt="">
+        <h2>Nieuwe versie van Toledo Mobile</h2>
+        <p class="upd-v">Versie ${esc(info.v)} <span>· je hebt nu ${esc(VERSION)}</span></p>
+        ${news.length ? `<div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+        <div class="upd-how"><b>Zo werkt het (ongeveer 10 seconden)</b>
+          <ol><li>Tik hieronder op <b>Installeren</b>.</li><li>Kies in het venster van <b>Userscripts</b> voor <b>Install</b>.</li><li>Klaar! Tik op <b>Terug naar Toledo</b>.</li></ol>
+          <p>Op de volgende pagina leggen we het stap voor stap uit, met plaatjes.</p></div>
+        <a class="btn upd-go" href="${esc(installUrl(info.v))}">Installeren</a>
+        <button type="button" class="upd-later">Later</button>
+      </div></div>`;
+    document.body.appendChild(layer);
+    const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
+    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
+    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
+    scrim.addEventListener('click', close);
+    layer.querySelector('.upd-later').addEventListener('click', () => { lsSet('tm4:upd-later', { v: info.v, ts: Date.now() }); close(); });
+    layer.querySelector('.upd-go').addEventListener('click', () => { lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); });
+  }
+
+  // after an update: say so once, with what is new
+  function justUpdated() {
+    const was = lsJson('tm4:ver');
+    lsSet('tm4:ver', VERSION);
+    if (!was || !newerThan(VERSION, was)) return;
+    try { localStorage.removeItem('tm4:upd-later'); } catch (_) {}
+    const news = newsBetween(NEWS, was, VERSION);
+    setTimeout(() => {
+      if (!news.length) { toast(`Bijgewerkt naar versie ${VERSION}`); return; }
+      const layer = document.createElement('div');
+      layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
+      layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Bijgewerkt"><div class="sg upd-c">
+        <span class="upd-ok">${ico('check')}</span>
+        <h2>Toledo Mobile is bijgewerkt</h2>
+        <p class="upd-v">Je hebt nu versie ${esc(VERSION)}</p>
+        <div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
+        <button type="button" class="btn upd-go">Top!</button></div></div>`;
+      document.body.appendChild(layer);
+      const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
+      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
+      const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
+      scrim.addEventListener('click', close);
+      layer.querySelector('.upd-go').addEventListener('click', close);
+    }, 900);
+  }
+
+  // every app page: check now and each time you come back to the app; onNew(info) lets the page add its own row
+  function updateWatch(onNew) {
+    if (TEST && !W.__TM_UPD_TEST__) return;
+    const got = (info) => { updateNotice(info); if (onNew) onNew(info); };
+    setTimeout(() => checkUpdate(got), 1200);
+    let lastCheck = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastCheck < 60e3) return;
+      lastCheck = Date.now();
+      checkUpdate(got);
+    });
+  }
+
+  // the install page itself (raw.githubusercontent.com/…/toledo-mobile.user.js): instead of a wall of code, a
+  // friendly page that shows where to tap. Userscripts downloads the file again itself, so the page's text
+  // doesn't need to stay.
+  function installPage() {
+    const go = () => {
+      const txt = (document.body && document.body.textContent) || '';
+      const m = /@version\s+([\d.]+)/.exec(txt);
+      const v = m ? m[1] : '';
+      const fresh = v && newerThan(v, VERSION);
+      takeover('Toledo Mobile installeren');
+      document.body.className = 'no-tabs';
+      const step = (n, title, mock) => `<li class="ip-step"><span class="ip-n">${n}</span><div><b>${title}</b>${mock || ''}</div></li>`;
+      document.body.innerHTML = `<main class="ip" data-tm4>
+        <img class="upd-logo" src="${TM_ICON}" alt="">
+        <h1>${fresh || !v ? 'Nog één stap' : 'Je bent helemaal mee'}</h1>
+        <p class="ip-sub">${fresh ? `Toledo Mobile ${esc(v)} staat klaar. Je hebt nu ${esc(VERSION)}.` : v ? `Je hebt al de nieuwste versie (${esc(VERSION)}). Je hoeft niets te doen.` : 'Volg deze stappen om Toledo Mobile bij te werken.'}</p>
+        ${fresh || !v ? `<ol class="ip-steps">
+          ${step(1, `Tik in de adresbalk op <span class="ip-k">aA</span> of op <span class="ip-k">${ico('pagemenu')}</span>`, '<div class="ip-mock ip-bar"><span class="ip-hl">aA</span><span class="ip-url">raw.githubusercontent.com</span><span class="ip-dim">↻</span></div>')}
+          ${step(2, 'Kies <b>Userscripts</b>', '<div class="ip-mock ip-list"><div class="ip-li">Lettergrootte</div><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div><div class="ip-li">Verberg werkbalk</div></div>')}
+          ${step(3, 'Tik op de blauwe tekst en dan op <b>Install</b>', '<div class="ip-mock ip-pop"><div class="ip-warn">Userscript Installed: <u>Tap to re-install</u></div><div class="ip-btn">Install</div></div>')}
+          ${step(4, 'Klaar! Ga terug naar Toledo', '')}
+        </ol>
+        <p class="ip-tip">Gaat Userscripts vanzelf open? Dan kan je meteen naar stap 3.</p>` : ''}
+        <a class="btn ip-back" href="${PORTAL}?tm=vandaag">Terug naar Toledo</a>
+      </main>`;
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
   }
 
   /* Anonymous user count: at most once a day, a random install id (made once on this phone, never the
@@ -239,6 +372,8 @@
     search: '<circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.5 15.5 4.4 4.4"/>',
     refresh: '<path d="M19.4 12.6a7.4 7.4 0 1 1-2.1-6"/><path d="M19.6 4.4v3.8h-3.8"/>',
     check: '<path d="m5 12.6 4.4 4.4L19 7.4"/>',
+    close: '<path d="M7 7l10 10M17 7 7 17"/>',
+    pagemenu: '<rect x="4" y="4.5" width="16" height="15" rx="3"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/>',
     checks: '<path d="m2.8 12.8 4.3 4.3 9-9.6M12.6 16.6l.5.5 9-9.6"/>',
     more: '<circle cx="12" cy="12" r="8.8"/><circle cx="7.9" cy="12" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="16.1" cy="12" r=".9" fill="currentColor"/>',
     cap: '<path d="M2.6 9.4 12 5l9.4 4.4L12 13.8z"/><path d="M6.4 11.4v4.5c1.6 1.4 3.6 2.1 5.6 2.1s4-.7 5.6-2.1v-4.5M21.4 9.4v5"/>',

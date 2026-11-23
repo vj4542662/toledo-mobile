@@ -3,12 +3,21 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.11.2"
+VERSION = "4.12.0"
+# What's new, in plain language for students (no technical terms). Add a line for every version you publish:
+# the app shows these in the update screen and once more right after updating.
+NEWS = {
+    "4.12.0": [
+        "Updates gaan nu veel makkelijker: je krijgt meteen een melding bovenaan als er een nieuwe versie is.",
+        "Eén knop om te installeren, met duidelijke stappen in plaats van een pagina vol code.",
+        "Na een update zie je meteen wat er nieuw is.",
+    ],
+}
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
 app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'main.js'])
-app = app.replace('__VERSION__', VERSION)
+app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False))
 
 classic = (src / 'classic-v3.js').read_text()
 classic = classic.split('// ==/UserScript==', 1)[1]
@@ -89,6 +98,7 @@ header = f"""// ==UserScript==
 // @match        https://idp.kuleuven.be/idp/*
 // @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
 // @match        https://kurt3.ghum.kuleuven.be/*
+// @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @run-at       document-start
@@ -105,6 +115,8 @@ header = f"""// ==UserScript==
   - KURT (study places, kurt3.ghum.kuleuven.be) becomes an app screen: libraries with live occupancy, rooms with free seats, and the floor plan to tap a seat and book it.
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
+  - The update page on GitHub (this file) shows simple steps instead of code, and the app checks GitHub's small
+    version.json now and then so it can show a notification as soon as there is a new version.
   - While the app is open, Toledo, Blackboard and KU Loket get a small request every few minutes so their sessions don't time out.
   Everything uses your own session in your own browser. The only thing sent elsewhere: once a day a random,
   anonymous install id plus the version number, so the author can count how many people use the script.
@@ -119,4 +131,8 @@ lcss = re.sub(r'/\*.*?\*/', '', lcss, flags=re.S)
 lcss = re.sub(r'\n\s*', '\n', lcss).strip()
 out = header + "(() => {\n  'use strict';\n  if (window.__TM4__) return;\n  window.__TM4__ = true;\n  const CSS = " + json.dumps(css) + ";\n  const LOGIN_CSS = " + json.dumps(lcss) + ";\n" + app + "})();\n" + classic
 (here / 'toledo-mobile.user.js').write_text(out)
+# the app checks this small file (not the whole script) to see whether there is a new version
+def vkey(v): return tuple(int(x) for x in v.split('.'))
+recent = dict(sorted(NEWS.items(), key=lambda kv: vkey(kv[0]), reverse=True)[:12])
+(here / 'version.json').write_text(json.dumps({'version': VERSION, 'news': recent}, ensure_ascii=False, indent=1) + '\n')
 print(len(out), 'bytes')

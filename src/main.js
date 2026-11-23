@@ -1,7 +1,8 @@
   /* ================================================================== what does this page become? */
   if (!SITE) return;
   let mode = 'classic', target = '';
-  if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
+  if (SITE === 'install') mode = 'none'; // GitHub: only the update page below
+  else if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
   else if (SITE === 'kurt') mode = TOP && PHONE && params.get('tm') !== 'orig' && !/^\/(check-in|login|logout|signin|saml|api)\b/i.test(PATH) ? 'kurt' : 'none'; // study places
   else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
@@ -39,6 +40,14 @@
     const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); fn(); } });
     mo.observe(document, { childList: true });
   };
+  if (SITE === 'install') {
+    // the update page on GitHub: a friendly how-to instead of the script's code
+    if (TOP && PHONE && /^\/vj4542662\/toledo-mobile\/[^?#]*\.user\.js$/.test(location.pathname)) {
+      whenRoot(() => { const st = document.createElement('style'); st.textContent = 'body{visibility:hidden!important}'; document.documentElement.appendChild(st); });
+      installPage();
+    }
+    return;
+  }
   if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
   if (mode === 'bridge') {
     // the hidden frame only reads data: don't let the KU Loket launchpad (SAPUI5) boot in it as well

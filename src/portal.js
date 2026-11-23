@@ -264,7 +264,7 @@
     // ---- Vandaag
     BUILD.vandaag = () => '<div class="lt"><h1>Vandaag</h1><p class="lt-sub" data-k="date"></p></div><div data-k="body"></div>';
     NAVS.vandaag = () => ({ title: 'Vandaag' });
-    const updateBanner = () => (P.newVer ? `<div class="banner">${ico('refresh')}<span class="main">Nieuwe versie ${esc(P.newVer)} van Toledo Mobile. Tik op Updaten en daarna op Userscripts in de adresbalk.</span><button type="button" data-act="update">Updaten</button></div>` : '');
+    const updateBanner = () => (P.upd ? `<button type="button" class="banner upd-banner" data-act="update"><img class="upn-ic" src="${TM_ICON}" alt=""><span class="main"><b>Update beschikbaar</b><br>Versie ${esc(P.upd.v)} staat klaar. Installeren duurt 10 seconden.</span><span class="act">Bekijk</span></button>` : '');
     // KU Loket published new exam results (in the last two weeks) that you haven't looked at in the app yet
     function resultsBanner(now) {
       const S = P.study && P.study.v && P.study.v.study;
@@ -521,7 +521,7 @@
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
-      if (P.newVer) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar ' + P.newVer, sub: 'Daarna op Userscripts in de adresbalk tikken' })}</div>`;
+      if (P.upd) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar versie ' + P.upd.v, sub: 'Nieuwe versie van Toledo Mobile, tik om te installeren' })}</div>`;
       h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschuren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
       put($('[data-k="body"]', el), h);
     };
@@ -665,7 +665,7 @@
       W.scrollTo({ top: sec.getBoundingClientRect().top + W.scrollY - off, behavior: 'smooth' });
     }
     const ACTS = {
-      update: () => { location.href = UPDATE_URL; },
+      update: () => { hideNotice(); updateSheet(P.upd); },
       clr: () => { const el = V.vakken.el, inp = $('input', el); inp.value = ''; P.search = ''; $('.clr', el).hidden = true; FILL.vakken(el); inp.focus(); },
       comm: () => { P.showComm = true; FILL.vakken(V.vakken.el); },
       offall: () => { P.showOff = true; FILL.vakken(V.vakken.el); },
@@ -885,7 +885,8 @@
     badges();
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
-    setTimeout(() => checkUpdate((v) => { P.newVer = v; dirty('vandaag', 'meer'); }), 1500);
+    updateWatch((info) => { P.upd = info; dirty('vandaag', 'meer'); });
+    justUpdated();
     setTimeout(countUser, 4000);
     setInterval(() => { if (document.visibilityState === 'visible' && (P.tab === 'vandaag' || P.tab === 'rooster')) dirty(P.tab); }, 30e3);
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable

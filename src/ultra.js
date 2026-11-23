@@ -875,6 +875,7 @@
     setTimeout(() => { scanDone(); getMe().catch(() => {}); }, 2500);
     pullRefresh(() => (U.cur && U.cur.refresh ? U.cur.refresh() : null));
     keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
+    updateWatch();
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };
     document.addEventListener('visibilitychange', wake);
     W.addEventListener('pageshow', (e) => { if (e.persisted) wake(); });
