@@ -71,15 +71,26 @@
     // known rooms (from the libraries you opened): id -> { l: library, n: name, t: resource types }, so a floor plan opens without asking KURT first
     const ZONES = store.get('kurt:zones') || {};
     const keepZones = (lid, zones) => { (zones || []).forEach((z) => { ZONES[z.id] = { l: Number(lid), n: (z.name || '').trim(), t: z.resourceTypeIds || [] }; }); store.set('kurt:zones', ZONES); };
-    // answers KURT gave a moment ago are reused while you move between screens (library -> floor plan opens at once)
+    // answers KURT gave a moment ago are reused while you move between screens and when the page is opened again
+    // (library -> floor plan opens at once). Kept in memory and in sessionStorage; cleared after booking or cancelling.
     const MEM = new Map();
+    const MK = 'tm4-km:';
     const memo = (key, maxAge, fn) => {
       const c = MEM.get(key);
       if (c && Date.now() - c.ts < maxAge) return c.p;
-      const pr = fn();
-      MEM.set(key, { ts: Date.now(), p: pr });
+      try {
+        const sv = JSON.parse(sessionStorage.getItem(MK + key) || 'null');
+        if (sv && Date.now() - sv.ts < maxAge) { const pv = Promise.resolve(sv.v); MEM.set(key, { ts: sv.ts, p: pv }); return pv; }
+      } catch (_) {}
+      const ts = Date.now();
+      const pr = fn().then((v) => { try { sessionStorage.setItem(MK + key, JSON.stringify({ ts, v })); } catch (_) {} return v; });
+      MEM.set(key, { ts, p: pr });
       pr.catch(() => MEM.delete(key));
       return pr;
+    };
+    const memoClear = () => {
+      memoClear();
+      try { Object.keys(sessionStorage).filter((k) => k.startsWith(MK)).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
     };
     const parFor = (lid, types) => memo(`par:${lid}:${mainType(types)}`, 10 * 60e3, () => get(`/parameters?locationId=${lid}&resourceTypeId=${mainType(types)}`));
     const zoneAvail = (lid, zid, d, t) => memo(`za:${zid}:${d}:${t}`, 90e3, () => get(`/zoneavailabilities?locationId=${lid}&zoneId=${zid}&startDate=${d}&startTime=${t}`));
@@ -89,7 +100,7 @@
       set(w) { if (w) ss.set('tm4-kurt-when', JSON.stringify(w)); else ss.del('tm4-kurt-when'); },
     };
 
-    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>?d=&t= */
+    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>] */
     // KURT's own addresses (/locations/10, /zone/1) become the app's
     {
       const m = /^\/(locations|zone)\/(\d+)/.exec(location.pathname);
@@ -111,6 +122,7 @@
       const my = ++token;
       const r = route();
       closeBook();
+      document.body.classList.toggle('kfull', r.name === 'z');
       sec.classList.remove('push', 'pop');
       if (anim) { void sec.offsetWidth; sec.classList.add(anim); }
       W.scrollTo(0, keepY); keepY = 0;
@@ -122,14 +134,25 @@
     W.addEventListener('hashchange', () => { show(quiet ? '' : history.length > lastLen ? 'push' : 'pop'); quiet = false; lastLen = history.length; });
 
     /* ---------- home */
+    // the libraries and their opening hours change once a day: fetched once a day; occupancy every time
     async function locData() {
-      const tiles = await get('/tiles');
-      const ids = tiles.flatMap((t) => t.locations.map((l) => l.id));
+      const today = ymd(Date.now());
+      const old = store.get('kurt:locinfo');
+      let tiles, info;
+      if (old && old.day === today && old.tiles) ({ tiles, info } = old);
+      else {
+        tiles = await get('/tiles');
+        info = {};
+        await Promise.all(tiles.flatMap((t) => t.locations).map((loc) => get('/locations/' + loc.id).then((l) => {
+          info[loc.id] = { unit: l.unit, address: l.address, openingHoursToday: l.openingHoursToday, closedToday: l.closedToday, zones: (l.zones || []).length };
+          keepZones(loc.id, l.zones);
+        }, () => {})));
+        store.set('kurt:locinfo', { day: today, tiles, info });
+      }
       const extra = {};
-      await Promise.all(ids.map(async (id) => {
-        const [l, o] = await Promise.all([get('/locations/' + id).catch(() => null), get('/occupancies/' + id).catch(() => null)]);
-        extra[id] = { l: l && { unit: l.unit, address: l.address, openingHoursToday: l.openingHoursToday, closedToday: l.closedToday, zones: (l.zones || []).length }, o: o && { capacity: o.capacity, occupancy: o.occupancy, closed: o.closed } };
-      }));
+      await Promise.all(tiles.flatMap((t) => t.locations).map((loc) => get('/occupancies/' + loc.id).then((o) => o, () => null).then((o) => {
+        extra[loc.id] = { l: info[loc.id], o: o && { capacity: o.capacity, occupancy: o.occupancy, closed: o.closed } };
+      })));
       return { tiles, extra };
     }
     function locRow(loc, x) {
@@ -140,22 +163,26 @@
       const th = loc.thumbnailUrl ? `<span class="ko-th" style="background-image:url('${esc(K + '/' + loc.thumbnailUrl)}')"></span>` : `<span class="ic soft">${ico('seat')}</span>`;
       return row({ href: '#/l/' + loc.id, iconHtml: th, title: loc.unit, subHtml: `${esc(sub || l.address || '')}${closed ? '' : occBar(o)}`, cls: 'ko-row' + (closed ? ' off' : '') });
     }
-    function seatNow(rid) {
-      return memo('now:' + rid, 60e3, async () => {
-        const now = new Date();
-        const h0 = now.getHours();
-        if (h0 >= 23) return { free: false };
-        const today = ymd(Date.now());
-        const ra = await get(`/resourceavailabilities?resourceId=${rid}&startDate=${today}&startTime=${pad(h0)}:00&endDate=${today}&endTime=${pad(h0 + 1)}:00&participantCount=1&exactMatch=false`);
-        const av = (ra && ra.availabilities || [])[0];
-        if (!av || !av.slotAllocation) return { free: false };
-        const al = av.slotAllocation, slot = Math.round(1440 / al.length) || 60;
-        const si = Math.floor((h0 * 60) / slot);
-        if (al[si] === 'A') { let i = si; while (i < al.length && al[i] === 'A') i++; return { free: true, until: hm(Math.min(1440, i * slot)) }; }
-        for (let i = si + 1; i < al.length; i++) if (al[i] === 'A') return { free: false, from: hm(i * slot) };
-        return { free: false };
-      });
+    function warm(lid) {
+      const L = store.get('kurt:loc:' + lid);
+      const zp = L && L.l && L.l.zones ? Promise.resolve(L.l.zones)
+        : memo('loc:' + lid, 10 * 60e3, () => get('/locations/' + lid)).then((l) => { keepZones(lid, l.zones); return l.zones || []; });
+      return zp.then((zones) => {
+        if (!zones.length) return null;
+        return parFor(lid, zones[0].resourceTypeIds).then((par) => {
+          const sel = pickTime(par);
+          if (sel.t) zones.forEach((z) => zoneAvail(lid, z.id, sel.d.value, sel.t.value).catch(() => {}));
+        });
+      }).catch(() => {});
     }
+    // start loading the moment a finger touches a library or room, not when the tap ends
+    document.addEventListener('pointerdown', (e) => {
+      const a = e.target.closest && e.target.closest('a[href^="#/"]');
+      const m = a && /^#\/(l|z)\/(\d+)/.exec(a.getAttribute('href'));
+      if (!m) return;
+      const lid = m[1] === 'l' ? m[2] : ZONES[m[2]] && ZONES[m[2]].l;
+      if (lid) warm(lid);
+    }, { passive: true });
     function viewHome(my) {
       document.title = 'Studieplek';
       setNav({ title: 'Studieplek', back: { label: 'Meer', href: PORTAL + '?tm=meer', act: 'meer' } });
@@ -186,18 +213,13 @@
           h += `<p class="ko-hint">${ico('info')}Check in met de QR-code op je plek. 3 keer niet komen opdagen in 14 dagen = een week geen reservaties.</p>`;
         }
         if (!tiles) { h += `<div class="sh"><h2>Bibliotheken</h2></div>${skGroup(6)}`; put(sec, h); watchTitle(sec); return; }
-        if (d.res === undefined) { /* keep the skeleton above */ }
         const all = tiles.flatMap((t) => t.locations);
         const fl = favs().map((id) => all.find((l) => l.id === id)).filter(Boolean);
         const fs = seatFavs();
         h += `<div class="sh"><h2>Favorieten</h2></div>`;
-        if (!fl.length && !fs.length) h += `<div class="card ko-empty">${STAR(false)}<span>Tik op de ster bij een bibliotheek of bij een stoel. Die komen dan hier, met meteen of ze nu vrij zijn.</span></div>`;
-        if (fs.length) h += `<div class="group kfs-g">${fs.map((f) => {
-          const a = d.seat && d.seat[f.rid];
-          const stTxt = !a ? '<span class="sk" style="display:inline-block;width:70px"></span>' : a.free ? `<em>Vrij</em> tot ${a.until}` : a.from ? `Bezet · vrij vanaf ${a.from}` : 'Vandaag niet meer vrij';
-          return `<a class="row kfs" href="#/z/${f.zone}?seat=${f.rid}"><span class="kr-seat${a && !a.free ? ' busy' : ''}">${esc(seatNo(f.name))}</span><span class="main"><span class="t">${esc(nm(f.name))}</span><span class="s">${esc([f.unit, f.zname].filter(Boolean).join(' · '))}</span></span><span class="end kfs-st">${stTxt}</span></a>`;
-        }).join('')}</div>`;
-        if (fl.length) h += `<div class="group"${fs.length ? ' style="margin-top:12px"' : ''}>${fl.map((l) => locRow(l, extra[l.id])).join('')}</div>`;
+        if (!fl.length && !fs.length) h += `<div class="card ko-empty">${STAR(false)}<span>Tik op de ster bij een bibliotheek of bij een stoel, dan vind je ze hier terug.</span></div>`;
+        if (fl.length) h += `<div class="group">${fl.map((l) => locRow(l, extra[l.id])).join('')}</div>`;
+        if (fs.length) h += `<div class="group kfs-g"${fl.length ? ' style="margin-top:12px"' : ''}>${fs.map((f) => row({ href: `#/z/${f.zone}?seat=${f.rid}`, iconHtml: `<span class="kr-seat">${esc(seatNo(f.name))}</span>`, title: nm(f.name), sub: [f.unit, f.zname].filter(Boolean).join(' · '), cls: 'kfs' })).join('')}</div>`;
         h += `<div class="sh"><h2>Bibliotheken</h2></div>`;
         tiles.filter((t) => t.tileGroup === 1).forEach((t) => {
           h += `<div class="gh">${esc(NL_CITY[t.name] || t.name)}</div><div class="group">${t.locations.map((l) => locRow(l, extra[l.id])).join('')}</div>`;
@@ -208,12 +230,13 @@
         put(sec, h);
         watchTitle(sec);
       };
-      const d = { res: store.get('kurt:res') ? store.get('kurt:res').v : undefined, loc: null, seat: {} };
+      const d = { res: store.get('kurt:res') ? store.get('kurt:res').v : undefined, loc: null };
       const cached = store.get('kurt:locs');
       if (cached) d.loc = cached.v;
       draw(d);
       // favourite seats: free right now, and until when?
-      seatFavs().forEach((f) => seatNow(f.rid).then((a) => { d.seat[f.rid] = a; draw(d); }, () => { d.seat[f.rid] = { free: false }; draw(d); }));
+      // your favourites are probably next: get them ready
+      setTimeout(() => { if (my === token) [...new Set(favs().concat(seatFavs().map((f) => f.loc)))].slice(0, 4).forEach(warm); }, 700);
       get('/reservations').then((r) => { d.res = Array.isArray(r) ? r : []; store.set('kurt:res', { ts: Date.now(), v: d.res }); draw(d); }, () => { if (d.res === undefined) { d.res = []; draw(d); } });
       if (!cached || Date.now() - cached.ts > 3 * 60e3) {
         once('kurt:locs', locData).then((v) => { store.set('kurt:locs', { ts: Date.now(), v }); d.loc = v; draw(d); }, (e) => {
@@ -234,7 +257,7 @@
       return { ds, d, t, now: !w || (d === ds[0] && t === d.startTimes[0] && d.value === ymd(Date.now())) };
     }
     const whenPill = (sel) => !sel.d ? '' : `<button type="button" class="kw" data-act="when">${ico('clock')}<span class="kw-t"><b>${sel.now ? 'Nu' : esc(dayLbl(sel.d.value))}</b><span>${sel.now ? `${esc(dayLbl(sel.d.value)).toLowerCase()} vanaf ${esc(sel.t.display)}` : `vanaf ${esc(sel.t.display)}`}</span></span><span class="kw-ch">Wijzig</span></button>`;
-    function whenSheet() {
+    function whenSheet(after) {
       const par = PAR;
       if (!par || !par.startDates || !par.startDates.length) return;
       const sel = pickTime(par);
@@ -264,7 +287,7 @@
         else if (b.dataset.t) WHEN.set({ d: day, t: b.dataset.t });
         else return;
         close();
-        keepY = W.scrollY; show('');
+        if (after) after(); else { keepY = W.scrollY; show(''); }
       });
     }
     async function viewLoc(id, my) {
@@ -379,30 +402,57 @@
         <div class="kmap" id="kmap"><div class="kp" style="width:${W0}px;height:${H0}px">${fp.floorPlanUrl ? `<img src="${esc(fp.floorPlanUrl)}" alt="Plattegrond ${esc(zone.name)}" draggable="false">` : ''}
         ${seats.map((s) => `<i class="ks${s.availableHours > 0 ? ' free' : ''}${isSeatFav(s.resourceId) ? ' fav' : ''}" data-r="${s.resourceId}" style="left:${s.positionX}px;top:${s.positionY}px">${s.availableHours > 0 ? s.availableHours : ''}</i>`).join('')}</div>
         <div class="kmap-tools"><button type="button" data-act="zin" aria-label="Inzoomen">+</button><button type="button" data-act="zout" aria-label="Uitzoomen">−</button><button type="button" data-act="zfit" aria-label="Hele plattegrond">⤢</button></div>
-        <div class="kmap-leg"><span><i class="ks free">n</i> vrij, n uur</span><span><i class="ks"></i> bezet</span></div></div></div>`;
-      h += `<div class="sh"><h2>${free.length ? `${free.length} plaatsen vrij` : 'Niets vrij'}</h2><span class="sh-note">${esc(dayLbl(sel.d.value))} vanaf ${esc(sel.t.display)}</span></div>`;
-      // favourite seats first
-      free.sort((x, y) => (isSeatFav(y.resourceId) ? 1 : 0) - (isSeatFav(x.resourceId) ? 1 : 0));
-      if (free.length) h += `<div class="kfree">${free.map((s, i) => `<button type="button" class="kf${isSeatFav(s.resourceId) ? ' fav' : ''}" data-act="seat" data-r="${s.resourceId}"${i >= 24 ? ' hidden' : ''}><b>${esc(seatNo(s.resourceName))}</b><span>${s.availableHours} u</span></button>`).join('')}${free.length > 24 ? `<button type="button" class="kf more" data-act="allfree">Alle ${free.length}</button>` : ''}</div>`;
-      else h += `<p class="ko-hint">${ico('info')}Kies een ander uur of een andere ruimte.</p>`;
-      h += `<p class="fresh">${esc(unit)} · <a href="${esc(ORIG('/zone/' + id))}">Open in KURT</a></p>`;
+        <div class="kmap-cnt${free.length ? '' : ' none'}"><b>${free.length || 'Niets'}</b> ${free.length === 1 ? 'plaats' : 'plaatsen'} vrij</div>
+        <div class="kmap-leg"><span><i class="ks free">n</i> n uur vrij</span><span><i class="ks"></i> bezet</span></div>
+        <button type="button" class="kmap-list" data-act="list">${free.length ? `Lijst (${free.length})` : 'Lijst'}</button></div></div>`;
       put(sec, h);
-      Z = { id, zone, sel, seats, unit, W0, H0 };
+      // favourite seats first, then the longest free
+      free.sort((x, y) => (isSeatFav(y.resourceId) ? 1 : 0) - (isSeatFav(x.resourceId) ? 1 : 0));
+      Z = { id, zone, sel, seats, free, unit, W0, H0 };
       initMap();
       // from a favourite: open that seat
       const want = Number(q.get('seat'));
       if (want) {
         const st = seats.find((x) => x.resourceId === want);
-        if (st && st.availableHours > 0) setTimeout(() => pickSeat(want), 250);
-        else if (st) { Z.focus(want); toast(`${seatNo(st.resourceName)} is bezet om ${sel.t.display}`); }
+        if (st) setTimeout(() => pickSeat(want), 250);
         try { history.replaceState(null, '', K + '/#/z/' + id); } catch (_) {}
       }
+    }
+
+    function listSheet() {
+      if (!Z) return;
+      const { free, sel } = Z;
+      const layer = document.createElement('div');
+      layer.setAttribute('data-tm4', '');
+      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+        <div class="kw-h"><b>${free.length ? `${free.length} ${free.length === 1 ? 'plaats' : 'plaatsen'} vrij` : 'Niets vrij'}</b><span class="kl-sub">${esc(dayLbl(sel.d.value))} vanaf ${esc(sel.t.display)} · ${esc((Z.zone.name || '').trim())}</span></div>
+        ${free.length ? `<div class="kfree">${free.map((x) => `<button type="button" class="kf${isSeatFav(x.resourceId) ? ' fav' : ''}" data-r="${x.resourceId}"><b>${esc(seatNo(x.resourceName))}</b><span>${x.availableHours} u</span></button>`).join('')}</div>` : `<p class="ko-hint">${ico('info')}Kies een ander uur of een andere ruimte.</p>`}
+        <button type="button" class="btn ghost kl-when" data-w="1">${ico('clock')}Andere dag of uur</button>
+        <p class="fresh"><a href="${esc(ORIG('/zone/' + Z.id))}">Open in KURT</a></p></div></div>`;
+      document.body.appendChild(layer);
+      const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb');
+      const close = () => { scrim.classList.remove('on'); kb.classList.remove('on'); setTimeout(() => layer.remove(), 320); };
+      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
+      scrim.addEventListener('click', close);
+      kb.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        if (b.dataset.r) { close(); pickSeat(Number(b.dataset.r)); }
+        else if (b.dataset.w) { close(); whenSheet(); }
+      });
     }
 
     function initMap() {
       const box = $('#kmap');
       if (!box) return;
       const kp = box.querySelector('.kp');
+      // the map takes the rest of the screen, so the page itself doesn't need to scroll
+      const fitH = () => {
+        const tabs = $('#tm-tabs');
+        const top = box.getBoundingClientRect().top + W.scrollY;
+        box.style.height = Math.max(300, W.innerHeight - top - (tabs ? tabs.offsetHeight : 0) - 10) + 'px';
+      };
+      fitH();
       const { W0, H0 } = Z;
       let s = 1, x = 0, y = 0, fit = 1;
       const bw = () => box.clientWidth, bh = () => box.clientHeight;
@@ -437,7 +487,7 @@
       reset(false);
       const img = kp.querySelector('img');
       if (img && !img.complete) img.addEventListener('load', () => box.classList.remove('sk'), { once: true }); else box.classList.remove('sk');
-      W.addEventListener('resize', () => { if ($('#kmap') === box) reset(false); });
+      W.addEventListener('resize', () => { if ($('#kmap') === box) { fitH(); reset(false); } });
       // touch: one finger pans, two fingers pinch, a tap picks the nearest seat, a double tap zooms in
       const pts = new Map();
       let start = null, lastTap = 0;
@@ -472,7 +522,7 @@
           const px = (p.x - x) / s, py = (p.y - y) / s;
           let best = null, bd = Infinity;
           Z.seats.forEach((q) => { const d = Math.hypot(q.positionX - px, q.positionY - py) * s; if (d < bd) { bd = d; best = q; } });
-          if (best && bd < 26) { lastTap = 0; if (best.availableHours > 0) pickSeat(best.resourceId); else toast(`${seatNo(best.resourceName)} is bezet om ${Z.sel.t.display}`); }
+          if (best && bd < 26) { lastTap = 0; pickSeat(best.resourceId); }
           else if (now - lastTap < 320) { lastTap = 0; zoomAt(s * 2, p.x, p.y, true); }
           else lastTap = now;
         }
@@ -496,92 +546,106 @@
     }
     async function pickSeat(rid) {
       if (!Z) return;
-      Z.focus && Z.focus(rid);
       const st = Z.seats.find((q) => q.resourceId === rid);
+      if (!st) return;
+      if (Z.focus) Z.focus(rid);
       closeBook();
+      const { d, t } = Z.sel;
       const layer = document.createElement('div');
       layer.setAttribute('data-tm4', '');
-      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in"><div class="kb-h"><span class="kr-seat">${esc(seatNo(st.resourceName))}</span><span class="kr-main"><b>${esc(nm(st.resourceName))}</b><span>${esc(Z.unit)} · ${esc((Z.zone.name || '').trim())}</span></span><button type="button" class="kb-fav" data-act="sfav" aria-label="Favoriete stoel">${STAR(isSeatFav(rid))}</button></div><div class="kb-body">${skRows(2)}</div></div></div>`;
+      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+        <div class="kb-h"><span class="kr-seat">${esc(seatNo(st.resourceName))}</span><span class="kr-main"><b>${esc(nm(st.resourceName))}</b><span>${esc(Z.unit)} · ${esc((Z.zone.name || '').trim())}</span></span><button type="button" class="kb-fav" data-act="sfav" aria-label="Favoriete stoel">${STAR(isSeatFav(rid))}</button></div>
+        <button type="button" class="kb-when" data-act="swhen">${ico('clock')}<span><b>${esc(dayLbl(d.value))}</b> vanaf ${esc(t.display)}</span><em>Wijzig</em></button>
+        <div class="kb-body">${skRows(2)}</div></div></div>`;
       document.body.appendChild(layer);
       bookLayer = layer;
-      const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb');
+      const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb'), body = kb.querySelector('.kb-body');
       requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
       scrim.addEventListener('click', closeBook);
-      const body = kb.querySelector('.kb-body');
-      const { d, t } = Z.sel;
-      const step = 60;
-      void meP;
+      let book = null; // filled in once KURT says the seat can be booked
+      kb.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        const act = b.dataset.act;
+        if (act === 'sfav') {
+          const f = seatFavs(), on = isSeatFav(rid);
+          store.set('kurt:seats', on ? f.filter((x) => x.rid !== rid) : [{ rid, name: st.resourceName, zone: Number(Z.id), zname: (Z.zone.name || '').trim(), loc: Z.zone.locationId, unit: Z.unit }].concat(f).slice(0, 8));
+          b.innerHTML = STAR(!on);
+          const n = document.querySelector(`.ks[data-r="${rid}"]`); if (n) n.classList.toggle('fav', !on);
+          toast(on ? 'Uit je favorieten' : 'Favoriete stoel: je vindt hem op Studieplek');
+          return;
+        }
+        if (act === 'swhen') {
+          // another day or hour, then straight back to this seat
+          const zid = Z.id;
+          closeBook();
+          whenSheet(() => { quiet = true; location.replace(K + '/#/z/' + zid + '?seat=' + rid); });
+          return;
+        }
+        if (act === 'done') { closeBook(); nav('#/'); return; }
+        if (!book) return;
+        if (act === 'end') { book.end = Number(b.dataset.m); book.draw(); return; }
+        if (act !== 'book' || b.disabled) return;
+        b.disabled = true; b.innerHTML = '<span class="spin"></span> Reserveren…';
+        const { av, res, end } = book;
+        const me = ME || {};
+        const endDate = end >= 1440 ? ymd(addDays(fromYmd(d.value), 1)) : d.value;
+        const endTime = end >= 1440 ? '00:00' : hm(end);
+        const parts = me.uid ? [{ uid: me.uid, email: me.email }] : [];
+        // the same reservation KURT's own page sends
+        const payload = {
+          id: res.id, resourceName: res.name, subject: res.name, purpose: '', resourceId: av.id,
+          startDate: d.value, startTime: t.value, endDate, endTime, participants: parts,
+          summary: [`Resource **${av.name}**`, `at **${av.unit}**`, `for **${parts.map((x) => x.email.replace('@', '&commat;')).join(', ')}**`, `from **${enDate(d.value)} ${t.value}** until **${enDate(endDate)} ${endTime}**`],
+          withCheckIn: false,
+        };
+        if (res.additionalFields) payload.additionalFields = res.additionalFields;
+        try {
+          await send('POST', '/reservations/', payload);
+          store.del('kurt:res'); memoClear();
+          book = null;
+          kb.querySelector('.kb-when').hidden = true;
+          put(body, `<div class="kb-ok">${ico('check')}<b>Gereserveerd</b><span>${esc(nm(st.resourceName))} · ${esc(dayLbl(d.value))} ${esc(t.display)}–${hm(end)}</span><span>Check in met de QR-code op je plek, binnen het eerste halfuur.</span></div><button type="button" class="btn kb-go" data-act="done">Klaar</button>`);
+        } catch (err) {
+          book.draw();
+          body.insertAdjacentHTML('afterbegin', `<p class="ko-hint err">${ico('warn')}${esc(err.message || 'Reserveren lukte niet')}</p>`);
+        }
+      });
+      const taken = `<p class="ko-hint">${ico('info')}Deze plaats is niet vrij ${esc(dayLbl(d.value).toLowerCase())} om ${esc(t.display)}. Tik hierboven op Wijzig voor een andere dag of een ander uur.</p>`;
       let ra, res;
       try {
         const e1 = toMin(t.value) + 60;
         const ed = e1 >= 1440 ? ymd(addDays(fromYmd(d.value), 1)) : d.value;
         [ra, res] = await Promise.all([
           get(`/resourceavailabilities?resourceId=${rid}&startDate=${d.value}&startTime=${t.value}&endDate=${ed}&endTime=${e1 >= 1440 ? '00:00' : hm(e1)}&participantCount=1&exactMatch=false`),
-          get(`/resources/${rid}?withDetails=true`),
+          memo('res:' + rid, 30 * 60e3, () => get(`/resources/${rid}?withDetails=true`)),
           meP.catch(() => ME),
         ]);
       } catch (e) { if (bookLayer === layer) put(body, `<p class="ko-hint">${ico('warn')}Deze plaats kon niet geladen worden.</p>`); return; }
       if (bookLayer !== layer) return;
-      const av = (ra && ra.availabilities || []).find((q) => q.id === rid) || (ra && ra.availabilities || [])[0];
-      if (!av) { put(body, `<p class="ko-hint">${ico('warn')}Deze plaats is niet meer vrij om ${esc(t.display)}.</p>`); return; }
-      const res0 = 1440 / (av.slotAllocation.length || 24);
-      const slot = Math.round(res0) || step;
+      const list = (ra && ra.availabilities) || [];
+      const av = list.find((q) => q.id === rid) || list[0];
+      if (!av || !av.slotAllocation) { put(body, taken); return; }
+      const slot = Math.round(1440 / (av.slotAllocation.length || 24)) || 60;
       const si = Math.round(toMin(t.value) / slot);
       const maxMin = av.maxDurationMinutes || 960;
       const ends = [];
       for (let i = si; i < av.slotAllocation.length && av.slotAllocation[i] === 'A' && (i - si + 1) * slot <= maxMin; i++) ends.push((i + 1) * slot);
-      if (!ends.length) { put(body, `<p class="ko-hint">${ico('warn')}Deze plaats is niet meer vrij om ${esc(t.display)}.</p>`); return; }
-      let end = ends[Math.min(ends.length, 4) - 1]; // up to 4 hours by default
+      if (!ends.length) { put(body, taken); return; }
       const tags = (av.tags || []).map((g) => NL_TAGS[g.id] || g.name).filter(Boolean);
-      const draw = () => {
+      const rules = ((res && (res.conditionsOfUseNlUrl || res.conditionsOfUseEnUrl)) || '').trim();
+      book = { av, res, end: ends[Math.min(ends.length, 4) - 1] }; // up to 4 hours by default
+      book.draw = () => {
         const s0 = toMin(t.value);
         put(body, `${tags.length ? `<p class="kb-tags">${tags.map((g) => `<span>${esc(g)}</span>`).join('')}</p>` : ''}
-          <div class="kb-l">${esc(dayLbl(d.value))} van <b>${esc(t.display)}</b> tot</div>
-          <div class="chips kb-ends">${ends.map((m) => `<button type="button" class="chip${m === end ? ' on' : ''}" data-act="end" data-m="${m}">${hm(m)}<small>${dur(m - s0)}</small></button>`).join('')}</div>
-          <button type="button" class="btn kb-go" data-act="book">Reserveer ${esc(seatNo(st.resourceName))} · ${esc(t.display)}–${hm(end)}</button>
-          <p class="kb-legal">Je gaat akkoord met het <a href="${esc((res && (res.conditionsOfUseNlUrl || res.conditionsOfUseEnUrl) || '').trim())}">reglement</a>. Vergeet niet in te checken met de QR-code op je plek.</p>`);
+          <div class="kb-l">Tot wanneer?</div>
+          <div class="chips kb-ends">${ends.map((m) => `<button type="button" class="chip${m === book.end ? ' on' : ''}" data-act="end" data-m="${m}">${hm(m)}<small>${dur(m - s0)}</small></button>`).join('')}</div>
+          <button type="button" class="btn kb-go" data-act="book">Reserveer ${esc(seatNo(st.resourceName))} · ${esc(t.display)}–${hm(book.end)}</button>
+          <p class="kb-legal">Je gaat akkoord met het ${rules ? `<a href="${esc(rules)}">reglement</a>` : 'reglement'}. Vergeet niet in te checken met de QR-code op je plek.</p>`);
         const on = body.querySelector('.kb-ends .chip.on');
         if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
       };
-      draw();
-      kb.addEventListener('click', async (e) => {
-        const b = e.target.closest('[data-act]');
-        if (!b) return;
-        if (b.dataset.act === 'end') { end = Number(b.dataset.m); draw(); return; }
-        if (b.dataset.act === 'sfav') {
-          const f = seatFavs(), on = isSeatFav(rid);
-          store.set('kurt:seats', on ? f.filter((x) => x.rid !== rid) : [{ rid, name: st.resourceName, zone: Number(Z.id), zname: (Z.zone.name || '').trim(), loc: Z.zone.locationId, unit: Z.unit }].concat(f).slice(0, 8));
-          b.innerHTML = STAR(!on);
-          const n = document.querySelector(`.ks[data-r="${rid}"]`); if (n) n.classList.toggle('fav', !on);
-          toast(on ? 'Uit je favorieten' : 'Favoriete stoel: je ziet hem op Studieplek');
-          return;
-        }
-        if (b.dataset.act === 'done') { closeBook(); nav('#/'); return; }
-        if (b.dataset.act !== 'book' || b.disabled) return;
-        b.disabled = true; b.innerHTML = '<span class="spin"></span> Reserveren…';
-        const me = ME || {};
-        const endDate = end >= 1440 ? ymd(addDays(fromYmd(d.value), 1)) : d.value;
-        const endTime = end >= 1440 ? '00:00' : hm(end);
-        const parts = me.uid ? [{ uid: me.uid, email: me.email }] : [];
-        const payload = {
-          id: res.id, resourceName: res.name,
-          subject: [302, 303].includes(res.resourceTypeId) ? res.name : res.name,
-          purpose: '', resourceId: av.id,
-          startDate: d.value, startTime: t.value, endDate, endTime,
-          participants: parts,
-          summary: [`Resource **${av.name}**`, `at **${av.unit}**`, `for **${parts.map((p) => p.email.replace('@', '&commat;')).join(', ')}**`, `from **${enDate(d.value)} ${t.value}** until **${enDate(endDate)} ${endTime}**`],
-          withCheckIn: false,
-        };
-        if (res.additionalFields) payload.additionalFields = res.additionalFields;
-        try {
-          await send('POST', '/reservations/', payload);
-          store.del('kurt:res'); MEM.clear();
-          put(body, `<div class="kb-ok">${ico('check')}<b>Gereserveerd</b><span>${esc(nm(st.resourceName))} · ${esc(dayLbl(d.value))} ${esc(t.display)}–${hm(end)}</span><span>Check in met de QR-code op je plek, binnen het eerste halfuur.</span></div><button type="button" class="btn kb-go" data-act="done">Klaar</button>`);
-        } catch (err) {
-          b.disabled = false; draw();
-          body.insertAdjacentHTML('afterbegin', `<p class="ko-hint err">${ico('warn')}${esc(err.message || 'Reserveren lukte niet')}</p>`);
-        }
-      });
+      book.draw();
     }
 
     /* ---------- taps */
@@ -592,7 +656,6 @@
       if (a) {
         e.preventDefault();
         const href = a.getAttribute('href');
-        if (a.classList.contains('kfs')) WHEN.set(null); // a favourite seat shows "now": open it at now
         nav(href);
         return;
       }
@@ -602,7 +665,7 @@
       if (act === 'kback') { e.preventDefault(); back(); }
       else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
       else if (act === 'when') { e.preventDefault(); whenSheet(); }
-      else if (act === 'allfree') { e.preventDefault(); $$('.kfree .kf[hidden]').forEach((n) => { n.hidden = false; }); b.hidden = true; }
+      else if (act === 'list') { e.preventDefault(); listSheet(); }
       else if (act === 'seat') { e.preventDefault(); pickSeat(Number(b.dataset.r)); }
       else if (act === 'zin' || act === 'zout') { e.preventDefault(); if (Z && Z.zoom) Z.zoom(act === 'zin' ? 1.6 : 1 / 1.6); }
       else if (act === 'zfit') { e.preventDefault(); if (Z && Z.reset) Z.reset(true); }
@@ -616,11 +679,11 @@
         e.preventDefault();
         const id = b.dataset.id;
         sheet({ title: 'Reservatie verwijderen?', msg: b.dataset.n, actions: [{ label: 'Reservatie verwijderen', red: true, run: () => {
-          send('DELETE', '/reservations/' + encodeURIComponent(id) + '/').then(() => { toast('Reservatie verwijderd'); store.del('kurt:res'); MEM.clear(); show(); }, (err) => toast(err.message || 'Annuleren lukte niet'));
+          send('DELETE', '/reservations/' + encodeURIComponent(id) + '/').then(() => { toast('Reservatie verwijderd'); store.del('kurt:res'); memoClear(); show(); }, (err) => toast(err.message || 'Annuleren lukte niet'));
         } }] });
       }
     });
-    pullRefresh(() => { store.del('kurt:locs'); store.del('kurt:res'); MEM.clear(); show(); return new Promise((r) => setTimeout(r, 900)); });
+    pullRefresh(() => { store.del('kurt:locs'); store.del('kurt:res'); memoClear(); show(); return new Promise((r) => setTimeout(r, 900)); });
     show();
   }
 
