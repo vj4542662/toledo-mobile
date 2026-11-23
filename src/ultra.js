@@ -163,9 +163,15 @@
       }));
     }
     function getMe() {
-      const c = store.get('me');
+      const c = store.get('me2');
       if (c && Date.now() - c.ts < 7 * 864e5) return Promise.resolve(c.v);
-      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName').then((v) => { store.set('me', { ts: Date.now(), v }); return v; }));
+      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName,studentId').then((v) => { store.set('me2', { ts: Date.now(), v }); return v; }));
+    }
+    // your student number (r0123456): the portal only knows your login id, so it is handed over on the way back
+    function rnParam() {
+      const c = store.get('me2');
+      const d = c && c.v && /^\d{7,8}$/.test(c.v.studentId || '') ? String(c.v.studentId).slice(-7) : '';
+      return d && store.get('rnSent') !== d ? '&rn=r' + d : '';
     }
     const num = (n) => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
     function gradeText(x, c) {
@@ -687,10 +693,12 @@
       setTabOn(tab);
       // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
       const done = doneParam();
-      const known = !done || store.get('doneSent') === done;
+      const rn = rnParam();
+      const known = !rn && (!done || store.get('doneSent') === done);
       if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
       if (done) store.set('doneSent', done);
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done, { dir: 'back' });
+      if (rn) store.set('rnSent', rn.slice(-7));
+      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -773,7 +781,7 @@
 
     if (!history.state || !history.state.tm) history.replaceState({ tm: 1, d: 0 }, '', location.hash);
     render('none');
-    setTimeout(scanDone, 2500);
+    setTimeout(() => { scanDone(); getMe().catch(() => {}); }, 2500);
     pullRefresh(() => (U.cur && U.cur.refresh ? U.cur.refresh() : null));
     keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };

@@ -25,6 +25,11 @@
         store.set('p:done', P.done);
       }
     }
+    // your student number, handed over by the course pages (?rn=r0123456); Toledo itself only gives the login id
+    {
+      const rn = String(params.get('rn') || '').toLowerCase();
+      if (/^r\d{7}$/.test(rn)) store.set('p:rn', rn);
+    }
     const isDone = (e) => {
       const u = e.url || '';
       const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
@@ -469,7 +474,7 @@
       const name = [u.givenName, u.familyName].filter(Boolean).join(' ');
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
       const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
-      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${u.userId ? ' · ' + esc(u.userId) : ''}</span></span></div></div>`;
+      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
       const mailApp = store.get('mailApp') !== 'web';
       h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
       const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];

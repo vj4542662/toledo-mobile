@@ -873,6 +873,11 @@
         store.set('p:done', P.done);
       }
     }
+    // your student number, handed over by the course pages (?rn=r0123456); Toledo itself only gives the login id
+    {
+      const rn = String(params.get('rn') || '').toLowerCase();
+      if (/^r\d{7}$/.test(rn)) store.set('p:rn', rn);
+    }
     const isDone = (e) => {
       const u = e.url || '';
       const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
@@ -1317,7 +1322,7 @@
       const name = [u.givenName, u.familyName].filter(Boolean).join(' ');
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
       const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
-      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${u.userId ? ' · ' + esc(u.userId) : ''}</span></span></div></div>`;
+      let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
       const mailApp = store.get('mailApp') !== 'web';
       h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.ADVALVAS || 'https://icts-p-toledo-valvas.cloud.icts.kuleuven.be/student/messages', 'inbox', '#ff9500', 'Ad Valvas', 'Berichten van je faculteit')}${link(L['BB-MESSAGES-ULTRA'] || ULTRA + '/ultra/messages', 'bubble', '#30b955', 'Berichten', 'Blackboard')}</div>`;
       const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
@@ -1836,9 +1841,15 @@
       }));
     }
     function getMe() {
-      const c = store.get('me');
+      const c = store.get('me2');
       if (c && Date.now() - c.ts < 7 * 864e5) return Promise.resolve(c.v);
-      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName').then((v) => { store.set('me', { ts: Date.now(), v }); return v; }));
+      return once('me', () => uget('/learn/api/public/v1/users/me?fields=id,userName,studentId').then((v) => { store.set('me2', { ts: Date.now(), v }); return v; }));
+    }
+    // your student number (r0123456): the portal only knows your login id, so it is handed over on the way back
+    function rnParam() {
+      const c = store.get('me2');
+      const d = c && c.v && /^\d{7,8}$/.test(c.v.studentId || '') ? String(c.v.studentId).slice(-7) : '';
+      return d && store.get('rnSent') !== d ? '&rn=r' + d : '';
     }
     const num = (n) => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
     function gradeText(x, c) {
@@ -2360,10 +2371,12 @@
       setTabOn(tab);
       // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
       const done = doneParam();
-      const known = !done || store.get('doneSent') === done;
+      const rn = rnParam();
+      const known = !rn && (!done || store.get('doneSent') === done);
       if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
       if (done) store.set('doneSent', done);
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done, { dir: 'back' });
+      if (rn) store.set('rnSent', rn.slice(-7));
+      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -2446,7 +2459,7 @@
 
     if (!history.state || !history.state.tm) history.replaceState({ tm: 1, d: 0 }, '', location.hash);
     render('none');
-    setTimeout(scanDone, 2500);
+    setTimeout(() => { scanDone(); getMe().catch(() => {}); }, 2500);
     pullRefresh(() => (U.cur && U.cur.refresh ? U.cur.refresh() : null));
     keepAlive('ultra', [[ULTRA + '/learn/api/public/v1/users/me?fields=id']], 5 * 60e3);
     const wake = () => { if (document.visibilityState === 'visible' && U.cur && U.cur.show) U.cur.show(); };
