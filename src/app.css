@@ -714,3 +714,44 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .ip-us-lines i:nth-child(2){width:70%}.tm4 .ip-us-lines i:nth-child(3){width:50%}
 .tm4 .ip-us-scroll{padding:2px 0 8px;text-align:center;font-size:12.5px;font-weight:600;color:#0a6cd6}
 .tm4 .ip-warn2{margin:10px 0 0;padding:9px 11px;border-radius:10px;background:rgba(255,59,48,.1);color:var(--text);font-size:14px;line-height:19px;font-weight:400}
+/* KURT: group work rooms */
+.tm4 .kroute{display:flex;align-items:center;gap:5px;margin:4px 0 0;font-size:13px;line-height:18px}
+.tm4 .kroute .i{width:14px;height:14px;color:var(--sub)}
+.tm4 .kroute a{color:var(--accent)}.tm4 .kroute i{font-style:normal;color:var(--ter)}
+.tm4 .kr-seat.kr-room{background:var(--accent)}.tm4 .kr-room .i{width:26px;height:26px;stroke-width:1.9}
+.tm4 .kg-home-t{display:flex;gap:12px;align-items:center}
+.tm4 .kg-home-t>.i{flex:none;width:44px;height:44px;padding:9px;border-radius:12px;background:var(--accent);color:#fff;stroke-width:1.9}
+.tm4 .kg-home-t span{display:flex;flex-direction:column}.tm4 .kg-home-t b{font-size:16px}.tm4 .kg-home-t span span{font-size:13.5px;color:var(--sub)}
+.tm4 .kg-libs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tm4 .kg-libs .chip{display:inline-flex;align-items:center;height:34px;color:var(--accent);font-weight:600}
+.tm4 .kg-cta{display:flex;align-items:center;gap:12px;color:inherit}
+.tm4 .kg-cta .chev{flex:none;width:8px;height:14px;fill:none;stroke:var(--ter);stroke-width:2}
+.tm4 .kg-ic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.tm4 .kg-ic .i{width:26px;height:26px;stroke-width:1.9}
+.tm4 .kg-days{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none}
+.tm4 .kg-days::-webkit-scrollbar{display:none}
+.tm4 .kg-days .chip{display:flex;flex-direction:column;justify-content:center;align-items:center;height:50px;min-width:62px;line-height:1.1}
+.tm4 .kg-days .chip small{font-size:11.5px;font-weight:500;opacity:.7}
+.tm4 .kg-sum{margin:12px 20px 0;font-size:14px;line-height:19px;color:var(--sub)}.tm4 .kg-sum b{color:var(--green)}
+.tm4 .card.kg{margin-top:10px;padding:12px 14px 14px}
+.tm4 .kg-h{display:flex;align-items:center;gap:12px}
+.tm4 .kg-h .kr-main{flex:1}
+.tm4 .kg-free{flex:none;max-width:42%;font-size:13.5px;font-weight:600;color:var(--green);text-align:right}
+.tm4 .kg.none .kg-free{color:var(--sub);font-weight:500}.tm4 .kg.none .kg-ic{filter:grayscale(1);opacity:.6}
+.tm4 .kg-strip{display:flex;gap:2px;margin-top:10px}
+.tm4 .kg-c{flex:1;min-width:0;height:30px;padding:0;border-radius:5px;background:var(--fill2,var(--fill));color:var(--sub);font-size:10.5px;font-weight:600}
+.tm4 .kg-c.free{background:var(--green);color:#fff}
+.tm4 .kg-c:disabled{opacity:.55}
+.tm4 .kb-when-s{pointer-events:none}
+.tm4 .kg-in{display:block;width:100%;height:44px;margin:0 0 12px;padding:0 12px;border:0;border-radius:10px;background:var(--fill);color:var(--text);font:inherit;font-size:16px}
+.tm4 .kg-pl span{color:var(--sub)}
+.tm4 .kg-ppl{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.tm4 .kg-p{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--card)}
+.tm4 .kg-p .kr-main{flex:1}.tm4 .kg-p .kr-main b{font-size:15px;text-transform:capitalize}.tm4 .kg-p .kr-main span{font-size:12.5px}
+.tm4 .kg-av{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:16px;background:var(--accent);color:#fff;font-weight:700;font-size:14px}
+.tm4 .kg-x{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:16px;color:var(--sub)}.tm4 .kg-x .i{width:18px;height:18px}
+.tm4 .kg-add{display:flex;gap:8px}.tm4 .kg-add .kg-in{flex:1}
+.tm4 .kg-addb{flex:none;height:44px;padding:0 14px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:15px}
+.tm4 .kg-addb .spin{width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,.4);border-top-color:#fff}
+.tm4 .kg-mates{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.tm4 .kg-mates .chip{height:30px;padding:0 11px;font-size:14px;color:var(--accent);text-transform:capitalize}
+.tm4 .kb-go:disabled{opacity:.5}
