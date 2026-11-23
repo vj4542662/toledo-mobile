@@ -7,6 +7,7 @@
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
     else if (params.get('tm') === 'sync') mode = 'sync';
+    else if (PHONE && params.get('tm') !== 'orig' && (params.get('tm') === 'room' || /zr_1011-display.*\/room\/\d+/.test(decodeURIComponent(location.hash)))) mode = 'room'; // lokaalfiche
     else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 10 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in (approving in the Authenticator can take a while)
     else if (PHONE && params.get('tm') === 'agenda') { mode = 'redirect'; target = PORTAL + '?tm=rooster'; } // link from v3
   } else if (!TOP && !TEST) mode = 'none';
@@ -54,6 +55,7 @@
   }
   if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
+  if (mode === 'room') { whenRoot(roomPage); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }
   if (mode === 'plain') { classicPill(); return; }

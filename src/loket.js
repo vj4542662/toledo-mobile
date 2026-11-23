@@ -137,6 +137,94 @@
     }));
   }
 
+  /* ================================================================== room page (lokaalfiche), app style
+     www.kuleuven.be/lokalen/<id>.htm lands on KU Loket's own room app (#zr_1011-display&/room/<id>); the app links
+     straight to LOKET?tm=room&id=<id>. Where the room is matters most (map, address, photos); the rest stays small. */
+  function roomPage() {
+    const id = (/^\d{6,10}$/.test(params.get('id') || '') && params.get('id')) || (/\/room\/(\d{6,10})/.exec(decodeURIComponent(location.hash)) || [])[1] || '';
+    const orig = `${LOKET}?tm=orig#zr_1011-display&/room/${id}`;
+    takeover('Lokaal', []);
+    buildShell([
+      { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
+      { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
+      { id: 'rooster', label: 'Rooster', icon: 'calendar', href: PORTAL + '?tm=rooster' },
+      { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
+      { id: 'meer', label: 'Meer', icon: 'grid', href: PORTAL + '?tm=meer' },
+    ], 'rooster');
+    const canBack = history.length > 1 && /^https:\/\/(toledo\.kuleuven\.be|ultra\.edu\.kuleuven\.cloud)\//.test(document.referrer);
+    setNav({ back: { label: canBack ? 'Terug' : 'Rooster', act: 'back', href: PORTAL + '?tm=rooster' }, title: '' });
+    const main = $('#tm-main');
+    const sec = document.createElement('section');
+    sec.className = 'view on';
+    sec.setAttribute('data-tm4', '');
+    main.appendChild(sec);
+    const ACR = /^(ICTS|PC|PCS|KU|AV|II|III|IV|VIP|LAB)$/;
+    const nice = (t) => { const v = String(t || '').trim(); if (!v || v !== v.toUpperCase()) return v; return v.toLowerCase().replace(/(^|[\s(\-/.])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase()).split(' ').map((w) => (/\d/.test(w) || ACR.test(w.toUpperCase()) ? w.toUpperCase() : w)).join(' '); };
+    const num = (q) => String(q || '').trim().replace(/^0+(?=\d)/, '');
+    function draw(d, fresh) {
+      const room = d.number || '';
+      const name = nice(d.name);
+      const bld = String(d.buildingName || '').replace(/^\S+\s+/, '') || d.buildingName || '';
+      const street = String(d.buildingStreetHouseNr || '').replace(/\s{2,}/g, ' ').trim();
+      const city = [d.buildingPostalCode, d.buildingCity].filter(Boolean).join(' ');
+      const addr = [street, city].filter(Boolean).join(', ');
+      const q = encodeURIComponent([street, city].filter(Boolean).join(' ') || bld);
+      const media = ((d.mediaSet && d.mediaSet.results) || []);
+      const photos = media.filter((m) => /^(JPG|JPEG|PNG)$/i.test(m.type || '') && m.url);
+      const docs = media.filter((m) => /^PDF$/i.test(m.type || '') && m.url);
+      const res = ((d.resourceSet && d.resourceSet.results) || []);
+      const cap = num(d.capacity);
+      const examCap = (res.find((r) => /examencapaciteit/i.test(r.description || '')) || {}).quantity;
+      document.title = room || 'Lokaal';
+      let h = `<div class="lt"><h1>${esc(room || 'Lokaal')}</h1><p class="lt-sub">${esc([name, bld].filter(Boolean).join(' · '))}</p></div>`;
+      if (photos.length) h += `<div class="rp-photos">${photos.map((m, i) => `<a href="${esc(m.url)}" class="rp-ph"><img src="${esc(m.url)}" alt="Foto ${i + 1} van ${esc(room)}" loading="${i < 2 ? 'eager' : 'lazy'}" decoding="async"></a>`).join('')}</div>${photos.length > 1 ? `<p class="rp-cnt">${photos.length} foto's · veeg opzij</p>` : ''}`;
+      else if (!fresh) h += '<div class="rp-photos"><div class="rp-ph sk"></div></div>';
+      if (addr) {
+        h += `<div class="sh"><h2>Locatie</h2></div><div class="card rp-loc">
+          <div class="rp-mapw"><span>${ico('pin')}Kaart laden…</span><iframe class="rp-map" src="https://maps.google.com/maps?q=${q}&z=17&output=embed" loading="lazy" referrerpolicy="no-referrer" title="Kaart van ${esc(street || bld)}"></iframe></div>
+          <div class="rp-addr">${ico('pin')}<span><b>${esc(street || bld)}</b><br>${esc(city)}</span></div>
+          ${d.access ? `<div class="rp-note">${ico('info')}<span>${esc(d.access)}</span></div>` : ''}
+          <div class="rp-acts"><a class="pri" href="https://www.google.com/maps/search/?api=1&query=${q}">Google Maps</a><a href="https://maps.apple.com/?q=${q}">Apple Kaarten</a>${d.locationUrl ? `<a href="${esc(d.locationUrl)}">KU Leuven-kaart</a>` : ''}</div>
+        </div>`;
+      }
+      if (docs.length) h += `<div class="group" style="margin-top:12px">${docs.map((m, i) => row({ href: m.url, icon: 'doc', soft: true, title: docs.length > 1 ? `Plan ${i + 1}` : 'Plan', sub: 'PDF', external: true })).join('')}</div>`;
+      // the rest: small
+      const facts = [['Soort', d.type], ['Plaatsen', cap], ['Plaatsen bij examens', examCap && num(examCap)], ['Oppervlakte', d.surface], ['Gebouw', d.buildingNr]].filter((x) => x[1]);
+      if (facts.length) h += `<div class="gh">Over dit lokaal</div><div class="group plain rp-small">${facts.map(([k, v]) => `<div class="row"><span class="main"><span class="t">${esc(k)}</span></span><span class="end">${esc(String(v))}</span></div>`).join('')}</div>`;
+      const groups = {};
+      res.filter((r) => !/examencapaciteit|code (geel|oranje)/i.test(r.description || '')).forEach((r) => { (groups[r.group || 'Andere'] = groups[r.group || 'Andere'] || []).push(r); });
+      const gk = Object.keys(groups);
+      if (gk.length) h += `<details class="rp-more"><summary>Voorzieningen (${res.length})</summary>${gk.map((g) => `<div class="gh">${esc(g)}</div><p class="rp-list">${groups[g].map((r) => esc(r.description + (Number(r.quantity) > 1 ? ' (' + num(r.quantity) + ')' : ''))).join(' · ')}</p>`).join('')}</details>`;
+      const resp = ((d.responsibleSet && d.responsibleSet.results) || []).map((r) => r.name).filter(Boolean);
+      if (resp.length || d.assignedTo1) h += `<p class="rp-list rp-foot">${d.assignedTo1 ? 'Beheer: ' + esc(d.assignedTo1) + '<br>' : ''}${resp.length ? 'Verantwoordelijken: ' + esc(resp.join(', ')) : ''}</p>`;
+      h += `<p class="fresh"><a href="${esc(orig)}" data-orig="1">Open in KU Loket</a></p>`;
+      put(sec, h);
+    }
+    const KEY = 'room:' + id;
+    const cached = store.get(KEY);
+    if (cached && cached.v) draw(Object.assign({}, cached.v, { mediaSet: { results: [] } }), false);
+    else put(sec, `<div class="lt"><h1>Lokaal</h1></div><div class="rp-photos"><div class="rp-ph sk"></div></div>${skGroup(3)}`);
+    if (!id) { put(sec, empty('pin', 'Lokaal niet gevonden', '')); return; }
+    api(`${LOKET_ORIGIN}/sap/opu/odata/sap/ZL_RE_LOK_FICHE_SRV/roomSet('${id}')?sap-client=200&$format=json&$expand=mediaSet,resourceSet,responsibleSet,infoLinkSet`)
+      .then((j) => {
+        const d = (j && j.d) || {};
+        // photo links are one-time handles: keep the rest for a fast next visit
+        const keep = Object.assign({}, d);
+        delete keep.mediaSet;
+        store.set(KEY, { ts: Date.now(), v: keep });
+        draw(d, true);
+      }, () => {
+        if (cached && cached.v) { draw(Object.assign({}, cached.v, { mediaSet: { results: [] } }), true); return; }
+        put(sec, empty('pin', 'Lokaal kon niet geladen worden', 'KU Loket reageert niet of je bent afgemeld.', `<p style="margin-top:14px"><a class="btn" href="${esc(orig)}" data-orig="1">Open in KU Loket</a></p>`));
+      });
+    W.addEventListener('click', (e) => {
+      const b = e.target.closest && e.target.closest('[data-act="back"]');
+      if (b) { e.preventDefault(); if (canBack) history.back(); else goTo(PORTAL + '?tm=rooster', { dir: 'back' }); return; }
+      const t = e.target.closest && e.target.closest('#tm-tabs a');
+      if (t) { e.preventDefault(); goTo(t.getAttribute('href'), { dir: 'back' }); }
+    }, true);
+  }
+
   /* runs inside the hidden KU Loket frame that the app opens. Read first, stop the page only when that worked. */
   function bridge() {
     let sent = false;

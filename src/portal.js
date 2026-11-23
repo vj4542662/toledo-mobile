@@ -121,12 +121,12 @@
           const exam = /^(evaluation|evaluatie|examen|exam)\b\s*:?/i.test(l.t || '');
           let title = String(l.t || '').replace(/^(evaluation|evaluatie|examen|exam)\b\s*:?\s*/i, '');
           if (e && (!title || (title.length >= 26 && cleanTitle(e.title).startsWith(title)))) title = cleanTitle(e.title);
-          out.push({ start: st, end: en, title: title || 'Les', lu: e && e.learningUnitId, color: e ? e.color : 0, room: l.r, url: l.u, form: exam ? 'Examen' : l.f, who: exam ? '' : l.p, exam });
+          out.push({ start: st, end: en, title: title || 'Les', lu: e && e.learningUnitId, color: e ? e.color : 0, room: l.r, url: roomHref(l.u), form: exam ? 'Examen' : l.f, who: exam ? '' : l.p, exam });
         });
       } else {
         (P.upcoming || []).forEach((u) => {
           const loc = u.location || {}, src = u.source || {};
-          out.push({ start: u.start, end: u.end, title: u.name || 'Les', lu: src.learningUnitId, color: src.color, room: [loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), url: (loc.url || '').replace(/^http:/, 'https:') });
+          out.push({ start: u.start, end: u.end, title: u.name || 'Les', lu: src.learningUnitId, color: src.color, room: [loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), url: roomHref((loc.url || '').replace(/^http:/, 'https:')) });
         });
       }
       return out.sort((a, b) => a.start - b.start);
@@ -148,7 +148,7 @@
       const idx = byLu();
       return ((ag && ag.exams) || []).map((x) => {
         const e = idx.code[String(x.c || '').toLowerCase()];
-        return { start: fromYmd(x.d, x.s || '00:00'), time: x.s && x.s !== '00:00' ? x.s : '', end: x.e && x.e !== '00:00' ? x.e : '', title: String(x.t || '').replace(/^(evaluation|evaluatie)\s*:\s*/i, '') || (e ? cleanTitle(e.title) : 'Examen'), room: x.r, url: x.u || roomUrl(x.r), note: x.x, lu: e && e.learningUnitId, color: e ? e.color : 0 };
+        return { start: fromYmd(x.d, x.s || '00:00'), time: x.s && x.s !== '00:00' ? x.s : '', end: x.e && x.e !== '00:00' ? x.e : '', title: String(x.t || '').replace(/^(evaluation|evaluatie)\s*:\s*/i, '') || (e ? cleanTitle(e.title) : 'Examen'), room: x.r, url: roomHref(x.u) || roomUrl(x.r), note: x.x, lu: e && e.learningUnitId, color: e ? e.color : 0 };
       }).sort((a, b) => a.start - b.start);
     }
     const deadlines = (now = Date.now()) => P.events.filter((e) => e.subType === 'due' && !e.dismissed && e.date > now - 3600e3).sort((a, b) => a.date - b.date);

@@ -87,6 +87,8 @@
   };
   const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
   const absU = (u, base = ULTRA + '/') => { try { const x = new URL(u, base); return /^(https?:|mailto:)$/.test(x.protocol) ? x.href : ''; } catch (_) { return ''; } };
+  // room links (www.kuleuven.be/lokalen/<id>.htm) open the app's own room page on KU Loket
+  const roomHref = (u) => { const m = /^https?:\/\/www\.kuleuven\.be\/lokalen\/(\d{6,10})\.htm/.exec(String(u || '')); return m ? `${LOKET}?tm=room&id=${m[1]}` : u || ''; };
   const put = (el, html) => { if (el && el.__h !== html) { el.innerHTML = html; el.__h = html; } };
 
   /* course colours (Toledo palette, 1-16) */
