@@ -191,8 +191,90 @@
      opens the app link from it (icts.kuleuven.be/apps/authenticator/…). You approve in the app and come back to a page
      that finishes the login by itself, as before. If anything is off (slow network, page changed), the normal second
      step simply appears, so you never end up worse off. Nothing is filled in: no username, no password. */
+  const APP_LINK = /^https:\/\/icts\.kuleuven\.be\/apps\/authenticator\/[\w-]+$/;
+  // ask KU Leuven for the second step (the same request the blue button sends) and pull the app link out of it
+  function fetchStep2(form, b) {
+    const body = new URLSearchParams(new FormData(form));
+    body.append(b.name, b.value || '');
+    return fetch(form.action, { method: 'POST', body, credentials: 'include', redirect: 'follow' })
+      .then((r) => (r.ok ? r.text().then((html) => ({ html, url: r.url })) : Promise.reject(new Error('HTTP ' + r.status))))
+      .then(({ html, url }) => {
+        const doc2 = new DOMParser().parseFromString(html, 'text/html');
+        const a = doc2.getElementById('btnMobileDevice');
+        const app = a && a.getAttribute('href');
+        const cont = doc2.getElementById('loginformnextauth');
+        if (!app || !APP_LINK.test(app) || !cont) throw new Error('no app link');
+        return { html, url, app, action: new URL(cont.getAttribute('action'), url || location.href).href };
+      });
+  }
+  // show the second step (it waits for your approval and finishes by itself), and open the app if this is still your tap
+  function showStep2(st, openApp) {
+    ss.set('tm4-fa', JSON.stringify({ action: st.action, ts: Date.now() })); // see finishAfterApp
+    if (st.url && new URL(st.url).origin === location.origin) history.replaceState(null, '', st.url);
+    document.open();
+    document.write(st.html);
+    document.close();
+    loginSkin(true);
+    if (openApp) location.href = st.app;
+    finishAfterApp();
+  }
+  const plainSubmit = (form, b) => {
+    const h = document.createElement('input');
+    h.type = 'hidden'; h.name = b.name; h.value = b.value || '';
+    form.appendChild(h);
+    HTMLFormElement.prototype.submit.call(form);
+  };
+
+  /* Opening Toledo from the home screen while signed out: the KU Leuven page becomes one big "tap to open the
+     Authenticator" screen. The next step is already fetched in the background, so the moment you tap (anywhere),
+     the app opens. A tap is needed because iOS never lets a page open another app on its own. "Andere manier" gives
+     you the normal KU Leuven page (password, QR code). */
+  function quickLogin() {
+    const form = document.getElementById('nextauthLoginForm');
+    const b = document.getElementById('btnnextauthlogin');
+    if (!form || !b || ss.get('tm4-ql-off')) return false;
+    const rd = form.querySelector('[name="__Host-rememberDevice"]');
+    if (rd && rd.checked) return false;
+    if (Array.from(document.querySelectorAll('.alert-danger, .alert-warning')).some((el) => el.offsetParent !== null && el.id !== 'rss-status')) return false; // a message from KU Leuven: let you read it
+    const last = Number(ss.get('tm4-ql-at')) || 0;
+    if (Date.now() - last < 20e3) return false; // just tried: don't loop
+    ss.set('tm4-ql-at', String(Date.now()));
+    const ov = document.createElement('div');
+    ov.id = 'tm4-ql';
+    ov.setAttribute('role', 'button');
+    ov.innerHTML = '<img src="https://stijl.kuleuven.be/shibboleth/images/authenticator.svg" alt=""><b>Inloggen</b><span class="q">Even geduld…</span><button type="button" class="other">Andere manier</button>';
+    const css = document.createElement('style');
+    css.textContent = '#tm4-ql{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:var(--bg,#f2f2f7);color:var(--text,#000);font:17px -apple-system,system-ui,sans-serif;text-align:center;-webkit-tap-highlight-color:transparent}'
+      + '#tm4-ql img{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 24px rgba(0,0,0,.15)}#tm4-ql b{font-size:26px;margin-top:8px}'
+      + '#tm4-ql .q{min-height:50px;display:flex;align-items:center;padding:0 22px;border-radius:14px;color:var(--sub,#6d6d72)}'
+      + '#tm4-ql.ready .q{background:var(--accent,#0a6cd6);color:#fff;font-weight:600}'
+      + '#tm4-ql .other{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom));border:0;background:none;color:var(--accent,#0a6cd6);font:500 16px -apple-system,system-ui,sans-serif;padding:10px}';
+    document.head.appendChild(css);
+    document.body.appendChild(ov);
+    let st = null, gone = false;
+    const off = () => { gone = true; ov.remove(); };
+    ov.querySelector('.other').addEventListener('click', (e) => {
+      e.stopPropagation();
+      ss.set('tm4-ql-off', '1');
+      if (st) showStep2(st, false); else off(); // the second step has a "Go back" to the password login
+    });
+    ov.addEventListener('click', () => {
+      if (gone) return;
+      if (st) { gone = true; showStep2(st, true); return; }
+      ov.querySelector('.q').textContent = 'Bezig…';
+    });
+    fetchStep2(form, b).then((v) => {
+      if (gone) return;
+      st = v;
+      ov.classList.add('ready');
+      ov.querySelector('.q').textContent = 'Tik om de Authenticator te openen';
+    }, () => { if (!gone) plainSubmit(form, b); }); // fetching failed: take the normal route (the button you would press)
+    return true;
+  }
+
+  /* Your own tap on "Log in via KU Leuven Authenticator": fetch the second step and open the app from that same tap
+     (iOS only opens another app from a real tap). If anything is off, the normal second step simply appears. */
   function fastAuthenticator() {
-    const APP = /^https:\/\/icts\.kuleuven\.be\/apps\/authenticator\/[\w-]+$/;
     let busy = false;
     W.addEventListener('click', (e) => {
       const b = e.target && e.target.closest && e.target.closest('#btnnextauthlogin');
@@ -204,34 +286,10 @@
       e.stopImmediatePropagation();
       busy = true;
       const t0 = Date.now();
-      const body = new URLSearchParams(new FormData(form));
-      body.append(b.name, b.value || '');
-      const plain = () => {
-        const h = document.createElement('input');
-        h.type = 'hidden'; h.name = b.name; h.value = b.value || '';
-        form.appendChild(h);
-        HTMLFormElement.prototype.submit.call(form);
-      };
-      fetch(form.action, { method: 'POST', body, credentials: 'include', redirect: 'follow' })
-        .then((r) => (r.ok ? r.text().then((html) => ({ html, url: r.url })) : Promise.reject(new Error('HTTP ' + r.status))))
-        .then(({ html, url }) => {
-          const doc2 = new DOMParser().parseFromString(html, 'text/html');
-          const a = doc2.getElementById('btnMobileDevice');
-          const app = a && a.getAttribute('href');
-          const cont = doc2.getElementById('loginformnextauth');
-          if (!app || !APP.test(app) || !cont) throw new Error('no app link');
-          // where "I signed in with the app, continue" goes: used when you come back from the app (see finishAfterApp)
-          ss.set('tm4-fa', JSON.stringify({ action: new URL(cont.getAttribute('action'), url || location.href).href, ts: Date.now() }));
-          if (url && new URL(url).origin === location.origin) history.replaceState(null, '', url);
-          document.open();
-          document.write(html);
-          document.close();
-          loginSkin(true);
-          if (Date.now() - t0 < 900) location.href = app; // still part of your tap: iOS opens the app
-          finishAfterApp();
-        })
-        .catch(() => { busy = false; plain(); });
+      fetchStep2(form, b).then((v) => showStep2(v, Date.now() - t0 < 900)).catch(() => { busy = false; plainSubmit(form, b); });
     }, true);
+    const ql = () => { try { quickLogin(); } catch (_) {} };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ql, { once: true }); else ql();
   }
 
   /* Back from the Authenticator app: KU Leuven's page should notice the approval by itself, but iOS pauses it while
