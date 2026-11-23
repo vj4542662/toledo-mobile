@@ -3,10 +3,15 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.14.0"
+VERSION = "4.15.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.15.0": [
+        "De hele app laadt sneller: Toledo Mobile zelf is een derde kleiner geworden.",
+        "Vandaag en je vakken openen vlotter, ook met een vol lessenrooster.",
+        "Een vak openen voelt sneller: de app zoekt op de achtergrond rustiger door je mappen.",
+    ],
     "4.14.0": [
         "KURT: de plattegrond vult nu het hele scherm. Bovenaan zie je hoeveel plaatsen er vrij zijn, en met de knop Lijst zie je alle vrije stoelen.",
         "KURT: bij een stoel (ook een favoriet) kies je nu zelf de dag en het uur, tot een week op voorhand.",
@@ -150,6 +155,21 @@ lcss = (src / 'login.css').read_text()
 lcss = re.sub(r'/\*.*?\*/', '', lcss, flags=re.S)
 lcss = re.sub(r'\n\s*', '\n', lcss).strip()
 out = header + "(() => {\n  'use strict';\n  if (window.__TM4__) return;\n  window.__TM4__ = true;\n  const CSS = " + json.dumps(css) + ";\n  const LOGIN_CSS = " + json.dumps(lcss) + ";\n" + app + "})();\n" + classic
+# Smaller file = Userscripts hands it to Safari faster on every page. terser shortens the code (same behaviour);
+# the ==UserScript== header stays. Without Node.js the build still works, just with a bigger file.
+def minify(js):
+    import subprocess
+    body = js.split('// ==/UserScript==\n', 1)
+    try:
+        r = subprocess.run(['npx', '--yes', 'terser@5.36.0', '--compress', 'passes=2', '--mangle', '--ecma', '2020'],
+                           input=body[1], capture_output=True, text=True, timeout=300)
+        if r.returncode or not r.stdout.strip():
+            raise RuntimeError(r.stderr[-400:])
+        return body[0] + '// ==/UserScript==\n' + r.stdout.strip() + '\n'
+    except Exception as e:  # noqa: BLE001
+        print('LET OP: niet verkleind (terser niet beschikbaar):', e)
+        return js
+out = minify(out)
 (here / 'toledo-mobile.user.js').write_text(out)
 # the app checks this small file (not the whole script) to see whether there is a new version
 def vkey(v): return tuple(int(x) for x in v.split('.'))

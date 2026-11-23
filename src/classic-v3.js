@@ -31,11 +31,9 @@
   if (!SITE) return;
 
   const PORTAL = 'https://toledo.kuleuven.be/portal/';
-  const OFF_KEY = 'toledo-mobile-off';
   const root = document.documentElement;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const isOff = () => { try { return localStorage.getItem(OFF_KEY) === '1'; } catch (_) { return false; } };
 
   /* ================================================================== CSS */
   const SHARED_CSS = String.raw`html.tm-on {
@@ -66,296 +64,6 @@ html.tm-on #tm-tabbar .tm-badge:empty { display: none; }
 
 html.tm-on:not(.tm-tabs) #tm-tabbar { display: none !important; }
 html.tm-on #tm-tabbar a.tm-ext-active { color: var(--tm-blue); }
-`;
-
-  const PORTAL_CSS = String.raw`
-
-html.tm-on body {
-  background: var(--tm-bg) !important; color: var(--tm-text) !important;
-  font-family: var(--tm-font) !important;
-  padding-bottom: calc(var(--tm-tab-h) + env(safe-area-inset-bottom) + 12px) !important;
-}
-html.tm-on :is(h1,h2,h3,h4,h5,h6,p,a,li,label,input,button,select,textarea,small,strong,.btn,.panel,.badge,.lu-title,.lu-id,.tol-title):not([class*="glyphicon"]):not([class*="fa-"]):not(.lu-type-icon) {
-  font-family: var(--tm-font) !important;
-}
-
-/* ---------- header ---------- */
-html.tm-on nav.navbar-primary {
-  background: var(--tm-head) !important; background-image: none !important; border: 0 !important;
-  box-shadow: 0 .5px 0 rgba(0,0,0,.15) !important;
-}
-html.tm-on nav.navbar-primary button.navbar-toggle { display: none !important; }
-html.tm-on #tol-primary-navigation > li:has(> a[href="#/home"]),
-html.tm-on #tol-primary-navigation > li:has(> a[href="#/messages"]),
-html.tm-on #tol-primary-navigation > li:has(> a[href="#/updates"]) { display: none !important; }
-html.tm-on #tm-title {
-  display: inline-block; color: #fff; font: 700 22px/1 var(--tm-font); letter-spacing: -.3px;
-  padding: 14px 0 0 2px; margin: 0;
-}
-html.tm-on #tm-title b { font-weight: 700; color: #9fd3ec; }
-html.tm-on #portal-search { padding: 0 2px 10px; }
-html.tm-on #portal-search input.form-control {
-  height: 38px !important; border-radius: 10px 0 0 10px !important; border: 0 !important; box-shadow: none !important;
-  background: rgba(255,255,255,.96) !important; font-size: 16px !important; padding-left: 12px !important;
-}
-html.tm-on #portal-search .input-group-btn .btn {
-  height: 38px !important; border-radius: 0 10px 10px 0 !important; border: 0 !important;
-  background: #2b8fc1 !important; color: #fff !important; font-weight: 600 !important; padding: 0 14px !important;
-}
-html.tm-on #tol-primary-navigation .badge { background: var(--tm-red) !important; font-weight: 600 !important; }
-html.tm-on #tol-primary-navigation > li > a > .glyphicon-envelope { font-size: 20px; color: #fff; vertical-align: middle; }
-html.tm-on #tol-primary-navigation > li > a:has(> .glyphicon-envelope) > .badge {
-  position: relative !important; display: inline-block !important; top: -9px; left: auto !important; right: auto !important;
-  height: 17px !important; min-width: 17px; margin: 0 0 0 -7px !important; padding: 0 5px !important;
-  font-size: 10.5px !important; line-height: 17px !important; border-radius: 9px !important; vertical-align: middle;
-}
-
-/* ---------- page + cards ---------- */
-html.tm-on .main-content, html.tm-on .main-content > .container-fluid { background: transparent !important; }
-html.tm-on .main-content .no-side-padding { padding-left: 0 !important; padding-right: 0 !important; }
-html.tm-on .main-content .panel {
-  background: var(--tm-card) !important; border: 0 !important; border-radius: 14px !important;
-  box-shadow: none !important; margin: 0 12px 18px !important; overflow: hidden;
-  scroll-margin-top: calc(var(--tm-hh, 110px) + 10px);
-}
-html.tm-on .main-content .panel > .panel-heading,
-html.tm-on .main-content .panel > .panel-heading.tol-panel-title {
-  background: transparent !important; border: 0 !important; color: var(--tm-text) !important;
-  font: 700 20px/1.2 var(--tm-font) !important; letter-spacing: -.2px; padding: 16px 16px 8px !important;
-}
-html.tm-on .main-content .panel-heading .panel-title { font: inherit !important; color: inherit !important; }
-html.tm-on .main-content .panel-body { padding: 0 !important; background: transparent !important; }
-
-/* ---------- Informatie ---------- */
-html.tm-on .tol-information .tol-info-links { margin: 0 !important; padding: 0 0 6px !important; list-style: none; }
-html.tm-on .tol-information .tol-info-links a {
-  display: block; padding: 10px 16px; font-size: 16px; color: var(--tm-blue) !important;
-}
-
-/* ---------- Uurrooster ---------- */
-html.tm-on .tol-upcoming .panel-heading .time-table-link { color: var(--tm-blue) !important; }
-html.tm-on .tol-upcoming-list { margin: 0 !important; padding: 0 0 4px !important; }
-html.tm-on .tol-upcoming-list .list-group-item {
-  display: flex !important; align-items: center; gap: 14px; float: none !important;
-  margin: 0 0 0 16px !important; padding: 10px 16px 10px 10px !important; background: transparent !important;
-  border-top: 0 !important; border-right: 0 !important; border-bottom: .5px solid var(--tm-sep) !important;
-  border-left-width: 4px !important; border-radius: 0 !important; min-height: 0 !important;
-}
-html.tm-on .tol-upcoming-list .list-group-item:last-child { border-bottom: 0 !important; }
-html.tm-on .tol-upcoming .panel-body > div:first-child:not(:empty),
-html.tm-on .tol-enrollments .centered-text {
-  padding: 0 16px 8px !important; font-size: 13px !important; color: var(--tm-sub) !important; text-align: left !important;
-}
-html.tm-on .tol-upcoming .panel-body > div:last-child:not(:first-child) { padding: 8px 16px 14px !important; }
-html.tm-on .tol-upcoming .panel-body > div:last-child:not(:first-child) a { color: var(--tm-blue) !important; font-size: 15px !important; }
-html.tm-on .tol-upcoming-timespan {
-  float: none !important; flex: none; width: 76px !important; margin: 0 !important; padding: 0 !important;
-  border: 0 !important; text-align: left !important;
-}
-html.tm-on .tol-upcoming-timespan-from::before { display: none !important; }
-html.tm-on .tol-upcoming-timespan-timeblock { display: block; font-size: 15px !important; line-height: 1.25 !important; }
-html.tm-on .tol-upcoming-timespan-from { font-weight: 600 !important; font-size: 15px !important; color: var(--tm-text) !important; }
-html.tm-on .tol-upcoming-timespan-till { font-weight: 400 !important; font-size: 13px !important; color: var(--tm-sub) !important; }
-html.tm-on .tol-upcoming-timespan-till::before, html.tm-on .tol-upcoming-timespan-from::after { display: none !important; }
-html.tm-on .tol-upcoming-timespan-date { font-size: 11.5px !important; color: var(--tm-sub) !important; margin-top: 2px; white-space: nowrap; }
-html.tm-on .tol-upcoming-description { float: none !important; flex: 1; min-width: 0; margin: 0 !important; padding: 0 !important; border: 0 !important; }
-html.tm-on .tol-upcoming-title strong { font-size: 16px !important; font-weight: 600 !important; color: var(--tm-text) !important; }
-html.tm-on .tol-upcoming-location { display: inline-block; margin-top: 3px; font-size: 13.5px !important; color: var(--tm-sub) !important; }
-html.tm-on .tol-upcoming .panel-body > a, html.tm-on .tol-upcoming > a, html.tm-on .tol-upcoming .panel-footer {
-  display: block; padding: 10px 16px 14px !important; color: var(--tm-blue) !important; font-size: 15px; background: transparent !important; border: 0 !important;
-}
-
-/* ---------- Updates en communicatie (home widget) ---------- */
-html.tm-on .tol-events-list .tol-event {
-  position: relative !important; width: auto !important; margin: 0 !important; padding: 0 0 0 58px !important;
-  border: 0 !important; background: transparent !important;
-}
-html.tm-on .tol-events-list .tol-event::before, html.tm-on .tol-events-list .tol-event::after { left: 12px !important; top: 11px !important; }
-html.tm-on .tol-events-list .tol-event > a {
-  display: block; padding: 11px 14px 11px 0 !important; text-decoration: none !important; background: transparent !important;
-  border-bottom: .5px solid var(--tm-sep);
-}
-html.tm-on .tol-events-list .tol-event:last-child > a { border-bottom: 0; }
-html.tm-on .tol-events-list .tol-title {
-  font-size: 15.5px !important; font-weight: 600 !important; color: var(--tm-text) !important; margin: 0 0 2px !important;
-  padding-right: 74px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-html.tm-on .tol-events-list .tol-date { font-size: 12.5px !important; color: var(--tm-sub) !important; right: 14px !important; top: 13px !important; }
-html.tm-on .tol-events-list .tol-is-new { display: none !important; }
-html.tm-on .tol-events-list .tol-source { display: block; margin-top: 3px; font-size: 13px !important; color: var(--tm-blue) !important; }
-html.tm-on .tol-events-list .tol-event.tol-unread-item .tol-title::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2b8fc1; margin: 0 6px 2px 0; vertical-align: middle;
-}
-html.tm-on .tol-events-list .tol-what-happened {
-  display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  font-size: 14px !important; color: var(--tm-sub) !important; line-height: 1.35 !important;
-}
-html.tm-on .tol-events-widget .panel-footer, html.tm-on .tol-events-widget .panel-body > a {
-  display: block; background: transparent !important; border: 0 !important; padding: 10px 16px 14px !important; color: var(--tm-blue) !important;
-}
-
-/* ---------- Cursussen (enrollments): tiles become list rows ---------- */
-html.tm-on .tol-enrollments > .panel-heading { display: flex !important; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px 16px 10px !important; }
-html.tm-on .tol-enrollments > .panel-heading::before { content: "Cursussen"; font: 700 20px/1.2 var(--tm-font); color: var(--tm-text); flex: 1 1 100%; }
-html.tm-on .tol-enrollments .toledo-filter-bar { display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 !important; flex: 1 1 100%; min-width: 0; }
-html.tm-on .tol-enrollments .toledo-filter-bar > * { float: none !important; margin: 0 !important; }
-html.tm-on .tol-enrollments .toledo-filter-bar-input { order: 1; flex: 1 1 100%; position: static !important; width: auto !important; }
-html.tm-on .tol-enrollments .toledo-filter-bar-input .input-group-addon {
-  display: flex !important; align-items: center; width: auto !important; height: 36px !important; padding: 0 12px !important;
-  border: 0 !important; border-radius: 0 9px 9px 0 !important; background: #e9e9ee !important; color: var(--tm-sub) !important;
-}
-html.tm-on .tol-enrollments .toledo-filter-bar-input .input-group { display: flex !important; width: 100% !important; }
-html.tm-on .tol-enrollments .toledo-filter-bar-input input.form-control {
-  flex: 1; height: 36px !important; border-radius: 9px 0 0 9px !important; border: 0 !important; background: #e9e9ee !important;
-  box-shadow: none !important; font-size: 16px !important;
-}
-html.tm-on .tol-enrollments .toledo-filter-bar-input .input-group-btn .btn { height: 36px !important; border-radius: 0 9px 9px 0 !important; }
-html.tm-on .tol-enrollments .toledo-filter-bar-select { order: 2; flex: 1 1 auto; }
-html.tm-on .tol-enrollments .toledo-filter-options { order: 3; flex: none; display: flex !important; gap: 6px; }
-html.tm-on .tol-enrollments .toledo-filter-options .btn { height: 32px; min-width: 36px; }
-html.tm-on .tol-enrollments .toledo-filter-display-style { display: none !important; }
-html.tm-on .tol-enrollments .toledo-filter-bar .btn {
-  border-radius: 8px !important; border: 0 !important; background: #e9e9ee !important; color: var(--tm-text) !important;
-  font-size: 13px !important; box-shadow: none !important;
-}
-html.tm-on .tol-enrollments .toledo-filter-bar-select { min-width: 0; }
-html.tm-on .tol-enrollments .toledo-filter-bar-select > .btn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html.tm-on .tol-enrollments .dropdown-menu { font-size: 15px; border-radius: 12px !important; border: 0 !important; box-shadow: 0 8px 30px rgba(0,0,0,.18) !important; }
-html.tm-on .tol-enrollments .dropdown-menu > li > a { padding: 9px 16px !important; }
-html.tm-on .tol-enrollments .panel-body > .row, html.tm-on .tol-enrollments .row { margin: 0 !important; }
-html.tm-on .tol-enrollment-container {
-  width: 100% !important; float: none !important; padding: 0 !important; margin: 0 !important;
-}
-html.tm-on .enrollment-tile-item {
-  display: flex !important; align-items: center; gap: 8px; position: relative !important;
-  height: auto !important; min-height: 60px !important; margin: 0 !important; padding: 0 8px 0 0 !important;
-  border-radius: 0 !important; box-shadow: none !important; background: var(--tm-card) !important; background-image: none !important;
-  border-top: 0 !important; border-right: 0 !important; border-bottom: .5px solid var(--tm-sep) !important; border-left-width: 4px !important;
-  transform: none !important;
-}
-html.tm-on .tol-enrollment-container:last-child .enrollment-tile-item { border-bottom: 0 !important; }
-html.tm-on .enrollment-tile-item .image-container { display: none !important; }
-html.tm-on .enrollment-tile-item .enrollment-clickable-area {
-  flex: 1; min-width: 0; display: block !important; position: static !important; height: auto !important;
-  padding: 10px 4px 10px 12px !important; text-decoration: none !important; background: transparent !important;
-}
-html.tm-on .enrollment-tile-item .learning-unit-info {
-  position: static !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important;
-  background: transparent !important; background-image: none !important; border: 0 !important;
-}
-html.tm-on .enrollment-tile-item .learning-unit-info > .lu-type-icon { display: none !important; }
-html.tm-on .enrollment-tile-item .lu-title {
-  font-size: 16px !important; font-weight: 600 !important; line-height: 1.3 !important; color: var(--tm-text) !important;
-  margin: 0 !important; padding: 0 !important; height: auto !important; max-height: none !important;
-  display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal !important;
-}
-html.tm-on .enrollment-tile-item .lu-id {
-  font-size: 12.5px !important; color: var(--tm-sub) !important; margin: 2px 0 0 !important; padding: 0 !important;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-html.tm-on .enrollment-tile-item .lu-id .fa-solid { font-size: 10px; margin-right: 3px; }
-html.tm-on .enrollment-tile-item .functionality-info {
-  position: static !important; display: flex !important; align-items: center; gap: 2px; flex: none;
-  height: auto !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: 0 !important;
-}
-html.tm-on .enrollment-tile-item .functionality-info .actions-block { display: flex !important; align-items: center; gap: 2px; float: none !important; position: static !important; }
-html.tm-on .enrollment-tile-item .functionality-info a {
-  position: relative; display: inline-flex !important; align-items: center; justify-content: center;
-  width: 30px; height: 40px; padding: 0 !important; margin: 0 !important; float: none !important; color: #8e8e93 !important;
-}
-html.tm-on .enrollment-tile-item .favorite-indicator { position: static !important; order: 0; }
-html.tm-on .enrollment-tile-item .favorite-indicator .fa-star { color: #ffcc00; }
-html.tm-on .enrollment-tile-item .favorite-indicator .fa-regular.fa-star { color: #c7c7cc; }
-html.tm-on .enrollment-tile-item .toledo-events-badge { position: absolute !important; top: 3px !important; right: -1px !important; left: auto !important; }
-html.tm-on .enrollment-tile-item .toledo-events-badge .badge { background: var(--tm-red) !important; font-size: 10.5px !important; padding: 2px 5px !important; min-width: 17px; }
-html.tm-on .enrollment-tile-item.enrollment-unavailable .enrollment-clickable-area { opacity: .5; }
-
-/* ---------- Updates / Communicatie pages (timeline) ---------- */
-html.tm-on .two-column-timeline > .panel-heading { padding: 12px !important; background: transparent !important; }
-html.tm-on .two-column-timeline .tol-filter-bar { display: flex !important; flex-wrap: wrap; gap: 8px; margin: 0 !important; }
-html.tm-on .two-column-timeline .tol-filter-bar > * { float: none !important; margin: 0 !important; }
-html.tm-on .two-column-timeline .tol-filter-bar-input { order: 1; flex: 1 1 0; min-width: 0; position: static !important; width: auto !important; }
-html.tm-on .two-column-timeline .tol-filter-bar > .dropdown:not(.tol-filter-bar-select) { order: 2; flex: none; }
-html.tm-on .two-column-timeline .tol-filter-bar-select { order: 3; flex: 1 1 100%; }
-html.tm-on .two-column-timeline .tol-filter-bar-input .input-group { display: flex !important; width: 100% !important; }
-html.tm-on .two-column-timeline .tol-filter-bar-input input.form-control { flex: 1; border-radius: 9px 0 0 9px !important; }
-html.tm-on .two-column-timeline .tol-filter-bar-input .input-group-addon,
-html.tm-on .two-column-timeline .tol-filter-bar-input .input-group-btn .btn {
-  display: flex !important; align-items: center; width: auto !important; height: 36px !important; padding: 0 12px !important;
-  border: 0 !important; border-radius: 0 9px 9px 0 !important; background: #e9e9ee !important; color: var(--tm-sub) !important;
-}
-html.tm-on .two-column-timeline .tol-filter-bar input.form-control, html.tm-on .two-column-timeline .tol-filter-bar .btn {
-  border-radius: 9px !important; border: 0 !important; background: #e9e9ee !important; box-shadow: none !important; font-size: 15px !important; height: 36px;
-}
-html.tm-on .tol-timeline { padding: 0 !important; margin: 0 !important; }
-html.tm-on .tol-timeline::before, html.tm-on .tol-timeline-body::before, html.tm-on .tol-timeline-entry::before { display: none !important; }
-html.tm-on .tol-timeline-heading { padding: 14px 16px 6px !important; margin: 0 !important; background: transparent !important; border: 0 !important; }
-html.tm-on .tol-timeline-heading h4 {
-  display: flex; align-items: center; gap: 8px; margin: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important;
-  font: 600 13px/1.2 var(--tm-font) !important; text-transform: uppercase; letter-spacing: .3px; color: var(--tm-sub) !important;
-}
-html.tm-on .tol-timeline-body { margin: 0 !important; padding: 0 !important; }
-html.tm-on .tol-timeline-entry {
-  display: flex !important; align-items: flex-start; gap: 0; float: none !important; width: auto !important;
-  margin: 0 0 0 16px !important; padding: 11px 12px 11px 0 !important; border-bottom: .5px solid var(--tm-sep) !important; background: transparent !important;
-}
-html.tm-on .tol-timeline-entry:last-child { border-bottom: 0 !important; }
-html.tm-on .tol-timeline-stat { display: none !important; }
-html.tm-on .tol-timeline-label {
-  position: relative; float: none !important; width: auto !important; flex: 1; min-width: 0; margin: 0 !important; padding: 0 !important;
-  background: transparent !important; border: 0 !important; box-shadow: none !important;
-}
-html.tm-on .tol-timeline-label::before, html.tm-on .tol-timeline-label::after { display: none !important; }
-html.tm-on .tol-timeline-label > a { display: block; text-decoration: none !important; padding-right: 28px; }
-html.tm-on .tol-timeline-label-content { padding: 0 !important; margin: 0 !important; background: transparent !important; border: 0 !important; }
-html.tm-on .tol-timeline-what-happened { font-size: 13.5px !important; color: var(--tm-sub) !important; padding: 0 !important; margin: 0 0 2px !important; }
-html.tm-on .tol-timeline-title {
-  font: 600 16px/1.3 var(--tm-font) !important; color: var(--tm-text) !important; margin: 0 !important; padding: 0 !important; border: 0 !important;
-}
-html.tm-on .tol-timeline-label-footer {
-  padding: 0 !important; margin: 4px 0 0 !important; background: transparent !important; border: 0 !important;
-  font-size: 13px !important; color: var(--tm-blue) !important; font-style: normal !important;
-}
-html.tm-on .tol-timeline-dissmiss-buttons { position: absolute !important; top: -2px; right: 0; }
-html.tm-on .tol-timeline-dissmiss-buttons .btn-link { color: #c7c7cc !important; padding: 4px 6px !important; }
-html.tm-on .tol-timeline-entry.unread .tol-timeline-title::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2b8fc1; margin: 0 6px 2px 0; vertical-align: middle;
-}
-
-/* ---------- menu (Toledo's own secondary navigation) as a full sheet ---------- */
-html.tm-on nav.navbar-secondary.in, html.tm-on nav.navbar-secondary.collapsing {
-  position: fixed !important; top: var(--tm-hh, 110px) !important; left: 0; right: 0;
-  bottom: calc(var(--tm-tab-h) + env(safe-area-inset-bottom)) !important; height: auto !important; max-height: none !important;
-  overflow-y: auto !important; -webkit-overflow-scrolling: touch; z-index: 1029 !important;
-  background: var(--tm-bg) !important; border: 0 !important; margin: 0 !important; padding: 12px 0 24px !important;
-}
-html.tm-on nav.navbar-secondary .container-fluid, html.tm-on nav.navbar-secondary .row, html.tm-on nav.navbar-secondary .col-xs-12 { padding: 0 !important; margin: 0 !important; }
-html.tm-on #tol-secundairy-navigation {
-  float: none !important; margin: 0 12px !important; padding: 0 !important; background: var(--tm-card); border-radius: 14px; overflow: hidden;
-}
-html.tm-on #tol-secundairy-navigation > li { float: none !important; display: block !important; border-bottom: .5px solid var(--tm-sep); }
-html.tm-on #tol-secundairy-navigation > li:last-child { border-bottom: 0; }
-html.tm-on #tol-secundairy-navigation > li > a {
-  display: flex !important; align-items: center; justify-content: space-between; padding: 14px 16px !important;
-  font-size: 17px !important; color: var(--tm-text) !important; background: transparent !important;
-}
-html.tm-on #tol-secundairy-navigation > li > a .caret { border: 0 !important; width: 9px; height: 9px; margin: 0 4px 0 0;
-  border-right: 2px solid #c7c7cc !important; border-bottom: 2px solid #c7c7cc !important; transform: rotate(45deg); transition: transform .2s; }
-html.tm-on #tol-secundairy-navigation > li.open > a .caret { transform: rotate(225deg); }
-html.tm-on #tol-secundairy-navigation .dropdown-menu {
-  position: static !important; float: none !important; display: none; width: auto !important; margin: 0 !important; padding: 0 0 6px !important;
-  background: transparent !important; border: 0 !important; box-shadow: none !important;
-}
-html.tm-on #tol-secundairy-navigation > li.open > .dropdown-menu { display: block !important; }
-html.tm-on #tol-secundairy-navigation .dropdown-menu > li > a {
-  padding: 10px 16px 10px 30px !important; font-size: 16px !important; color: var(--tm-blue) !important; white-space: normal !important; background: transparent !important;
-}
-html.tm-on #tol-secundairy-navigation .dropdown-menu > li.dropdown-header { padding: 8px 16px 2px 30px !important; font-size: 12px; text-transform: uppercase; color: var(--tm-sub); }
-html.tm-on #tm-classic {
-  display: block; margin: 18px auto 0; padding: 10px 16px; border: 0; background: transparent;
-  color: var(--tm-sub); font: 14px var(--tm-font); text-decoration: underline;
-}
-
 `;
 
   const ULTRA_CSS = String.raw`
@@ -606,17 +314,12 @@ html.tm-on #tm-ag-pill {
 `;
 
   const GLOBAL_CSS = String.raw`
-@media (min-width: 768px) { #tm-tabbar, #tm-title, #tm-classic, #tm-on-pill, .tm-more, .tm-datetile, .tm-count, .tm-open-file, .tm-file-pill, #tm-filebar, .tm-float, #tm-agenda, #tm-ag-pill { display: none !important; } }
-#tm-on-pill {
-  position: fixed; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 2147483000;
-  padding: 9px 14px; border: 0; border-radius: 20px; background: #124c6b; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25);
-  font: 600 13px -apple-system, system-ui, sans-serif;
-}
+@media (min-width: 768px) { #tm-tabbar, #tm-title, #tm-classic, .tm-more, .tm-datetile, .tm-count, .tm-open-file, .tm-file-pill, #tm-filebar, .tm-float, #tm-agenda, #tm-ag-pill { display: none !important; } }
 `;
 
   function addStyle() {
     if (document.getElementById('tm-style')) return;
-    const css = { portal: PORTAL_CSS, ultra: ULTRA_CSS, loket: LOKET_CSS }[SITE];
+    const css = { ultra: ULTRA_CSS, loket: LOKET_CSS }[SITE];
     const s = document.createElement('style');
     s.id = 'tm-style';
     s.textContent = `@media (max-width: 767px) {\n${SHARED_CSS}\n${css}\n}\n${GLOBAL_CSS}`;
@@ -660,122 +363,6 @@ html.tm-on #tm-ag-pill {
     const m = $('meta[name=viewport]');
     if (m && !/viewport-fit/.test(m.content)) m.content += ', viewport-fit=cover';
   }
-
-  /* ================================================================== portal */
-  const portal = (() => {
-    const menuOpen = () => { const m = $('nav.navbar-secondary'); return !!m && (m.classList.contains('in') || m.classList.contains('collapsing')); };
-    const toggleMenu = (want) => {
-      const btn = $('nav.navbar-primary button.navbar-toggle');
-      if (btn && (want === undefined || want !== menuOpen())) btn.click();
-    };
-
-    function ensureTitle() {
-      const left = $('nav.navbar-primary .pull-left');
-      if (left && !$('#tm-title', left)) {
-        const t = document.createElement('span');
-        t.id = 'tm-title';
-        t.textContent = 'Toledo';
-        left.appendChild(t);
-      }
-    }
-
-    function ensureClassicButton() {
-      const ul = $('#tol-secundairy-navigation');
-      if (!ul || $('#tm-classic')) return;
-      const b = document.createElement('button');
-      b.id = 'tm-classic';
-      b.type = 'button';
-      b.textContent = 'Klassieke weergave';
-      b.addEventListener('click', () => { try { localStorage.setItem(OFF_KEY, '1'); } catch (_) {} location.reload(); });
-      ul.insertAdjacentElement('afterend', b);
-    }
-
-    async function onTab(e) {
-      const a = e.target.closest('a[data-tab]');
-      if (!a) return;
-      e.preventDefault();
-      const id = a.dataset.tab;
-      if (id === 'menu') { window.scrollTo(0, 0); toggleMenu(); sync(); return; }
-      toggleMenu(false);
-      const tab = TABS.find((t) => t.id === id);
-      const onHome = /^#\/home/.test(location.hash) || location.hash === '' || location.hash === '#/';
-      if (id === 'courses') {
-        if (!onHome) location.hash = '#/home';
-        const el = await waitFor('.tol-enrollments');
-        if (el) el.scrollIntoView({ behavior: onHome ? 'smooth' : 'auto', block: 'start' });
-      } else if (location.hash === tab.hash) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        location.hash = tab.hash;
-        window.scrollTo(0, 0);
-      }
-      setTimeout(sync, 50);
-    }
-
-    function badgeFor(hash) {
-      const b = $(`#tol-primary-navigation a[href="${hash}"] .badge`);
-      const n = b ? (b.textContent || '').trim() : '';
-      return /^\d+$/.test(n) && n !== '0' ? (Number(n) > 99 ? '99+' : n) : '';
-    }
-
-    function sync() {
-      const bar = $('#tm-tabbar');
-      if (!bar) return;
-      const nav = $('nav.navbar-primary');
-      if (nav) root.style.setProperty('--tm-hh', Math.round(nav.getBoundingClientRect().height) + 'px');
-      const h = location.hash || '#/home';
-      let active = '';
-      if (menuOpen()) active = 'menu';
-      else if (h.startsWith('#/updates')) active = 'updates';
-      else if (h.startsWith('#/messages')) active = 'messages';
-      else if (h.startsWith('#/home')) {
-        const enr = $('.tol-enrollments');
-        active = enr && enr.getBoundingClientRect().top < window.innerHeight * 0.45 ? 'courses' : 'home';
-      }
-      setActiveTab(active);
-      const set = (id, v) => { const i = bar.querySelector(`a[data-tab="${id}"] .tm-badge`); if (i && i.textContent !== v) i.textContent = v; };
-      set('updates', badgeFor('#/updates'));
-      set('messages', badgeFor('#/messages'));
-    }
-
-    // Arriving from a course page via the tab bar: ?tm=courses or ?tm=menu
-    async function handleDeepLink() {
-      const p = new URLSearchParams(location.search);
-      const want = p.get('tm');
-      if (!want) return;
-      p.delete('tm');
-      const q = p.toString();
-      history.replaceState(history.state, '', location.pathname + (q ? '?' + q : '') + location.hash);
-      if (want === 'courses') {
-        const el = await waitFor('.enrollment-tile-item', 12000);
-        if (el) $('.tol-enrollments').scrollIntoView({ block: 'start' });
-      } else if (want === 'menu') {
-        const btn = await waitFor('nav.navbar-primary button.navbar-toggle', 12000);
-        if (btn) { await waitFor('#tol-secundairy-navigation', 4000); toggleMenu(true); }
-      }
-      sync();
-    }
-
-    function ensure() {
-      ensureTitle();
-      ensureTabbar(onTab);
-      ensureClassicButton();
-      sync();
-    }
-
-    return {
-      start() {
-        root.classList.add('tm-tabs');
-        ensure();
-        handleDeepLink();
-        window.addEventListener('hashchange', schedule);
-        window.addEventListener('scroll', schedule, { passive: true });
-        window.addEventListener('resize', schedule);
-      },
-      ensure,
-    };
-  })();
-
   /* ================================================================== Ultra (course pages) */
   const ultra = (() => {
     // Show the tab bar on list-type pages only; hide it while an item, assignment or test is open,
@@ -1176,27 +763,13 @@ html.tm-on #tm-ag-pill {
   })();
 
   /* ================================================================== boot */
-  const MOD = { portal, ultra, loket }[SITE];
+  const MOD = { ultra, loket }[SITE];
   let queued = false;
   function ensureAll() { queued = false; if (document.body) MOD.ensure(); }
   function schedule() { if (!queued) { queued = true; requestAnimationFrame(ensureAll); } }
 
-  function showOnPill() {
-    if (!document.body || $('#tm-on-pill') || window.innerWidth > 767) return;
-    const b = document.createElement('button');
-    b.id = 'tm-on-pill';
-    b.type = 'button';
-    b.textContent = 'Telefoonweergave';
-    b.addEventListener('click', () => { try { localStorage.removeItem(OFF_KEY); } catch (_) {} location.reload(); });
-    document.body.appendChild(b);
-  }
-
+  if (!MOD) return;
   addStyle();
-  if (SITE === 'portal' && isOff()) {
-    const tryPill = () => (document.body ? showOnPill() : setTimeout(tryPill, 200));
-    tryPill();
-    return;
-  }
   root.classList.add('tm-on');
 
   const start = () => {

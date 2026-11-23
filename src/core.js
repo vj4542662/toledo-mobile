@@ -22,6 +22,13 @@
   };
   const classicOn = (site) => { const v = Number(ss.get('tm4-classic-' + site)); return v > 0 && Date.now() - v < 30 * 60e3; };
 
+  // run fn once the parser has created <html> (before any of the page's own scripts can run)
+  const whenRoot = (fn) => {
+    if (document.documentElement) { fn(); return; }
+    const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); fn(); } });
+    mo.observe(document, { childList: true });
+  };
+
   /* ================================================================== helpers */
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -160,6 +167,20 @@
       }, () => {});
   }
 
+  // a bottom sheet over a dimmed page: slides in, and close() slides it out again
+  function openLayer(inner, cls, label) {
+    const layer = document.createElement('div');
+    if (cls) layer.className = cls;
+    layer.setAttribute('data-tm4', '');
+    layer.innerHTML = `<div class="scrim"></div><div class="sheet${cls ? ' upd' : ''}" role="dialog" aria-modal="true"${label ? ` aria-label="${esc(label)}"` : ''}>${inner}</div>`;
+    document.body.appendChild(layer);
+    const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
+    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
+    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
+    scrim.addEventListener('click', close);
+    return { layer, sh, close };
+  }
+
   // the notification at the top of the app
   function updateNotice(info) {
     if (!document.body || !info || !newerThan(info.v, VERSION)) return;
@@ -187,9 +208,7 @@
   function updateSheet(info) {
     if (!info || $('.upd-layer')) return;
     const news = newsBetween(info.news, VERSION, info.v);
-    const layer = document.createElement('div');
-    layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
-    layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Update">
+    const { layer, close } = openLayer(`
       <div class="sg upd-c">
         <img class="upd-logo" src="${TM_ICON}" alt="">
         <h2>Nieuwe versie van Toledo Mobile</h2>
@@ -200,12 +219,7 @@
           <p>Op de volgende pagina leggen we het stap voor stap uit, met plaatjes.</p></div>
         <a class="btn upd-go" href="${esc(installUrl(info.v))}">Installeren</a>
         <button type="button" class="upd-later">Later</button>
-      </div></div>`;
-    document.body.appendChild(layer);
-    const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
-    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
-    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
-    scrim.addEventListener('click', close);
+      </div>`, 'upd-layer', 'Update');
     layer.querySelector('.upd-later').addEventListener('click', () => { lsSet('tm4:upd-later', { v: info.v, ts: Date.now() }); close(); });
     layer.querySelector('.upd-go').addEventListener('click', (e) => { e.preventDefault(); lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); e.currentTarget.textContent = 'Even geduld…'; openInstall(info.v); });
   }
@@ -219,19 +233,12 @@
     const news = newsBetween(NEWS, was, VERSION);
     setTimeout(() => {
       if (!news.length) { toast(`Bijgewerkt naar versie ${VERSION}`); return; }
-      const layer = document.createElement('div');
-      layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
-      layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Bijgewerkt"><div class="sg upd-c">
+      const { layer, close } = openLayer(`<div class="sg upd-c">
         <span class="upd-ok">${ico('check')}</span>
         <h2>Toledo Mobile is bijgewerkt</h2>
         <p class="upd-v">Je hebt nu versie ${esc(VERSION)}</p>
         <div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
-        <button type="button" class="btn upd-go">Top!</button></div></div>`;
-      document.body.appendChild(layer);
-      const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
-      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
-      const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
-      scrim.addEventListener('click', close);
+        <button type="button" class="btn upd-go">Top!</button></div>`, 'upd-layer', 'Bijgewerkt');
       layer.querySelector('.upd-go').addEventListener('click', close);
     }, 900);
   }
@@ -479,8 +486,7 @@
     st.id = 'tm4-dark';
     st.textContent = THEME === 'dark' ? css : `@media (prefers-color-scheme:dark){${css}}`;
     const add = () => { const box = document.head || document.documentElement; if (box && !document.getElementById('tm4-dark')) box.appendChild(st); };
-    if (document.documentElement) add();
-    else { const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); add(); } }); mo.observe(document, { childList: true }); }
+    whenRoot(add);
     // keep it last, so later stylesheets can't win
     const keep = () => { if (document.head && st.parentNode && st !== document.head.lastElementChild) document.head.appendChild(st); };
     W.addEventListener('DOMContentLoaded', keep);
@@ -697,15 +703,7 @@
   }
 
   function sheet({ title, msg, actions }) {
-    const layer = document.createElement('div');
-    layer.setAttribute('data-tm4', '');
-    layer.innerHTML = `<div class="scrim"></div><div class="sheet" role="dialog" aria-modal="true"><div class="sg">${title || msg ? `<div class="sh-t">${title ? `<b>${esc(title)}</b>` : ''}${msg ? esc(msg) : ''}</div>` : ''}${actions.map((a, i) => (a.href ? `<a class="sa${a.red ? ' red' : ''}" href="${esc(a.href)}" data-i="${i}">${esc(a.label)}</a>` : `<button type="button" class="sa${a.red ? ' red' : ''}" data-i="${i}">${esc(a.label)}</button>`)).join('')}</div><div class="sg"><button type="button" class="sa bold" data-i="-1">Annuleer</button></div></div>`;
-    document.body.appendChild(layer);
-    const scrim = layer.querySelector('.scrim');
-    const sh = layer.querySelector('.sheet');
-    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
-    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
-    scrim.addEventListener('click', close);
+    const { sh, close } = openLayer(`<div class="sg">${title || msg ? `<div class="sh-t">${title ? `<b>${esc(title)}</b>` : ''}${msg ? esc(msg) : ''}</div>` : ''}${actions.map((a, i) => (a.href ? `<a class="sa${a.red ? ' red' : ''}" href="${esc(a.href)}" data-i="${i}">${esc(a.label)}</a>` : `<button type="button" class="sa${a.red ? ' red' : ''}" data-i="${i}">${esc(a.label)}</button>`)).join('')}</div><div class="sg"><button type="button" class="sa bold" data-i="-1">Annuleer</button></div>`);
     sh.addEventListener('click', (e) => {
       const b = e.target.closest('[data-i]');
       if (!b) return;

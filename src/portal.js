@@ -30,9 +30,13 @@
       const rn = String(params.get('rn') || '').toLowerCase();
       if (/^r\d{7}$/.test(rn)) store.set('p:rn', rn);
     }
+    const pkOf = (u) => (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u || '') || [])[1];
+    const curSem = () => { const m = new Date().getMonth(); return m >= 7 || m === 0 ? 'SEMESTER1' : 'SEMESTER2'; };
+    // derived lists are rebuilt only when their source data changes (a render asks for them many times)
+    const memo = (fn, deps) => { let key = null, val; return () => { const k = deps(); if (!key || k.some((x, i) => x !== key[i])) { key = k; val = fn(); } return val; }; };
     const isDone = (e) => {
       const u = e.url || '';
-      const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
+      const pk = pkOf(u);
       const cid = (/contentId=(_\d+_\d+)/.exec(u) || [])[1];
       return !!(pk && cid && P.done[pk] && P.done[pk].includes(cid));
     };
@@ -77,8 +81,8 @@
     function learnPk() {
       let ch = false;
       P.events.forEach((e) => {
-        const m = /(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(e.url || '');
-        if (m && /^ULTRA-/.test(e.sourceId || '') && P.lu2pk[e.sourceId] !== m[1]) { P.lu2pk[e.sourceId] = m[1]; ch = true; }
+        const pk = pkOf(e.url);
+        if (pk && /^ULTRA-/.test(e.sourceId || '') && P.lu2pk[e.sourceId] !== pk) { P.lu2pk[e.sourceId] = pk; ch = true; }
       });
       if (ch) store.set('p:lu2pk', P.lu2pk);
     }
@@ -109,7 +113,7 @@
       if (/^ULTRA-/.test(lu || '') && !ultraOk) return `${JOURNEY}${encodeURIComponent(lu)}${route}?${q}`;
       return pk ? `${ULTRA}/ultra/courses/${pk}/outline${route}?${q}` : '';
     }
-    function lessons() {
+    const lessons = memo(() => {
       const ag = P.agenda && P.agenda.v;
       const idx = byLu();
       const out = [];
@@ -130,7 +134,7 @@
         });
       }
       return out.sort((a, b) => a.start - b.start);
-    }
+    }, () => [P.agenda, P.upcoming, P.enr]);
     // a copy of the exam timetable from before 4.9.4 has no room links yet
     const examsNeedRooms = () => { const ag = P.agenda && P.agenda.v; return !!(ag && ag.ver !== 2 && (ag.exams || []).some((x) => x.r && !x.u)); };
     // room link from a lesson in the same room ("DV1 01.56 · aula" -> "DV1 01.56")
@@ -143,26 +147,34 @@
       const u = (P.upcoming || []).find((x) => x.location && x.location.url && [x.location.mnemonic, x.location.roomNumber].filter(Boolean).join(' ').toLowerCase() === key);
       return u ? u.location.url.replace(/^http:/, 'https:') : '';
     }
-    function exams() {
+    const exams = memo(() => {
       const ag = P.agenda && P.agenda.v;
       const idx = byLu();
       return ((ag && ag.exams) || []).map((x) => {
         const e = idx.code[String(x.c || '').toLowerCase()];
         return { start: fromYmd(x.d, x.s || '00:00'), time: x.s && x.s !== '00:00' ? x.s : '', end: x.e && x.e !== '00:00' ? x.e : '', title: String(x.t || '').replace(/^(evaluation|evaluatie)\s*:\s*/i, '') || (e ? cleanTitle(e.title) : 'Examen'), room: x.r, url: roomHref(x.u) || roomUrl(x.r), note: x.x, lu: e && e.learningUnitId, color: e ? e.color : 0 };
       }).sort((a, b) => a.start - b.start);
-    }
+    }, () => [P.agenda, P.upcoming, P.enr]);
     const deadlines = (now = Date.now()) => P.events.filter((e) => e.subType === 'due' && !e.dismissed && e.date > now - 3600e3).sort((a, b) => a.date - b.date);
     // courses with a deadline coming up: the course pages check there whether you already handed it in
-    const dlPks = () => Array.from(new Set(deadlines().filter((e) => e.date - Date.now() < 21 * 864e5).map((e) => (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(e.url || '') || [])[1]).filter(Boolean))).slice(0, 10).join('.');
+    const dlPks = memo(() => Array.from(new Set(deadlines().filter((e) => e.date - Date.now() < 21 * 864e5).map((e) => pkOf(e.url)).filter(Boolean))).slice(0, 10).join('.'), () => [P.events, Math.floor(Date.now() / 60e3)]);
     const feed = () => P.events.filter((e) => e.subType !== 'due' && !e.dismissed).sort((a, b) => b.date - a.date);
-    const newFor = (lu, now = Date.now()) => P.events.filter((e) => e.sourceId === lu && !e.read && !e.dismissed && e.subType !== 'due' && e.date > now - 7 * 864e5).length;
+    // unread updates of the last week, per course (read flags change in place, so markRead clears this)
+    let newMap = null, newSrc = null, newAt = 0;
+    const newFor = (lu, now = Date.now()) => {
+      if (newSrc !== P.events || now - newAt > 60e3) {
+        newSrc = P.events; newAt = now; newMap = {};
+        P.events.forEach((e) => { if (!e.read && !e.dismissed && e.subType !== 'due' && e.date > now - 7 * 864e5) newMap[e.sourceId] = (newMap[e.sourceId] || 0) + 1; });
+      }
+      return newMap[lu] || 0;
+    };
 
     const EV_ICON = { announcement: 'megaphone', content: 'doc', gradebook: 'chart', due: 'pencil', course: 'book', advalvas: 'inbox', other: 'bell' };
     const EV_LABEL = { announcement: 'Aankondiging', content: 'Nieuw materiaal', gradebook: 'Cijfer', due: 'Deadline', course: 'Vak', advalvas: 'Ad Valvas', other: 'Update' };
     function eventHref(e) {
       const u = e.url || '';
       if (!/^https:\/\/ultra\.edu\.kuleuven\.cloud\//.test(u)) return u;
-      const pk = (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u) || [])[1];
+      const pk = pkOf(u);
       if (!pk) return u;
       const ctid = (/contentId=(_\d+_\d+)/.exec(u) || [])[1];
       const ann = (/announcementId=(_\d+_\d+)/.exec(u) || [])[1];
@@ -181,6 +193,7 @@
       const todo = list.filter((e) => e && !e.read);
       if (!todo.length) return;
       todo.forEach((e) => { e.read = true; });
+      newSrc = null;
       store.set('p:events', { ts: Date.now(), v: P.events });
       for (let i = 0; i < todo.length; i += 150) {
         const body = todo.slice(i, i + 150).map((e) => ({ id: e.id, type: e.type, subType: e.subType, read: true }));
@@ -312,8 +325,7 @@
     }
     // Meer > Cijfers: only this semester's courses (Blackboard's own page lists every course you ever had)
     function gradesHref() {
-      const m = new Date().getMonth();
-      const cur = m >= 7 || m === 0 ? 'SEMESTER1' : 'SEMESTER2';
+      const cur = curSem();
       let list = P.enr.filter((e) => e.type !== 'community' && e.available !== false && (e.semester === cur || e.semester === 'YEAR' || e.favorite));
       if (!list.length) list = favCourses();
       list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
@@ -327,8 +339,7 @@
       return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
     }
     function favCourses() {
-      const sem = new Date().getMonth();
-      const cur = sem >= 7 || sem === 0 ? 'SEMESTER1' : 'SEMESTER2';
+      const cur = curSem();
       let list = P.enr.filter((e) => e.favorite && e.available !== false);
       if (!list.length) list = P.enr.filter((e) => e.type !== 'community' && e.available !== false && (e.semester === cur || e.semester === 'YEAR'));
       return list.sort((a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl'));
@@ -377,8 +388,7 @@
       const q = fold(P.search.trim());
       const match = (e) => !q || fold(e.title).includes(q) || fold(e.learningUnitId).includes(q);
       const all = P.enr.filter(match);
-      const m = new Date().getMonth();
-      const cur = m >= 7 || m === 0 ? 'SEMESTER1' : 'SEMESTER2';
+      const cur = curSem();
       const rank = (e) => (e.semester === cur ? 0 : e.semester === 'YEAR' ? 1 : e.semester === 'UNKNOWN' ? 3 : 2);
       const byT = (a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl');
       const fav = all.filter((e) => e.favorite).sort((a, b) => (a.available === false) - (b.available === false) || byT(a, b));

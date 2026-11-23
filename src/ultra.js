@@ -376,7 +376,8 @@
             kids.forEach((k) => { if (k.k === 'folder' && depth < 6) queue.push([k, depth + 1]); });
           }
         };
-        await Promise.all([work(), work(), work(), work()]);
+        // two at a time: in the background, so what you tap yourself (a folder, a file) still goes first
+        await Promise.all([work(), work()]);
         st.idx = buildIndex();
         st.crawled = true;
         drawTop();
@@ -416,7 +417,7 @@
       function loadRoot() {
         const c = cachedKids(pk, 'ROOT');
         if (c && !st.root) { st.root = c.v; st.idx = buildIndex(); drawRoot(); drawTop(); }
-        return fetchChildren(pk, 'ROOT').then((v) => { st.root = v; st.idx = buildIndex(); drawRoot(); drawTop(); setTimeout(crawl, 250); }, fail('root'));
+        return fetchChildren(pk, 'ROOT').then((v) => { st.root = v; st.idx = buildIndex(); drawRoot(); drawTop(); if (!st.crawling) { st.crawling = true; setTimeout(() => crawl().finally(() => { st.crawling = false; }), 1200); } }, fail('root'));
       }
       function loadAnn() {
         const c = store.get('a:' + pk);

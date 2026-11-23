@@ -13,7 +13,7 @@
     else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 10 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in (approving in the Authenticator can take a while)
     else if (PHONE && params.get('tm') === 'agenda') { mode = 'redirect'; target = PORTAL + '?tm=rooster'; } // link from v3
   } else if (!TOP && !TEST) mode = 'none';
-  else if (!PHONE) mode = 'classic';
+  else if (!PHONE) mode = SITE === 'portal' ? 'none' : 'classic'; // a computer or iPad: Toledo's own site as it is
   else if (SITE === 'portal') {
     if (!/^\/portal\/?(index\.html)?$/.test(PATH)) mode = 'none';
     else if (ss.get('tm4-classic') === '1') mode = 'plain'; // "Klassieke Toledo" in Meer: the real Toledo, untouched (no v3 layer)
@@ -34,12 +34,6 @@
   }
   W.__TM_MODE__ = mode;
 
-  // build our page once the parser has created <html> (before any of the page's own scripts can run)
-  const whenRoot = (fn) => {
-    if (document.documentElement) { fn(); return; }
-    const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); fn(); } });
-    mo.observe(document, { childList: true });
-  };
   if (SITE === 'install') {
     // the update page on GitHub: a friendly how-to instead of the script's code
     if (TOP && PHONE && /^\/vj4542662\/toledo-mobile\/[^?#]*\.user\.js$/.test(location.pathname)) {
