@@ -459,108 +459,67 @@
       const list = rooms.map((a) => { const sl = roomSlots(a, day); return { a, sl, b: blocks(sl) }; });
       list.sort((x, y) => (y.b.length > 0) - (x.b.length > 0) || String(x.a.name).localeCompare(String(y.a.name)));
       GR = { lid, day, unit, list };
-      const nFree = list.filter((x) => x.b.length).length;
-      // rooms with the same name ("Tulp 1" three times): name them by their code instead
-      const cnt = {};
-      list.forEach(({ a }) => { const k = nm(a.name); cnt[k] = (cnt[k] || 0) + 1; });
-      // every room on the same time scale: one bar per room, green = free, so you can look down a column ("who is free at 15:00?")
+      // first when, then which room: start hour and length at the top, below them the rooms that are free then
       let lo = 99, hi = 0;
       list.forEach(({ sl }) => { if (sl.out.length) { lo = Math.min(lo, sl.out[0].i); hi = Math.max(hi, sl.out[sl.out.length - 1].i + 1); } });
       if (lo >= hi) { lo = 8; hi = 22; }
-      const n = hi - lo, slotM = (list[0] && list[0].sl.slot) || 60;
-      GR.lo = lo; GR.n = n;
-      const pct = (i) => ((i - lo) / n) * 100;
-      const nowI = day === ymd(Date.now()) ? (Date.now() - fromYmd(day)) / 60e3 / slotM : -1;
-      const nowLine = nowI > lo && nowI < hi ? `<span class="kg-now" style="left:${pct(nowI).toFixed(2)}%"></span>` : '';
+      const slotM = (list[0] && list[0].sl.slot) || 60;
+      const freeAt = (it, i) => { const x = it.sl.out.find((y) => y.i === i); return !!(x && x.free); };
+      const runFrom = (it, i) => { let k = i; while (k < hi && freeAt(it, k)) k++; return k - i; };
       const hrs = [];
-      for (let i = lo; i < hi; i++) hrs.push(i);
-      const axis = `<div class="kg-axis"><div class="kg-ax" style="--n:${n}">${hrs.map((i) => `<span data-i="${i}">${Math.floor((i * slotM) / 60)}</span>`).join('')}</div></div>`;
-      const bar = ({ a, sl }) => {
-        const st = {};
-        sl.out.forEach((x) => { st[x.i] = x.free ? 'f' : 'b'; });
-        const cells = hrs.map((i) => { const v = st[i] || 'c'; return `<span class="kg-s ${v}${st[i - 1] === v || (!st[i - 1] && v === 'c') ? '' : ' st'}${st[i + 1] === v || (!st[i + 1] && v === 'c') ? '' : ' en'}"></span>`; }).join('');
-        return `<div class="kg-bar" data-r="${a.id}">${cells}${nowLine}</div>`;
+      for (let i = lo; i < hi; i++) if (list.some((it) => it.sl.out.some((x) => x.i === i && x.free)) || hrs.length) hrs.push(i);
+      while (hrs.length && !list.some((it) => freeAt(it, hrs[hrs.length - 1]))) hrs.pop();
+      const maxU = Math.max(1, Math.floor(Math.max(...list.map((x) => x.a.maxDurationMinutes || 240)) / slotM));
+      const durs = [1, 2, 3, 4].filter((u) => u <= maxU);
+      // rooms with the same name ("Tulp 1" three times): name them by their code instead
+      const cnt = {};
+      list.forEach(({ a }) => { const k = nm(a.name); cnt[k] = (cnt[k] || 0) + 1; });
+      const names = (a) => { const dup = cnt[nm(a.name)] > 1 && roomCode(a.name); return { title: dup ? roomCode(a.name) : nm(a.name), sub: [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} pers.`].filter(Boolean).join(' · ') }; };
+      let t = Number(q.get('t')), u = Number(q.get('u')) || store.get('kurt:gu') || 2;
+      if (!hrs.includes(t)) t = hrs.find((i) => list.some((it) => runFrom(it, i) >= Math.min(u, 2))) != null ? hrs.find((i) => list.some((it) => runFrom(it, i) >= Math.min(u, 2))) : hrs[0];
+      if (!durs.includes(u)) u = Math.min(2, durs[durs.length - 1]);
+      const n = hi - lo, pct = (i) => ((i - lo) / n) * 100;
+      const mini = (it) => {
+        const cells = [];
+        for (let i = lo; i < hi; i++) { const x = it.sl.out.find((y) => y.i === i); cells.push(`<i class="${x ? (x.free ? 'f' : 'b') : 'c'}"></i>`); }
+        return `<span class="kg-mini">${cells.join('')}<span class="kg-win" style="left:${pct(t).toFixed(2)}%;width:${((u / n) * 100).toFixed(2)}%"></span></span>`;
       };
-      const rowOf = (it) => {
-        const { a, b } = it;
-        const dup = cnt[nm(a.name)] > 1 && roomCode(a.name);
-        const title = dup ? roomCode(a.name) : nm(a.name);
-        const sub = [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} pers.`].filter(Boolean).join(' · ');
-        return `<div class="kgt${b.length ? '' : ' none'}"><button type="button" class="kgt-h" data-act="groom" data-r="${a.id}"${b.length ? '' : ' disabled'}><b>${esc(title)}</b><span>${esc(sub)}</span>${b.length ? '' : '<em>Volzet</em>'}</button>${bar(it)}</div>`;
+      const draw = () => {
+        try { history.replaceState(null, '', K + `/#/g/${lid}?d=${day}&t=${t}&u=${u}`); } catch (_) {}
+        const tEnd = t + u;
+        const full = [], part = [], none = [];
+        list.forEach((it) => { const run = t == null ? 0 : runFrom(it, t); (run >= u ? full : run > 0 ? part : none).push({ it, run }); });
+        const row = ({ it, run }, kind) => {
+          const { a } = it, nmv = names(a);
+          let st, btn = '';
+          if (kind === 'full') { st = `<em class="ok">Vrij ${hm(t * slotM)}–${hm(tEnd * slotM)}</em>`; btn = '<span class="kg-go">Kies</span>'; }
+          else if (kind === 'part') { st = `<em class="half">Vrij tot ${hm((t + run) * slotM)}</em>`; btn = '<span class="kg-go alt">Kies</span>'; }
+          else { const nx = it.sl.out.find((x) => x.i > t && x.free); st = `<em>${nx ? `Bezet · vrij vanaf ${hm(nx.i * slotM)}` : 'Bezet'}</em>`; }
+          const end = kind === 'full' ? tEnd * slotM : (t + run) * slotM;
+          return `<button type="button" class="kgr2 ${kind}" data-act="groom" data-r="${a.id}"${kind !== 'none' ? ` data-t="${t}" data-e="${end}"` : ''}${kind === 'none' && !it.b.length ? ' disabled' : ''}><span class="kr-main"><b>${esc(nmv.title)}</b><span>${esc(nmv.sub)}</span>${st}${mini(it)}</span>${btn}</button>`;
+        };
+        let h = head + dayRow;
+        if (!hrs.length) {
+          h += `<div class="card ko-empty">${ico('info')}<span>Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies hierboven een andere dag.</span></div>`;
+        } else {
+          h += `<div class="kg-pick"><div class="kb-l">Beginuur</div><div class="kg-tchips">${hrs.map((i) => `<button type="button" class="chip${i === t ? ' on' : ''}" data-act="gt" data-v="${i}">${hm(i * slotM)}</button>`).join('')}</div>
+            <div class="kb-l">Hoelang?</div><div class="kg-seg">${durs.map((d) => `<button type="button" class="${d === u ? 'on' : ''}" data-act="gu" data-v="${d}">${d} uur</button>`).join('')}</div></div>`;
+          h += `<p class="kg-sum">${full.length ? `<b>${full.length}</b> ${full.length === 1 ? 'lokaal is' : 'lokalen zijn'} vrij van ${hm(t * slotM)} tot ${hm(tEnd * slotM)}.` : `Geen lokaal is de hele tijd vrij van ${hm(t * slotM)} tot ${hm(tEnd * slotM)}.${part.length ? ' Deze zijn korter vrij:' : ''}`}</p>`;
+          if (full.length) h += `<div class="group kg-list2">${full.map((x) => row(x, 'full')).join('')}</div>`;
+          if (part.length) h += `${full.length ? `<div class="gh">Korter vrij vanaf ${hm(t * slotM)}</div>` : ''}<div class="group kg-list2">${part.map((x) => row(x, 'part')).join('')}</div>`;
+          if (none.length) h += `<details class="rp-more kg-full"><summary>${none.length} ${none.length === 1 ? 'lokaal' : 'lokalen'} bezet om ${hm(t * slotM)}</summary><div class="group kg-list2">${none.map((x) => row(x, 'none')).join('')}</div></details>`;
+        }
+        h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
+        put(sec, h);
+        const a1 = sec.querySelector('.kg-days .on'); if (a1) a1.scrollIntoView({ block: 'nearest', inline: 'center' });
+        const a2 = sec.querySelector('.kg-tchips .on'); if (a2) a2.scrollIntoView({ block: 'nearest', inline: 'center' });
       };
-      const open = list.filter((x) => x.b.length), full = list.filter((x) => !x.b.length);
-      let h = head + dayRow;
-      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen nog vrij. <span class="kg-key"><i></i>vrij</span> Schuif met je vinger over een balk om het uur te zien, en laat los op groen om te reserveren.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
-      if (open.length) h += `<div class="group kg-list">${axis}${open.map(rowOf).join('')}</div>`;
-      if (full.length) h += nFree ? `<details class="rp-more kg-full"><summary>${full.length} ${full.length === 1 ? 'lokaal' : 'lokalen'} volzet</summary><div class="group kg-list">${full.map(rowOf).join('')}</div></details>` : `<div class="group kg-list">${axis}${full.map(rowOf).join('')}</div>`;
-      h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
-      put(sec, h);
-      const on2 = sec.querySelector('.kg-days .on'); if (on2) on2.scrollIntoView({ block: 'nearest', inline: 'center' });
-      scrub(slotM);
-    }
-
-    // slide a finger over a bar: the box under it grows, a label shows its hour and whether it is free,
-    // the same hour lights up in the scale and in every other room; let go on green to book that hour
-    function scrub(slotM) {
-      const tip = document.createElement('div');
-      tip.className = 'kg-tip'; tip.hidden = true;
-      sec.appendChild(tip);
-      let S = null;
-      const end = () => {
-        if (!S) return;
-        if (S.cell) S.cell.classList.remove('hot');
-        S.list.classList.remove('scrub');
-        S.col.hidden = true;
-        $$('.kg-ax span.hot', sec).forEach((x) => x.classList.remove('hot'));
-        tip.hidden = true;
-        S = null;
-      };
-      const paint = (x) => {
-        const rc = S.bar.getBoundingClientRect();
-        const k = Math.min(GR.n - 1, Math.max(0, Math.floor(((x - rc.left) / rc.width) * GR.n)));
-        const cell = S.bar.children[k];
-        if (S.cell !== cell) { if (S.cell) S.cell.classList.remove('hot'); cell.classList.add('hot'); S.cell = cell; }
-        const i = GR.lo + k;
-        S.i = i; S.free = cell.classList.contains('f');
-        const w = rc.width / GR.n, cx = rc.left + (k + 0.5) * w;
-        tip.innerHTML = `<b>${hm(i * slotM)} – ${hm((i + 1) * slotM)}</b><span>${S.free ? 'Vrij · laat los om te kiezen' : cell.classList.contains('b') ? 'Bezet' : 'Niet open'}</span>`;
-        tip.className = 'kg-tip' + (S.free ? ' f' : '');
-        tip.hidden = false;
-        tip.style.left = Math.min(innerWidth - 84, Math.max(84, cx)) + 'px';
-        tip.style.top = rc.top + 'px';
-        const lr = S.list.getBoundingClientRect();
-        S.col.style.left = (rc.left - lr.left + k * w) + 'px';
-        S.col.style.width = w + 'px';
-        S.col.hidden = false;
-        $$('.kg-ax span', sec).forEach((x) => x.classList.toggle('hot', Number(x.dataset.i) === i));
-      };
-      $$('.kg-list', sec).forEach((list) => {
-        const col = document.createElement('div');
-        col.className = 'kg-col'; col.hidden = true;
-        list.appendChild(col);
-        $$('.kg-bar', list).forEach((bar) => {
-          bar.addEventListener('pointerdown', (e) => {
-            if (!GR || !GR.n || (e.pointerType === 'mouse' && e.button !== 0)) return;
-            end();
-            S = { bar, list, col, cell: null };
-            list.classList.add('scrub');
-            try { bar.setPointerCapture(e.pointerId); } catch (_) {}
-            paint(e.clientX);
-          });
-          bar.addEventListener('pointermove', (e) => { if (S && S.bar === bar) paint(e.clientX); });
-          bar.addEventListener('pointerup', () => {
-            if (!S || S.bar !== bar) return;
-            const { i, free } = S;
-            if (free) { S.cell.classList.add('pick'); setTimeout(() => { end(); pickRoom(bar.dataset.r, i); }, 120); } else end();
-          });
-          bar.addEventListener('pointercancel', end); // the page started to scroll up or down
-          bar.addEventListener('contextmenu', (e) => e.preventDefault());
-        });
-      });
+      GR.set = (k, v) => { const y = W.scrollY; if (k === 't') t = v; else { u = v; store.set('kurt:gu', v); } draw(); W.scrollTo(0, y); };
+      draw();
     }
 
     // book a group room: until when, a subject and your group (KURT asks at least minParticipants people, you included)
-    async function pickRoom(rid, at) {
+    async function pickRoom(rid, at, wantEnd) {
       if (!GR) return;
       const it = GR.list.find((x) => String(x.a.id) === String(rid));
       if (!it) return;
@@ -581,10 +540,12 @@
       };
       const pickEnd = () => { const e = endsFrom(st.si); st.end = e[Math.min(e.length, 2) - 1]; };
       pickEnd();
+      if (wantEnd && endsFrom(st.si).includes(wantEnd)) st.end = wantEnd;
+      const dupName = GR.list.filter((x) => nm(x.a.name) === nm(a.name)).length > 1 && roomCode(a.name);
       const layer = document.createElement('div');
       layer.setAttribute('data-tm4', '');
       layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
-        <div class="kb-h"><span class="kr-seat kr-room">${GROUP}</span><span class="kr-main"><b>${esc(nm(a.name))}</b><span>${esc([roomCode(a.name), GR.unit].filter(Boolean).join(' · '))}</span></span></div>
+        <div class="kb-h"><span class="kr-seat kr-room">${GROUP}</span><span class="kr-main"><b>${esc(dupName ? roomCode(a.name) : nm(a.name))}</b><span>${esc([dupName ? nm(a.name) : roomCode(a.name), GR.unit].filter(Boolean).join(' · '))}</span></span></div>
         <div class="kb-when kb-when-s">${ico('clock')}<span><b>${esc(dayLbl(day))}</b> · vrij ${esc(it.b.map((x) => `${hm(x.s)}–${hm(x.e)}`).join(', '))}</span></div>
         <div class="kb-body"></div></div></div>`;
       document.body.appendChild(layer);
@@ -989,7 +950,10 @@
         quiet = true; location.replace(K + '/#/g/' + b.dataset.l + '?d=' + b.dataset.d);
       } else if (act === 'groom') {
         e.preventDefault();
-        if (!b.disabled) pickRoom(b.dataset.r);
+        if (!b.disabled) pickRoom(b.dataset.r, b.dataset.t ? Number(b.dataset.t) : undefined, b.dataset.e ? Number(b.dataset.e) : undefined);
+      } else if (act === 'gt' || act === 'gu') {
+        e.preventDefault();
+        if (GR && GR.set) GR.set(act === 'gt' ? 't' : 'u', Number(b.dataset.v));
       } else if (act === 'checkin') {
         e.preventDefault();
         if (!b.disabled) validate(b, 10);
