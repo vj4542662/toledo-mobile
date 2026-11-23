@@ -119,6 +119,7 @@
       return row({ href: '#/l/' + loc.id, iconHtml: th, title: loc.unit, subHtml: `${esc(sub || l.address || '')}${closed ? '' : occBar(o)}`, cls: 'ko-row' + (closed ? ' off' : '') });
     }
     function viewHome(my) {
+      document.title = 'Studieplek';
       setNav({ title: 'Studieplek', back: { label: 'Meer', href: PORTAL + '?tm=meer', act: 'meer' } });
       const draw = (d) => {
         if (my !== token) return;
@@ -186,6 +187,7 @@
         if (my !== token) return;
         const l = L.l, o = L.o;
         const fav = favs().includes(Number(id));
+        document.title = l.unit;
         setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: l.unit, right: `<button type="button" class="nb" data-act="fav" data-id="${esc(id)}" aria-label="${fav ? 'Uit je plekken' : 'Bij je plekken'}">${fav ? '★' : '☆'}</button>` });
         const sel = pickTime(par, q);
         const zones = l.zones || [];
@@ -193,7 +195,7 @@
         store.set('kurt:zl', zoneLoc);
         let h = l.fullImageUrl ? `<div class="ko-hero" style="background-image:url('${esc(K + '/' + l.fullImageUrl)}')"></div>` : '';
         h += `<div class="lt"><h1${l.unit.length > 22 ? ' class="long"' : ''}>${esc(l.unit)}</h1><p class="lt-sub">${esc([openTxt(l), l.address].filter(Boolean).join(' · '))}</p></div>`;
-        if (o && o.capacity) h += `<div class="card ko-occ"><div><b>${Math.max(0, o.capacity - o.occupancy)}</b> van ${o.capacity} plaatsen vrij nu</div>${occBar(o)}</div>`;
+        if (o && o.capacity && !o.closed) h += `<div class="ko-occ"><span><b>${Math.max(0, o.capacity - o.occupancy)}</b> van ${o.capacity} plaatsen vrij nu</span>${occBar(o)}</div>`;
         if (zones.length) {
           h += `<div class="sh"><h2>Kies je plek</h2>${sel.t ? `<span class="sh-note">vanaf ${esc(sel.t.display)}</span>` : ''}</div>`;
           h += timeBar(sel, '#/l/' + id);
@@ -203,7 +205,7 @@
             const best = free && free.length ? Math.max(...free.map((s) => s.availableHours)) : 0;
             const fp = a && a.floorPlan && a.floorPlan.floorPlanUrl;
             const qs = sel.t ? `?d=${sel.d.value}&t=${sel.t.value}` : '';
-            return `<a class="kz${free && !free.length ? ' none' : ''}" href="#/z/${z.id}${qs}"><span class="kz-fp"${fp ? ` style="background-image:url('${esc(fp)}')"` : ''}></span><span class="kz-t"><b>${esc(z.name.trim())}</b><span>${free == null ? 'Laden…' : free.length ? `<em>${free.length} vrij</em> · tot ${best} u na elkaar` : 'Niets vrij op dit uur'}</span></span><span class="kz-go">${ico('pin')}Kaart</span></a>`;
+            return `<a class="kz${free && !free.length ? ' none' : ''}" href="#/z/${z.id}${qs}"><span class="kz-fp"${fp ? ` style="background-image:url('${esc(fp)}')"` : ''}></span><span class="kz-t"><b>${esc(z.name.trim())}</b><span>${free == null ? 'Laden…' : free.length ? `<em>${free.length} vrij</em> · max. ${best} u` : 'Niets vrij op dit uur'}</span></span><span class="kz-go">${ico('pin')}Kaart</span></a>`;
           }).join('')}</div>`;
         } else h += `<div class="card ko-none">${ico('info')}<span>Deze locatie heeft geen plattegrond in KURT. Reserveer hier via KURT zelf.</span></div>`;
         const acts = [];
@@ -256,6 +258,7 @@
       try { a = await get(`/zoneavailabilities?locationId=${zone.locationId}&zoneId=${id}&startDate=${sel.d.value}&startTime=${sel.t.value}`); } catch (e) { if (my === token) put(sec, empty('warn', 'Plattegrond kon niet geladen worden', '')); return; }
       if (my !== token) return;
       const unit = (a.location && a.location.unit) || '';
+      document.title = ((a.zone && a.zone.name) || zone.name || '').trim() || 'Plattegrond';
       setNav({ back: { label: 'Terug', act: 'kback', href: '#/l/' + zone.locationId }, title: (a.zone && a.zone.name) || zone.name, always: true });
       const seats = a.availabilities || [];
       const free = seats.filter((s) => s.availableHours > 0).sort((x, y) => y.availableHours - x.availableHours || String(x.resourceName).localeCompare(String(y.resourceName), 'nl', { numeric: true }));
@@ -306,7 +309,7 @@
         const st = Z.seats.find((q) => q.resourceId === rid);
         if (!st) return;
         const ns = Math.max(s, Math.min(MAX(), fit * 2.6));
-        s = ns; x = bw() / 2 - st.positionX * s; y = bh() / 2 - st.positionY * s; apply(true);
+        s = ns; x = bw() / 2 - st.positionX * s; y = bh() * 0.3 - st.positionY * s; apply(true);
         $$('.ks.sel', kp).forEach((n) => n.classList.remove('sel'));
         const n = kp.querySelector(`.ks[data-r="${rid}"]`);
         if (n) n.classList.add('sel');

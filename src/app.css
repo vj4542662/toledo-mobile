@@ -503,10 +503,10 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .ko-bar i{display:block;height:100%;border-radius:3px;background:var(--green)}
 .tm4 .ko-bar.busy i{background:var(--orange)}
 .tm4 .ko-bar.full i{background:var(--red)}
-.tm4 .ko-hero{height:190px;margin:0 16px 14px;border-radius:16px;background:var(--fill) center/cover no-repeat}
-.tm4 .ko-occ{display:flex;flex-direction:column;gap:2px;font-size:15px;color:var(--sub)}
-.tm4 .ko-occ b{color:var(--text);font-size:17px}
-.tm4 .ko-occ .ko-bar{max-width:none;height:7px}
+.tm4 .ko-hero{height:130px;margin:0 16px 14px;border-radius:16px;background:var(--fill) center/cover no-repeat}
+.tm4 .ko-occ{display:flex;align-items:center;gap:12px;margin:-4px 20px 0;font-size:14.5px;color:var(--sub)}
+.tm4 .ko-occ b{color:var(--text)}
+.tm4 .ko-occ .ko-bar{flex:1;margin:0;height:6px}
 .tm4 .ko-hint{display:flex;gap:8px;align-items:flex-start;margin:12px 20px 0;font-size:13.5px;line-height:18px;color:var(--sub)}
 .tm4 .ko-hint .i{width:18px;height:18px}
 .tm4 .ko-hint.err{color:var(--red);margin:0 0 12px}
@@ -550,14 +550,16 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .kp{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;--k:1}
 .tm4 .kp img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
 .tm4 .ks{position:absolute;display:grid;place-items:center;width:calc(max(30px,15px * var(--k)));height:calc(max(30px,15px * var(--k)));margin:calc(max(30px,15px * var(--k)) / -2) 0 0 calc(max(30px,15px * var(--k)) / -2);border-radius:50%;
-  background:rgba(142,142,147,.55);color:#fff;font:700 calc(max(17px,9px * var(--k)))/1 var(--font);font-style:normal;pointer-events:none}
-.tm4 .ks.free{background:#30b955;box-shadow:0 0 0 calc(2px * var(--k)) #fff}
+  background:#30b955;color:#fff;font:700 calc(max(17px,9px * var(--k)))/1 var(--font);font-style:normal;pointer-events:none}
+.tm4 .ks:not(.free){width:calc(max(12px,6px * var(--k)));height:calc(max(12px,6px * var(--k)));margin:calc(max(12px,6px * var(--k)) / -2) 0 0 calc(max(12px,6px * var(--k)) / -2);background:rgba(142,142,147,.45)}
+.tm4 .ks.free{box-shadow:0 0 0 calc(2px * var(--k)) #fff}
 .tm4 .ks.sel{background:#0a6cd6;transform:scale(1.35);z-index:2;transition:transform .2s}
 .tm4 .kmap-tools{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
 .tm4 .kmap-tools button{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.92);color:#0a6cd6;font-size:22px;font-weight:600;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .tm4 .kmap-leg{position:absolute;left:8px;bottom:8px;display:flex;gap:10px;padding:5px 9px;border-radius:9px;background:rgba(255,255,255,.92);color:#3a3a3c;font-size:12.5px;pointer-events:none}
 .tm4 .kmap-leg span{display:flex;align-items:center;gap:5px}
-.tm4 .kmap-leg .ks{position:static;width:16px;height:16px;margin:0;font-size:9px;box-shadow:none}
+.tm4 .kmap-leg .ks,.tm4 .kmap-leg .ks:not(.free){position:static;width:16px;height:16px;margin:0;font-size:9px;box-shadow:none}
+.tm4 .kmap-leg .ks:not(.free){width:10px;height:10px}
 .tm4 .kfree{display:flex;flex-wrap:wrap;gap:8px;margin:0 16px}
 .tm4 .kf{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:54px;border-radius:12px;background:var(--card);box-shadow:var(--shadow)}
 .tm4 .kf b{font-size:17px}
