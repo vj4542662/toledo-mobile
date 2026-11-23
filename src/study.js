@@ -94,12 +94,13 @@
     const ringV = st && st.better != null ? st.better : (n || 0) * 5;
     h += `<div class="st-hero res-hero" style="--rc:${col}"><div class="st-top"><span class="hero-lbl"><i style="background:${col}"></i>${st && st.mine ? `Groep ${esc(st.mine[0])}` : failed ? 'Niet geslaagd' : 'Resultaat'}</span><span class="hero-cd">${esc(acy(y.y))}</span></div>
       <div class="st-row">${ringSvg([{ v: ringV, c: col }], 100, { mid, track: 'rgba(255,255,255,.2)' })}
-      <div class="st-kpis"><div class="kpi"><b>${esc(nl(n))}<small>/20</small></b><span>jouw score</span></div>
-      ${st && st.mine ? `<div class="kpi"><b>${st.from === st.to ? st.from : `${st.from}–${st.to}`}</b><span>plaats van ${st.all} geslaagden</span></div>` : st ? `<div class="kpi"><b>${st.all}</b><span>studenten slaagden</span></div>` : ''}</div></div></div>`;
+      <div class="st-kpis">${st && st.better != null ? `<div class="kpi"><b>${esc(nl(n))}<small>/20</small></b><span>jouw score</span></div>` : ''}
+      ${st && st.mine ? `<div class="kpi"><b>${st.from === st.to ? st.from : `${st.from}–${st.to}`}</b><span>plaats van ${st.all} geslaagden</span></div>` : st ? `<div class="kpi"><b>${st.all}</b><span>studenten slaagden</span></div>` : ''}
+      ${!st || st.better == null ? `<div class="kpi"><b>${esc(nl(c.sp, 0))}<small> sp</small></b><span>${failed ? 'nog niet verworven' : 'verworven'}</span></div>` : ''}</div></div></div>`;
     if (st) {
       const asc = st.rk.slice().reverse(); // E (lowest) left, A (best) right
       // where you are on one line, every group as wide as its share of students
-      const strip = `<div class="pos"><div class="pos-bar">${asc.map((k) => `<i class="${k[5] ? 'me' : ''}" style="flex:${Math.max(0.5, st.pc(k)).toFixed(2)};--g:${grpCol(k)}"><span>${esc(k[0])}</span></i>`).join('')}</div>
+      const strip = `<div class="pos${st.better != null ? ' has-me' : ''}"><div class="pos-bar">${asc.map((k) => `<i class="${k[5] ? 'me' : ''}" style="flex:${Math.max(0.5, st.pc(k)).toFixed(2)};--g:${grpCol(k)}"><span>${esc(k[0])}</span></i>`).join('')}</div>
         ${st.better != null ? `<div class="pos-me" style="left:${Math.min(98, Math.max(2, st.better)).toFixed(1)}%"><b style="transform:translateX(-${Math.min(90, Math.max(10, st.better)).toFixed(0)}%)">Jij · ${esc(nl(n))}</b></div>` : ''}
         <div class="pos-ax"><span>lager</span><span>hoger</span></div></div>`;
       const line = st.mine

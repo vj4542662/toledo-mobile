@@ -412,7 +412,8 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .res-hero .st-row{margin-top:12px}
 .tm4 .res-hero .ring-mid small{line-height:1.15}
 .tm4 .pos-line{margin:0 0 14px;font-size:15px;line-height:20px}
-.tm4 .pos{position:relative;padding-top:30px}
+.tm4 .pos{position:relative}
+.tm4 .pos.has-me{padding-top:30px}
 .tm4 .pos-bar{display:flex;gap:3px;height:30px}
 .tm4 .pos-bar i{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:7px;background:color-mix(in srgb,var(--g) 22%,transparent);transform-origin:0 50%;animation:tm-grow .6s cubic-bezier(.2,.85,.25,1) both}
 .tm4 .pos-bar i span{font-size:12.5px;font-weight:700;font-style:normal;color:color-mix(in srgb,var(--g) 80%,var(--text))}
