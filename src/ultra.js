@@ -695,10 +695,21 @@
       const done = doneParam();
       const rn = rnParam();
       const known = !rn && (!done || store.get('doneSent') === done);
-      if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
+      const url = PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn;
+      if (fromPortal && f === tab && history.length > U.depth + 1 && known) {
+        // Safari's history doesn't always lead back to the app (an entry it dropped, a page in between): when
+        // nothing happened after a moment, load the app's tab instead of staying dimmed and loading forever
+        if (!TEST) leaving('back');
+        let gone = false;
+        const g = () => { gone = true; };
+        W.addEventListener('pagehide', g, { once: true });
+        history.go(-(U.depth + 1));
+        setTimeout(() => { W.removeEventListener('pagehide', g); if (!gone && document.visibilityState === 'visible') goTo(url, { dir: 'back' }); }, 2500);
+        return;
+      }
       if (done) store.set('doneSent', done);
       if (rn) store.set('rnSent', rn.slice(-7));
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
+      goTo(url, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();

@@ -38,7 +38,12 @@
     mo.observe(document, { childList: true });
   };
   if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
-  if (mode === 'bridge') { bridge(); return; }
+  if (mode === 'bridge') {
+    // the hidden frame only reads data: don't let the KU Loket launchpad (SAPUI5) boot in it as well
+    if (/^\/sap\/bc\/ui2\/flp/.test(PATH)) blockScripts((n) => /ui5_ui5|sap-ui-core|ushell|\/resources\//.test(n.getAttribute('src') || '') || n.id === 'sap-ui-bootstrap');
+    bridge();
+    return;
+  }
   if (mode === 'cover') {
     // came back here with the back button: this page would only send you forward again, so step over it
     const back = () => { try { return (performance.getEntriesByType('navigation')[0] || {}).type === 'back_forward'; } catch (_) { return false; } };

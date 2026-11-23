@@ -311,8 +311,29 @@
   const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
   /* ================================================================== shell */
+  /* The site's own app must not start next to ours: Toledo's portal app, Blackboard's app or the KU Loket launchpad
+     running hidden in the background costs a lot of memory, and on an iPhone that makes Safari kill the tab ("A
+     problem repeatedly occurred", a black screen). Scripts the parser still adds are switched off before they run
+     (the parser hands new nodes to observers before it runs a script). */
+  function blockScripts(match) {
+    const off = (n) => {
+      if (n.nodeType !== 1 || n.tagName !== 'SCRIPT' || n.hasAttribute('data-tm4')) return;
+      if (match && !match(n)) return;
+      n.type = 'text/tm4-blocked';
+      n.removeAttribute('src');
+      n.remove();
+    };
+    const mo = new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => {
+      off(n);
+      if (n.nodeType === 1 && n.firstElementChild && n.getElementsByTagName('script').length) Array.from(n.getElementsByTagName('script')).forEach(off);
+    })));
+    mo.observe(document, { childList: true, subtree: true });
+    document.querySelectorAll('script').forEach(off);
+    return mo;
+  }
   function takeover(title, preconnect) {
     try { W.stop(); } catch (_) {}
+    blockScripts();
     // reuse the page's own <html> and let the parser create head + body (a detached, script-built body
     // can leave the browser without a first paint)
     let root = document.documentElement;
@@ -513,6 +534,7 @@
       close();
       if (a && a.run) { e.preventDefault(); try { a.run(); } catch (err) { console.error(err); } }
     });
+    return close;
   }
 
   let toastT = 0;

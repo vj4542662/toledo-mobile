@@ -637,19 +637,25 @@
       strefresh: () => refreshAgenda(true, true),
       stsel: (b) => { P.stSel = Number(b.dataset.id) || 0; FILL.studie(V.studie.el); },
       resopen: (b) => { const k = b.dataset.k; P.stOpen[k] = !P.stOpen[k]; FILL.studie(V.studie.el); },
-      // Outlook-app first (iOS lets a tap open another app); no app after a moment: Outlook on the web
+      // Outlook-app first (iOS lets a tap open another app). Safari first asks "Open in Outlook?", and that can take
+      // longer than any timer, so the app never goes to Outlook on the web by itself (that is the Microsoft sign-in
+      // you'd get on returning): only if the app clearly didn't open, it offers the web version as a choice.
       mail: () => {
         if (store.get('mailApp') === 'web') { goTo(MAIL); return; }
-        let away = false;
-        const seen = () => { if (document.visibilityState === 'hidden') away = true; };
+        let away = false, closeSheet = null;
+        const seen = () => { if (document.visibilityState === 'hidden') { away = true; store.set('mailOk', 1); if (closeSheet) { closeSheet(); closeSheet = null; } } };
+        const gone = () => { away = true; };
         document.addEventListener('visibilitychange', seen);
-        W.addEventListener('pagehide', () => { away = true; }, { once: true });
+        W.addEventListener('pagehide', gone, { once: true });
+        W.addEventListener('blur', gone, { once: true });
         location.href = 'ms-outlook://emails';
         setTimeout(() => {
-          document.removeEventListener('visibilitychange', seen);
-          if (away) return;
-          toast('Outlook-app niet gevonden, Outlook op het web openen…');
-          setTimeout(() => goTo(MAIL), 900);
+          W.removeEventListener('blur', gone);
+          if (away || store.get('mailOk')) { setTimeout(() => document.removeEventListener('visibilitychange', seen), 60e3); return; }
+          closeSheet = sheet({ title: 'Outlook-app niet geopend', msg: 'Staat de Outlook-app op je iPhone? Je kan je mail ook in Safari openen.', actions: [
+            { label: 'Opnieuw in de Outlook-app', run: () => ACTS.mail() },
+            { label: 'Outlook op het web', run: () => goTo(MAIL) },
+          ] });
         }, 2600);
       },
       mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
