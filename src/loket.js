@@ -25,7 +25,7 @@
       return {
         d: sapDay(e.date), s: hm(e.start_time), e: hm(e.end_time), t: String(e.ola_description || e.workFormDesc || '').trim(), c: String(e.ects_code || '').trim(),
         f: String(e.workFormDesc || '').trim(), g: String(e.groupinfo_general || '').trim(),
-        r: [[loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), loc.roomName].filter(Boolean).join(' · '), u: https(loc.url_location),
+        r: [[loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), loc.roomName].filter(Boolean).join(' · '), u: https(loc.url_location) || (/^\d{6,10}$/.test(String(loc.locationId || loc.location_id || '')) ? `https://www.kuleuven.be/lokalen/${loc.locationId || loc.location_id}.htm` : ''),
         p: res(e.EventTeacherSet).map((x) => x.name || x.fullName || '').filter(Boolean).join(', '),
       };
     }).filter((x) => x.d && x.s).sort((a, b) => (a.d + a.s).localeCompare(b.d + b.s)) : null;
@@ -33,7 +33,7 @@
       const loc = res(x.toLocation)[0] || {};
       return {
         d: sapDay(x.examDate), s: hm(x.examBegtime), e: hm(x.examEndtime), t: String(x.moduleTitle || '').trim(), c: String(x.moduleCode || '').trim(),
-        r: [[loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), loc.roomName].filter(Boolean).join(' · '), u: https(loc.urlLocation), x: String(x.evaluationText || '').trim(),
+        r: [[loc.mnemonic, loc.roomNumber].filter(Boolean).join(' '), loc.roomName].filter(Boolean).join(' · '), u: https(loc.urlLocation) || (/^\d{6,10}$/.test(String(loc.locationId || '')) ? `https://www.kuleuven.be/lokalen/${loc.locationId}.htm` : ''), x: String(x.evaluationText || '').trim(),
       };
     }).filter((x) => x.d).sort((a, b) => (a.d + a.s).localeCompare(b.d + b.s)) : null;
     return { lessons, exams, range: [ymd(from), ymd(to)] }; // null = could not be read this time (keep the old copy)

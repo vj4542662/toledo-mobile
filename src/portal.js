@@ -297,6 +297,22 @@
         <div class="hero-acts">${l.lu ? `<a class="pri" href="${esc(href)}">${ico('book')}Open vak</a>` : ''}${l.url ? `<a href="${esc(l.url)}">${ico('pin')}Lokaal</a>` : ''}<a href="#rooster">${ico('calendar')}Rooster</a></div>
       </div>`;
     }
+    // Meer > Cijfers: only this semester's courses (Blackboard's own page lists every course you ever had)
+    function gradesHref() {
+      const m = new Date().getMonth();
+      const cur = m >= 7 || m === 0 ? 'SEMESTER1' : 'SEMESTER2';
+      let list = P.enr.filter((e) => e.type !== 'community' && e.available !== false && (e.semester === cur || e.semester === 'YEAR' || e.favorite));
+      if (!list.length) list = favCourses();
+      list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
+      if (!list.length) return '';
+      const cs = list.map((e) => [P.lu2pk[e.learningUnitId] || e.learningUnitId, e.color || '', cleanTitle(e.title).replace(/[~!]/g, ' ')].join('~')).join('!');
+      const q = new URLSearchParams({ cs, th: THEME });
+      const first = list.find((e) => P.lu2pk[e.learningUnitId]) || list[0];
+      const pk = P.lu2pk[first.learningUnitId];
+      const ultraOk = Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
+      if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/cijfers?${q}`;
+      return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
+    }
     function favCourses() {
       const sem = new Date().getMonth();
       const cur = sem >= 7 || sem === 0 ? 'SEMESTER1' : 'SEMESTER2';
@@ -315,6 +331,13 @@
       const hero = L.find((l) => l.start <= now && l.end > now) || L.find((l) => l.start > now);
       const today = L.filter((l) => l !== hero && dayDiff(l.start, now) === 0 && l.end > now);
       if (today.length) h += `<div class="sh"><h2>Later vandaag</h2></div><div class="group">${today.map((l) => lessonRow(l, now, 'vandaag')).join('')}</div>`;
+      // upcoming deadlines, also the ones you already handed in (until the deadline itself has passed)
+      const dl = deadlines(now).filter((e) => e.date > now && e.date - now < 21 * 864e5);
+      if (dl.length) {
+        const open = dl.filter((e) => !isDone(e)).length;
+        const shown = P.allDl ? dl : dl.slice(0, 5);
+        h += `<div class="sh"><h2>Komende deadlines</h2>${open < dl.length ? `<span class="sh-note">${open} open</span>` : ''}</div><div class="group">${shown.map((e) => dueRow(e, now)).join('')}${dl.length > shown.length ? `<button type="button" class="more-row" data-act="alldl">Toon alle ${dl.length}</button>` : ''}</div>`;
+      } else if (P.loadedAt) h += `<div class="sh"><h2>Komende deadlines</h2></div><div class="group">${row({ icon: 'check', soft: true, title: 'Geen deadlines in de komende 3 weken', chevron: false })}</div>`;
       // courses
       const favs = favCourses();
       if (favs.length) {
@@ -323,9 +346,6 @@
           return `<a class="tile" href="${esc(courseHref(e.learningUnitId, 'vandaag'))}" style="${colorVars(e.color)}"><b>${esc(cleanTitle(e.title))}</b><span>${esc(codeOf(e.title) || '')}${n ? `<i class="cap">${n}</i>` : ''}</span></a>`;
         }).join('')}</div>`;
       } else if (!P.enr.length && !P.loadedAt) h += `<div class="sh"><h2>Mijn vakken</h2></div><div class="tiles">${'<div class="tile sk" style="background:var(--fill)"></div>'.repeat(3)}</div>`;
-      // deadlines
-      const dl = deadlines(now).filter((e) => e.date - now < 14 * 864e5 && !isDone(e));
-      if (dl.length) h += `<div class="sh"><h2>Deadlines</h2></div><div class="group">${dl.slice(0, 4).map((e) => dueRow(e, now)).join('')}</div>`;
       // updates
       const f = feed().slice(0, 4);
       if (f.length) h += `<div class="sh"><h2>Nieuw</h2><a href="#updates">Alle</a></div><div class="group">${f.map((e) => eventRow(e, now)).join('')}</div>`;
@@ -481,13 +501,13 @@
       const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
       const I0 = P.study && P.study.v && P.study.v.isp;
       const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${link(L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', 'chart', '#5856d6', 'Cijfers', 'Alle vakken in Blackboard')}${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ act: 'loket', iconHtml: `<span class="ic" style="--c:#1d4f86">${ico('grid')}</span>`, title: 'KU Loket', sub: 'Studietracker, uurrooster en meer' })}</div>`;
+      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#rooster/examens', iconHtml: `<span class="ic" style="--c:#ff3b30">${ico('cap')}</span>`, title: 'Examenrooster' })}${row({ href: gradesHref() || L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', iconHtml: `<span class="ic" style="--c:#5856d6">${ico('chart')}</span>`, title: 'Cijfers', sub: 'Je vakken van dit semester' })}${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ act: 'loket', iconHtml: `<span class="ic" style="--c:#1d4f86">${ico('grid')}</span>`, title: 'KU Loket', sub: 'Studietracker, uurrooster en meer' })}</div>`;
       h += `<div class="gh">Tools</div><div class="group">${link(L['KALTURA-MYMEDIA'] || ULTRA + '/ultra/tools', 'video', '#8e5bd8', 'My Media', 'Kaltura-video\'s')}${link(L.KURT || 'https://bib.kuleuven.be/faciliteiten/reserveren', 'seat', '#ff2d55', 'KURT', 'Studieplek reserveren')}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#a2845e', 'LIMO', 'Bibliotheek zoeken')}${link(L['KUL-ONEDRIVE'] || 'https://onedrive.kuleuven.be', 'cloud', '#0078d4', 'OneDrive')}${link(L['KUL-MS-OFFICE-365'] || 'https://office.com', 'grid', '#d83b01', 'Microsoft 365')}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
       if (P.newVer) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar ' + P.newVer, sub: 'Daarna op Userscripts in de adresbalk tikken' })}</div>`;
-      h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie en stuurt niets door.</p>`;
+      h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschuren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
       put($('[data-k="body"]', el), h);
     };
 
@@ -620,6 +640,7 @@
       comm: () => { P.showComm = true; FILL.vakken(V.vakken.el); },
       offall: () => { P.showOff = true; FILL.vakken(V.vakken.el); },
       off: () => toast('Dit vak is nog niet beschikbaar in Toledo.'),
+      alldl: () => { P.allDl = true; FILL.vandaag(V.vandaag.el); },
       rseg: (b) => { P.seg = b.dataset.id; history.replaceState(null, '', location.pathname + '#rooster' + (P.seg === 'examens' ? '/examens' : '')); FILL.rooster(V.rooster.el); },
       wk: (b) => shiftWeek(Number(b.dataset.d)),
       wktoday: () => { const dir = P.weekOff > 0 ? -1 : 1; P.weekOff = 0; FILL.rooster(V.rooster.el); animWeek(dir); scrollToDay(ymd(Date.now())); },

@@ -19,9 +19,9 @@
       const qs = h.includes('?') ? h.slice(h.indexOf('?')) : '';
       const resume = ss.get('tm4-resume') || '';
       ss.del('tm4-resume');
-      if (resume.startsWith('#/c/' + PATH_PK)) h = resume + qs;
+      if (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers')) h = resume + qs;
       if (/^#\/vak\//.test(h)) h = h.replace(/^#\/vak\/[^/?]*/, '#/c/' + PATH_PK);
-      if (!/^#\/c\/_\d+_\d+/.test(h)) h = '#/c/' + PATH_PK + qs;
+      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/cijfers/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
     guardPath();
@@ -40,7 +40,8 @@
       const q = new URLSearchParams(i >= 0 ? h.slice(i + 1) : '');
       const s = path.split('/').filter(Boolean);
       const r = { path, q, type: 'none' };
-      if (s[0] === 'vak' && s[1]) { r.type = 'resolve'; r.lu = decodeURIComponent(s[1]); r.rest = s.slice(2).join('/'); }
+      if (s[0] === 'cijfers') r.type = 'grades';
+      else if (s[0] === 'vak' && s[1]) { r.type = 'resolve'; r.lu = decodeURIComponent(s[1]); r.rest = s.slice(2).join('/'); }
       else if (s[0] === 'c' && /^_\d+_\d+$/.test(s[1] || '')) {
         r.pk = s[1];
         const t = s[2] || '';
@@ -52,6 +53,7 @@
       return r;
     }
     const ctxKey = (pk) => 'tm4-ctx:' + pk;
+    const tabOf = (r) => (r.type === 'grades' ? 'meer' : getCtx(r.pk).f || 'vakken');
     function getCtx(pk) { try { return JSON.parse(ss.get(ctxKey(pk)) || '{}') || {}; } catch (_) { return {}; } }
     function saveCtx(pk, q) {
       const c = getCtx(pk);
@@ -563,6 +565,74 @@
       return view;
     }
 
+
+    /* ---------------- all grades of this semester's courses (Meer > Cijfers) ---------------- */
+    // The portal names the courses (?cs=pk~color~title!...): Blackboard's own grades page lists every course you ever had.
+    function gradesView(r) {
+      const el = section();
+      let list = [];
+      const raw = r.q.get('cs');
+      if (raw) {
+        list = raw.split('!').map((x) => { const [id, k, ...t] = x.split('~'); return /^_\d+_\d+$/.test(id) ? { pk: id, k, t: t.join('~') } : /^ULTRA-[\w.-]+$/.test(id) ? { lu: id, k, t: t.join('~') } : null; }).filter(Boolean).slice(0, 16);
+        ss.set('tm4-gcs', JSON.stringify(list));
+      } else { try { list = JSON.parse(ss.get('tm4-gcs') || '[]') || []; } catch (_) {} }
+      const st = { g: {}, err: {}, open: {} };
+      el.innerHTML = '<div class="lt"><h1>Cijfers</h1><p class="lt-sub">Je vakken van dit semester</p></div><div data-k="body"></div>';
+      const num = (g) => { const m = /^(-?\d+(?:[.,]\d+)?)\/(\d+(?:[.,]\d+)?)$/.exec(g || ''); return m ? parseFloat(m[1].replace(',', '.')) / parseFloat(m[2].replace(',', '.')) : null; };
+      function draw() {
+        if (!list.length) { put($('[data-k="body"]', el), empty('chart', 'Geen vakken', 'Open Cijfers via Meer in de app.')); return; }
+        let h = '';
+        list.forEach((c) => {
+          const name = c.t || (c.pk && meta(c.pk).name) || 'Vak';
+          if (!c.pk) { h += `<div class="gh gc" style="${colorVars(c.k)}"><i></i>${esc(name)}</div>` + skGroup(1); return; }
+          const g = st.g[c.pk];
+          const head = `<a class="gh gc" data-nav="1" href="#/c/${c.pk}/cijfers?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=meer" style="${colorVars(c.k)}"><i></i>${esc(name)}${CHEV}</a>`;
+          if (!g) { h += head + (st.err[c.pk] ? `<div class="group plain">${row({ title: 'Kon niet geladen worden', sub: 'Trek omlaag om opnieuw te proberen', chevron: false })}</div>` : skGroup(1)); return; }
+          const done = g.filter((x) => x.g);
+          const wait = g.filter((x) => !x.g && x.st === 'NeedsGrading');
+          const open = g.filter((x) => !x.g && x.st !== 'NeedsGrading' && x.due && x.due > Date.now());
+          if (!done.length && !open.length && !wait.length) { h += head + `<div class="group plain">${row({ title: 'Nog geen cijfers', cls: 'muted', chevron: false })}</div>`; return; }
+          const rowG = (x) => {
+            const p = num(x.g);
+            const tone = p == null ? '' : p >= 0.5 ? 'var(--green)' : 'var(--red)';
+            return row({ href: x.cid ? deepLink(c.pk, { id: x.cid }) : undefined, title: x.t,
+              sub: x.g ? '' : STATUS[x.st] || (x.due ? `Deadline ${dShort(x.due)} ${hhmm(x.due)}` : 'Nog geen cijfer'),
+              end: x.g ? `<b style="color:${tone || 'var(--text)'};font-size:17px;font-weight:600">${esc(x.g)}</b>` : '<span>—</span>', chevron: false });
+          };
+          const showWait = st.open[c.pk] || (!done.length && wait.length <= 2);
+          const waitRow = wait.length && !showWait ? row({ act: 'gwait', attrs: ` data-pk="${c.pk}"`, icon: 'clock', soft: true, title: `${wait.length} ingeleverd`, sub: 'Wacht op een cijfer', end: '<span class="cap">Toon</span>', chevron: false }) : '';
+          h += head + `<div class="group plain">${done.map(rowG).join('')}${showWait ? wait.map(rowG).join('') : waitRow}${open.map(rowG).join('')}</div>`;
+        });
+        put($('[data-k="body"]', el), h + `<p class="fresh"><a href="${ULTRA}/ultra/grades">Alle vakken in Blackboard</a></p>`);
+      }
+      // courses the portal only knew by name (ULTRA-...): ask Blackboard for their id once
+      const resolve = (c) => {
+        if (c.pk) return Promise.resolve();
+        const known = store.get('lu:' + c.lu);
+        if (known && known.v) { c.pk = known.v; return Promise.resolve(); }
+        return uget(`/learn/api/public/v3/courses/courseId:${encodeURIComponent(c.lu)}?fields=id,name`).then((x) => { store.set('lu:' + c.lu, { ts: Date.now(), v: x.id }); saveMeta(x.id, { name: x.name, lu: c.lu }); c.pk = x.id; }, (e) => { if (e && e.auth) throw e; c.gone = 1; });
+      };
+      async function load() {
+        list.forEach((c) => { if (!c.pk && c.lu) { const k = store.get('lu:' + c.lu); if (k && k.v) c.pk = k.v; } });
+        list.forEach((c) => { const x = c.pk && store.get('g:' + c.pk); if (x && !st.g[c.pk]) st.g[c.pk] = x.v; });
+        draw();
+        try {
+          await Promise.all(list.map(resolve));
+          const seen = new Set();
+          list = list.filter((c) => c.pk && !seen.has(c.pk) && seen.add(c.pk));
+          ss.set('tm4-gcs', JSON.stringify(list));
+          draw();
+          for (let i = 0; i < list.length; i += 3) {
+            await Promise.all(list.slice(i, i + 3).map((d) => fetchGrades(d.pk).then((v) => { st.g[d.pk] = v; delete st.err[d.pk]; }, (e) => { if (e && e.auth) throw e; st.err[d.pk] = 1; })));
+            draw();
+          }
+        } catch (e) { if (e && e.auth) relogin(); }
+      }
+      let at = 0;
+      const view = { el, title: () => 'Cijfers', act(n, b) { if (n !== 'gwait') return false; st.open[b.dataset.pk] = 1; draw(); return true; }, show() { if (Date.now() - at > 120e3) { at = Date.now(); load(); } }, refresh: () => { at = Date.now(); return load(); } };
+      return view;
+    }
+
     /* ---------------- deep link from Updates: open the thing itself ---------------- */
     function directTarget(pk, it) {
       if (it.k === 'file') return (it.f && it.f.u) || '';
@@ -622,7 +692,7 @@
     function navFor(v) {
       const r = parse();
       const st = history.state || {};
-      const f = getCtx(r.pk).f || 'vakken';
+      const f = tabOf(r);
       const back = U.depth > 0 ? { label: st.back || 'Terug', act: 'back', href: '#' } : { label: TAB_LABEL[f] || 'Vakken', act: 'back', href: PORTAL + '?tm=' + f };
       return { back, title: v.title(), right: v.right ? v.right() : '' };
     }
@@ -635,12 +705,12 @@
         goTo(PORTAL + '?tm=vakken', { replace: true, dir: 'back' });
         return;
       }
-      if ([...r.q.keys()].length) saveCtx(r.pk, r.q);
+      if (r.pk && [...r.q.keys()].length) saveCtx(r.pk, r.q);
       if (r.q.get('dl') != null) store.set('dlpks', { ts: Date.now(), v: String(r.q.get('dl')).split('.').filter((x) => /^_\d+_\d+$/.test(x)).slice(0, 10) });
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
-        v = r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
+        v = r.type === 'grades' ? gradesView(r) : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
         U.views.set(key, v);
         $('#tm-main').appendChild(v.el);
       } else if (v.route) v.route(r);
@@ -651,7 +721,7 @@
       U.cur = v;
       U.curKey = key;
       setNav(navFor(v));
-      setTabOn(getCtx(r.pk).f || 'vakken');
+      setTabOn(tabOf(r));
       const y = anim === 'push' ? 0 : U.scroll[key] || 0;
       W.scrollTo(0, y);
       if (y) requestAnimationFrame(() => W.scrollTo(0, y));
@@ -688,7 +758,7 @@
       return s2 ? '&done=' + encodeURIComponent(s2) : '';
     };
     function leave(tab) {
-      const f = getCtx(parse().pk).f || 'vakken';
+      const f = tabOf(parse());
       saveScroll();
       setTabOn(tab);
       // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
@@ -727,7 +797,7 @@
       relogging = true;
       const r = parse();
       const pk = r.pk || PATH_PK;
-      ss.set('tm4-resume', location.hash.split('?')[0]);
+      ss.set('tm4-resume', r.type === 'grades' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
       const target = `${ULTRA}/ultra/courses/${pk}/outline`;
       if (!TEST && pk && Date.now() - last > 60e3) {
@@ -745,7 +815,7 @@
     }
 
     const ACTS = {
-      back: () => { if (U.depth > 0) { U.animBack = true; history.back(); } else leave(getCtx(parse().pk).f || 'vakken'); },
+      back: () => { if (U.depth > 0) { U.animBack = true; history.back(); } else leave(tabOf(parse())); },
       menu: () => {
         const pk = parse().pk;
         sheet({ title: meta(pk).name || 'Vak', actions: [
