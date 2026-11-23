@@ -199,6 +199,14 @@
           const x = g[c.id] || {};
           return { id: c.id, t: c.displayName || c.name || 'Beoordeling', due: c.grading && c.grading.due ? Date.parse(c.grading.due) : 0, cid: c.contentId || '', st: x.status || '', g: gradeText(x, c) };
         });
+        // Blackboard's gradebook says "NeedsGrading" as soon as a draft (or a group member's draft) exists; only the
+        // attempt itself tells whether it was really handed in. Check the recent ones without a grade.
+        const SUBMITTED = /^(NeedsGrading|Completed|InProgressNeedsGrading)$/;
+        const check = v.filter((x) => !x.g && x.st === 'NeedsGrading' && (!x.due || x.due > Date.now() - 30 * 864e5)).slice(0, 12);
+        await Promise.all(check.map((x) => uget(`/learn/api/public/v2/courses/${pk}/gradebook/columns/${x.id}/attempts?userId=${me.id}&fields=id,status`).then((j) => {
+          const at = j.results || [];
+          if (at.length && !at.some((a) => SUBMITTED.test(a.status || ''))) x.st = 'InProgress';
+        }, (e) => { if (e && e.auth) throw e; })));
         store.set('g:' + pk, { ts: Date.now(), v });
         return v;
       });
@@ -281,7 +289,7 @@
 
     /* ---------------- course ---------------- */
     const SEGS = [{ id: 'inhoud', label: 'Inhoud' }, { id: 'aankondigingen', label: 'Aankondigingen' }, { id: 'cijfers', label: 'Cijfers' }];
-    const STATUS = { NeedsGrading: 'Ingeleverd · wacht op beoordeling', InProgress: 'Bezig', Graded: 'Beoordeeld' };
+    const STATUS = { NeedsGrading: 'Ingeleverd · wacht op beoordeling', InProgress: 'Concept, nog niet ingeleverd', Graded: 'Beoordeeld' };
     function courseView(r) {
       const pk = r.pk;
       const el = section();
@@ -738,18 +746,18 @@
     }
     /* Which upcoming deadlines did you already hand in? The portal can't ask Blackboard itself (another site), so the
        course page checks the courses the portal named (?dl=) and tells it on the way back (?done=). */
-    const doneMap = () => (store.get('done') || {}).v || {};
+    const doneMap = () => (store.get('done2') || {}).v || {};
     function scanDone() {
       const dl = store.get('dlpks');
       const pks = Array.from(new Set(((dl && Date.now() - dl.ts < 7 * 864e5 && dl.v) || []).concat(PATH_PK ? [PATH_PK] : [])));
-      const st = store.get('done') || { ts: 0, v: {} };
+      const st = store.get('done2') || { ts: 0, v: {} };
       if (!pks.length || Date.now() - st.ts < 10 * 60e3) return;
       st.ts = Date.now();
-      store.set('done', st);
+      store.set('done2', st);
       pks.reduce((chain, pk) => chain.then(() => fetchGrades(pk).then((g) => {
-        const cur = store.get('done') || { ts: Date.now(), v: {} };
+        const cur = store.get('done2') || { ts: Date.now(), v: {} };
         cur.v[pk] = g.filter((x) => x.cid && (x.g || x.st === 'NeedsGrading' || x.st === 'Graded')).map((x) => x.cid);
-        store.set('done', cur);
+        store.set('done2', cur);
       }, () => {})), Promise.resolve());
     }
     const doneParam = () => {
