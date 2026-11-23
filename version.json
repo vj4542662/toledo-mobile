@@ -1,6 +1,9 @@
 {
- "version": "4.17.1",
+ "version": "4.17.2",
  "news": {
+  "4.17.2": [
+   "De uitlegpagina bij het updaten toont het logo weer, en de voorbeelden kleuren mee met licht of donker."
+  ],
   "4.17.1": [
    "Groepswerkruimtes: elk lokaal toont nu alleen de vrije uren, als grote knoppen in nette rijen. Volzette lokalen staan apart onderaan."
   ],
@@ -43,11 +46,6 @@
   ],
   "4.12.1": [
    "Toledo Mobile kijkt nu bij elk openen of er een nieuwe versie is."
-  ],
-  "4.12.0": [
-   "Updates gaan nu veel makkelijker: je krijgt meteen een melding bovenaan als er een nieuwe versie is.",
-   "Eén knop om te installeren, met duidelijke stappen in plaats van een pagina vol code.",
-   "Na een update zie je meteen wat er nieuw is."
   ]
  }
 }

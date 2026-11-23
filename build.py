@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.17.1"
+VERSION = "4.17.2"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.17.2": [
+        "De uitlegpagina bij het updaten toont het logo weer, en de voorbeelden kleuren mee met licht of donker.",
+    ],
     "4.17.1": [
         "Groepswerkruimtes: elk lokaal toont nu alleen de vrije uren, als grote knoppen in nette rijen. Volzette lokalen staan apart onderaan.",
     ],

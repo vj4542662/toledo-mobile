@@ -704,7 +704,10 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .ip-us-btns{display:flex;gap:8px;padding:0 10px}
 .tm4 .ip-us-btns span{flex:1;padding:8px 0;border-radius:8px;background:#8e8e93;color:#fff;text-align:center;font-weight:600;font-size:14px}
 .tm4 .ip-us-btns .ip-us-inst{background:#0a6cd6;box-shadow:0 0 0 3px rgba(10,108,214,.35)}
-@media (prefers-color-scheme:dark){.tm4 .ip-us-pop{background:#2f3237;color:#fff}.tm4 .ip-us-row span{color:#e5d94a}}
+/* the pictures follow the page (the app's light/dark setting) */
+html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row span{color:#e5d94a}
+@media (prefers-color-scheme:dark){html.tm4:not(.light) .ip-us-pop{background:#2f3237;color:#fff}html.tm4:not(.light) .ip-us-row span{color:#e5d94a}}
+.tm4 .ip-logo{display:block;overflow:hidden}
 .tm4 .ip-us-h{position:relative}
 .tm4 .ip-us-chk{position:absolute;right:8px;top:4px;width:28px;height:28px;border-radius:50%;background:#4d8ef7;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.55}
 .tm4 .ip-us-chk .i{width:16px;height:16px;stroke-width:2.6}
