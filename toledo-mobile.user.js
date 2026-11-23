@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Toledo Mobile
 // @namespace    https://toledo.kuleuven.be/portal
-// @version      4.8.1
+// @version      4.8.2
 // @description  KU Leuven Toledo as a real phone app: Vandaag, Vakken, Rooster, Updates and Meer, with course content, files and weblectures one tap away. Runs on your own Toledo session.
 // @match        https://toledo.kuleuven.be/portal*
 // @match        https://ultra.edu.kuleuven.cloud/ultra/*
@@ -34,7 +34,7 @@
   const LOGIN_CSS = "html.tm4-login{--bg:#f2f2f7;--card:#fff;--text:#000;--sub:#6d6d72;--sep:rgba(60,60,67,.2);--fill:rgba(118,118,128,.12);--accent:#0a6cd6;--red:#ff3b30;\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;color-scheme:light;background:var(--bg)!important}\nhtml.tm4-login.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}\n@media (prefers-color-scheme:dark){html.tm4-login:not(.light){color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}}\nhtml.tm4-login body{background:var(--bg)!important;color:var(--text)!important;font-family:var(--font)!important;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}\nhtml.tm4-login .vw-100{width:100%!important}\nhtml.tm4-login .vh-100{height:auto!important;min-height:100vh;min-height:100dvh}\nhtml.tm4-login #background,html.tm4-login #footer{display:none!important}\nhtml.tm4-login .sidebar{width:100%!important;max-width:none!important;min-height:100vh;min-height:100dvh;background:var(--bg)!important;border:0!important;box-shadow:none!important;\npadding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important}\nhtml.tm4-login #language{width:100%;padding:8px 10px 0!important}\nhtml.tm4-login #language .nav-link{color:var(--sub)!important;font-size:14px!important;padding:6px 8px!important}\nhtml.tm4-login #content{width:100%!important;max-width:460px;margin:0 auto;justify-content:flex-start!important;padding:4vh 22px 28px!important}\nhtml.tm4-login #service-info{display:flex;flex-direction:column;align-items:center;text-align:center;margin:0 0 30px!important}\nhtml.tm4-login #serviceDescription,html.tm4-login #serviceDescription .description-logo-text{display:contents!important}\nhtml.tm4-login #serviceDescription .col-3{order:0;flex:none!important;width:auto!important;max-width:none!important;padding:0!important}\nhtml.tm4-login #serviceLogo{display:block;width:80px;height:80px;object-fit:contain;padding:12px;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.1)}\nhtml.tm4-login #service-info h5{order:1;margin:18px 0 6px!important;font:700 30px/36px var(--font)!important;letter-spacing:.2px;color:var(--text)!important}\nhtml.tm4-login #serviceDescription .col-9{order:2;flex:none!important;width:auto!important;max-width:30ch!important;padding:0!important;color:var(--sub)!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .auth-forms{display:flex;flex-direction:column}\nhtml.tm4-login .loginbutton{margin:0!important;padding:0!important}\nhtml.tm4-login .loginMethod:not(.hidden){display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;margin:0!important;padding:12px 18px!important;\nborder:0!important;border-radius:14px!important;font:600 16px/21px var(--font)!important;box-shadow:none!important;text-align:left!important;-webkit-tap-highlight-color:transparent;transition:transform .12s,opacity .12s}\nhtml.tm4-login .loginMethod:active{transform:scale(.98);opacity:.85}\nhtml.tm4-login .loginMethod br{display:none!important}\nhtml.tm4-login #btnnextauthlogin{background:var(--accent)!important;color:#fff!important}\nhtml.tm4-login #btnnextauthlogin img{flex:none;width:32px;height:32px;margin:0!important;padding:3px;border-radius:8px;background:#fff}\nhtml.tm4-login #btnPwdLogin{background:var(--card)!important;color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--sep)!important}\nhtml.tm4-login #btnPwdLogin i,html.tm4-login .loginMethod i{flex:none;margin:0!important;font-size:24px!important;color:inherit!important}\nhtml.tm4-login .form-check:not(.hidden){display:flex!important;align-items:center;gap:10px;min-height:36px;margin:10px 4px 0!important;padding:0!important}\nhtml.tm4-login .form-check-input{position:static!important;flex:none;width:22px!important;height:22px!important;margin:0!important;accent-color:var(--accent);background-color:var(--card)}\nhtml.tm4-login .form-check-label,html.tm4-login .text-muted{color:var(--sub)!important}\nhtml.tm4-login .form-check-label{font-size:15px!important;line-height:20px}\nhtml.tm4-login #orSeperator:not(.hidden){display:flex!important;align-items:center;gap:12px;margin:18px 4px!important;padding:0!important;color:var(--sub)!important;font-size:13px!important;text-transform:uppercase;letter-spacing:.4px;background:none!important}\nhtml.tm4-login #orSeperator::before,html.tm4-login #orSeperator::after{content:\"\"!important;flex:1;height:.5px;margin:0!important;border:0!important;background:var(--sep)!important;position:static!important;width:auto!important}\nhtml.tm4-login .input-group{margin:0 0 10px!important}\nhtml.tm4-login .form-control{height:52px!important;padding:0 14px!important;border:1px solid var(--sep)!important;border-radius:12px!important;background:var(--card)!important;color:var(--text)!important;\nfont:17px var(--font)!important;box-shadow:none!important;-webkit-appearance:none;appearance:none}\nhtml.tm4-login .form-control::placeholder{color:var(--sub)!important;opacity:1}\nhtml.tm4-login .form-control:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)!important;outline:0!important}\nhtml.tm4-login .btn-primary,html.tm4-login #pwdLoginBtn{min-height:52px;border:0!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font:600 17px var(--font)!important;box-shadow:none!important}\nhtml.tm4-login .form-group{margin-bottom:0!important}\nhtml.tm4-login #pwdLoginForm .form-group{margin-top:14px!important}\nhtml.tm4-login #btnGoToMain:not(.hidden){display:flex!important;align-items:center;gap:4px;margin:16px auto 0!important;color:var(--accent)!important;font:500 16px var(--font)!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml.tm4-login #revokeConsent{margin-top:14px!important}\nhtml.tm4-login .alert:not(.hidden){border:0!important;border-radius:12px!important;padding:12px 14px!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .alert-danger{background:color-mix(in srgb,var(--red) 13%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .alert-warning{background:color-mix(in srgb,#ff9500 15%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .help{margin-top:22px!important;text-align:center}\nhtml.tm4-login .help > a{color:var(--sub)!important;font-size:15px!important;text-decoration:none!important}\nhtml.tm4-login .help-links{margin:12px 0 0!important;padding:0!important;list-style:none!important;text-align:left;background:var(--card);border-radius:12px;overflow:hidden}\nhtml.tm4-login .help-links li{margin:0!important}\nhtml.tm4-login .help-links li + li a{border-top:.5px solid var(--sep)}\nhtml.tm4-login .help-links a{display:block;padding:13px 16px;color:var(--accent)!important;font-size:15px;text-decoration:none!important}\nhtml.tm4-login #content h1,html.tm4-login #content h2,html.tm4-login #content h3,html.tm4-login #content h4{color:var(--text)!important;font-family:var(--font)!important}\nhtml.tm4-login #content p{color:var(--text)}\nhtml.tm4-login #content .btn:not(.loginMethod):not(.close):not(#btnGoToMain){min-height:50px;border-radius:14px!important;font:600 17px var(--font)!important}\nhtml.tm4-login #content .btn-secondary,html.tm4-login #content .btn-light,html.tm4-login #content .btn-outline-primary{background:var(--card)!important;color:var(--accent)!important;border:1px solid var(--sep)!important}\nhtml.tm4-login #content a{color:var(--accent)}";
   /* ================================================================== environment */
   const W = window;
-  const VERSION = '4.8.1';
+  const VERSION = '4.8.2';
   const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
@@ -345,8 +345,29 @@
   const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
   /* ================================================================== shell */
+  /* The site's own app must not start next to ours: Toledo's portal app, Blackboard's app or the KU Loket launchpad
+     running hidden in the background costs a lot of memory, and on an iPhone that makes Safari kill the tab ("A
+     problem repeatedly occurred", a black screen). Scripts the parser still adds are switched off before they run
+     (the parser hands new nodes to observers before it runs a script). */
+  function blockScripts(match) {
+    const off = (n) => {
+      if (n.nodeType !== 1 || n.tagName !== 'SCRIPT' || n.hasAttribute('data-tm4')) return;
+      if (match && !match(n)) return;
+      n.type = 'text/tm4-blocked';
+      n.removeAttribute('src');
+      n.remove();
+    };
+    const mo = new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => {
+      off(n);
+      if (n.nodeType === 1 && n.firstElementChild && n.getElementsByTagName('script').length) Array.from(n.getElementsByTagName('script')).forEach(off);
+    })));
+    mo.observe(document, { childList: true, subtree: true });
+    document.querySelectorAll('script').forEach(off);
+    return mo;
+  }
   function takeover(title, preconnect) {
     try { W.stop(); } catch (_) {}
+    blockScripts();
     // reuse the page's own <html> and let the parser create head + body (a detached, script-built body
     // can leave the browser without a first paint)
     let root = document.documentElement;
@@ -547,6 +568,7 @@
       close();
       if (a && a.run) { e.preventDefault(); try { a.run(); } catch (err) { console.error(err); } }
     });
+    return close;
   }
 
   let toastT = 0;
@@ -1485,19 +1507,25 @@
       strefresh: () => refreshAgenda(true, true),
       stsel: (b) => { P.stSel = Number(b.dataset.id) || 0; FILL.studie(V.studie.el); },
       resopen: (b) => { const k = b.dataset.k; P.stOpen[k] = !P.stOpen[k]; FILL.studie(V.studie.el); },
-      // Outlook-app first (iOS lets a tap open another app); no app after a moment: Outlook on the web
+      // Outlook-app first (iOS lets a tap open another app). Safari first asks "Open in Outlook?", and that can take
+      // longer than any timer, so the app never goes to Outlook on the web by itself (that is the Microsoft sign-in
+      // you'd get on returning): only if the app clearly didn't open, it offers the web version as a choice.
       mail: () => {
         if (store.get('mailApp') === 'web') { goTo(MAIL); return; }
-        let away = false;
-        const seen = () => { if (document.visibilityState === 'hidden') away = true; };
+        let away = false, closeSheet = null;
+        const seen = () => { if (document.visibilityState === 'hidden') { away = true; store.set('mailOk', 1); if (closeSheet) { closeSheet(); closeSheet = null; } } };
+        const gone = () => { away = true; };
         document.addEventListener('visibilitychange', seen);
-        W.addEventListener('pagehide', () => { away = true; }, { once: true });
+        W.addEventListener('pagehide', gone, { once: true });
+        W.addEventListener('blur', gone, { once: true });
         location.href = 'ms-outlook://emails';
         setTimeout(() => {
-          document.removeEventListener('visibilitychange', seen);
-          if (away) return;
-          toast('Outlook-app niet gevonden, Outlook op het web openen…');
-          setTimeout(() => goTo(MAIL), 900);
+          W.removeEventListener('blur', gone);
+          if (away || store.get('mailOk')) { setTimeout(() => document.removeEventListener('visibilitychange', seen), 60e3); return; }
+          closeSheet = sheet({ title: 'Outlook-app niet geopend', msg: 'Staat de Outlook-app op je iPhone? Je kan je mail ook in Safari openen.', actions: [
+            { label: 'Opnieuw in de Outlook-app', run: () => ACTS.mail() },
+            { label: 'Outlook op het web', run: () => goTo(MAIL) },
+          ] });
         }, 2600);
       },
       mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
@@ -2387,10 +2415,21 @@
       const done = doneParam();
       const rn = rnParam();
       const known = !rn && (!done || store.get('doneSent') === done);
-      if (fromPortal && f === tab && history.length > U.depth + 1 && known) { if (!TEST) leaving('back'); history.go(-(U.depth + 1)); return; }
+      const url = PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn;
+      if (fromPortal && f === tab && history.length > U.depth + 1 && known) {
+        // Safari's history doesn't always lead back to the app (an entry it dropped, a page in between): when
+        // nothing happened after a moment, load the app's tab instead of staying dimmed and loading forever
+        if (!TEST) leaving('back');
+        let gone = false;
+        const g = () => { gone = true; };
+        W.addEventListener('pagehide', g, { once: true });
+        history.go(-(U.depth + 1));
+        setTimeout(() => { W.removeEventListener('pagehide', g); if (!gone && document.visibilityState === 'visible') goTo(url, { dir: 'back' }); }, 2500);
+        return;
+      }
       if (done) store.set('doneSent', done);
       if (rn) store.set('rnSent', rn.slice(-7));
-      goTo(PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn, { dir: 'back' });
+      goTo(url, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {
       saveScroll();
@@ -2991,7 +3030,12 @@
     mo.observe(document, { childList: true });
   };
   if (mode === 'redirect') { try { W.stop(); } catch (_) {} whenRoot(() => cover('')); location.replace(target); return; }
-  if (mode === 'bridge') { bridge(); return; }
+  if (mode === 'bridge') {
+    // the hidden frame only reads data: don't let the KU Loket launchpad (SAPUI5) boot in it as well
+    if (/^\/sap\/bc\/ui2\/flp/.test(PATH)) blockScripts((n) => /ui5_ui5|sap-ui-core|ushell|\/resources\//.test(n.getAttribute('src') || '') || n.id === 'sap-ui-bootstrap');
+    bridge();
+    return;
+  }
   if (mode === 'cover') {
     // came back here with the back button: this page would only send you forward again, so step over it
     const back = () => { try { return (performance.getEntriesByType('navigation')[0] || {}).type === 'back_forward'; } catch (_) { return false; } };
