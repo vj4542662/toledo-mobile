@@ -499,7 +499,7 @@
       return `Bijgewerkt ${dayDiff(t, Date.now()) === 0 ? 'vandaag ' + hhmm(t) : dShort(t) + ' ' + hhmm(t)} · <button type="button" data-act="strefresh">Bijwerken</button>`;
     };
     function stEmpty(what) {
-      if (P.st === 'loading' || (!P.study && !P.st)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
+      if (P.st === 'loading' || (!P.study && !P.st && bridgeBusy)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
       return empty(what === 'isp' ? 'idcard' : 'trend', what === 'isp' ? 'ISP nog niet geladen' : 'Studievoortgang nog niet geladen', 'Deze gegevens komen uit KU Loket.' + (P.stLogin ? ' KU Loket wil dat je even opnieuw aanmeldt.' : ''), '<p style="margin-top:14px"><button type="button" class="btn" data-act="stsync">Laden uit KU Loket</button></p>');
     }
     BUILD.studie = () => '<div class="lt"><h1>Studievoortgang</h1></div><div data-k="body"></div>';
@@ -553,8 +553,13 @@
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
       setTabOn(SUBVIEW[id] || id);
+      if (SUBVIEW[id]) {
+        // nothing to show yet: get it, and if the hidden frame can't, open KU Loket for a moment (at most once per 5 minutes, never right after a sync)
+        const auto = !P.study && !syncM && Date.now() - (Number(ss.get('tm4-stauto')) || 0) > 5 * 60e3;
+        if (auto) ss.set('tm4-stauto', String(Date.now()));
+        refreshAgenda(auto, true);
+      }
       render(id);
-      if (SUBVIEW[id]) refreshAgenda(false, true);
       if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
@@ -731,7 +736,7 @@
        (the userscript runs inside it, see bridge()) and hands it over with postMessage. */
     // force = you pressed "vernieuwen": if the hidden frame can't do it quickly (or KU Loket first wants you to
     // sign in), the app opens KU Loket itself for a moment and comes straight back with the timetable.
-    let bridgeBusy = false;
+    let bridgeBusy = false, bridgeSt = false, bridgeDone = Promise.resolve();
     const studyStale = () => !P.study || Date.now() - P.study.ts > 6 * 3600e3;
     // force: you asked for it (button), so when the hidden frame can't, KU Loket opens for a moment.
     // study: also read study progress + ISP (opening those pages, or when that copy is older than 6 hours).
@@ -740,12 +745,19 @@
       const a = P.agenda;
       const wantStudy = !!study && (force || studyStale());
       if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
-      if (bridgeBusy) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
-      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return Promise.resolve(); }
+      // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
+      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
+      if (bridgeBusy) {
+        if (force && !quiet) ACTS.agsync();
+        else if (wantStudy && !bridgeSt) bridgeDone.then(() => refreshAgenda(false, true, quiet));
+        return Promise.resolve();
+      }
+      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); stIdle(); return Promise.resolve(); }
       const fail = store.get('p:bridgefail') || { n: 0, ts: 0 };
-      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); else stIdle(); return Promise.resolve(); }
       const withSt = wantStudy || studyStale();
       bridgeBusy = true;
+      bridgeSt = withSt;
       P.ag = 'loading';
       if (withSt) P.st = 'loading';
       dirty('vandaag', 'rooster', 'studie', 'isp');
@@ -760,27 +772,29 @@
       f.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
       let timer = 0, done = false, settle = () => {};
       const settled = new Promise((r) => { settle = r; });
-      const finish = (ok, login) => {
+      bridgeDone = settled;
+      const finish = (ok, login, noSt) => {
         if (done) return;
         done = true;
-        settle();
-        if (withSt) { P.st = ok ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
+        if (withSt) { P.st = ok && !noSt ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
         clearTimeout(timer);
         W.removeEventListener('message', onMsg);
         setTimeout(() => f.remove(), 50);
         bridgeBusy = false;
+        bridgeSt = false;
+        settle();
         P.ag = ok ? 'ok' : 'failed';
         P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
         else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
         dirty('vandaag', 'rooster', 'studie', 'isp', 'meer');
         if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
-        if (!ok && force && !quiet) ACTS.agsync();
+        if ((!ok || (withSt && noSt && SUBVIEW[P.tab])) && force && !quiet) ACTS.agsync();
         else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');
       };
       const onMsg = (e) => {
         if (e.origin !== LOKET_ORIGIN || !e.data || e.data.tm4 !== 'agenda') return;
-        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); saveStudy(e.data.data); finish(true); return; }
+        if (e.data.ok && e.data.data) { const d = e.data.data; saveAgenda(d); saveStudy(d); finish(true, false, withSt && !d.study && !d.isp); return; }
         if (e.data.pending) {
           // KU Loket wants you to sign in first: that needs the real page
           if (force && !quiet) { finish(false, true); return; }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Toledo Mobile
 // @namespace    https://toledo.kuleuven.be/portal
-// @version      4.8.0
+// @version      4.8.1
 // @description  KU Leuven Toledo as a real phone app: Vandaag, Vakken, Rooster, Updates and Meer, with course content, files and weblectures one tap away. Runs on your own Toledo session.
 // @match        https://toledo.kuleuven.be/portal*
 // @match        https://ultra.edu.kuleuven.cloud/ultra/*
@@ -34,7 +34,7 @@
   const LOGIN_CSS = "html.tm4-login{--bg:#f2f2f7;--card:#fff;--text:#000;--sub:#6d6d72;--sep:rgba(60,60,67,.2);--fill:rgba(118,118,128,.12);--accent:#0a6cd6;--red:#ff3b30;\n--font:-apple-system,BlinkMacSystemFont,\"SF Pro Text\",\"Helvetica Neue\",system-ui,sans-serif;color-scheme:light;background:var(--bg)!important}\nhtml.tm4-login.dark{color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}\n@media (prefers-color-scheme:dark){html.tm4-login:not(.light){color-scheme:dark;--bg:#000;--card:#1c1c1e;--text:#fff;--sub:#98989f;--sep:rgba(84,84,88,.65);--fill:rgba(118,118,128,.24);--accent:#409cff}}\nhtml.tm4-login body{background:var(--bg)!important;color:var(--text)!important;font-family:var(--font)!important;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}\nhtml.tm4-login .vw-100{width:100%!important}\nhtml.tm4-login .vh-100{height:auto!important;min-height:100vh;min-height:100dvh}\nhtml.tm4-login #background,html.tm4-login #footer{display:none!important}\nhtml.tm4-login .sidebar{width:100%!important;max-width:none!important;min-height:100vh;min-height:100dvh;background:var(--bg)!important;border:0!important;box-shadow:none!important;\npadding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important}\nhtml.tm4-login #language{width:100%;padding:8px 10px 0!important}\nhtml.tm4-login #language .nav-link{color:var(--sub)!important;font-size:14px!important;padding:6px 8px!important}\nhtml.tm4-login #content{width:100%!important;max-width:460px;margin:0 auto;justify-content:flex-start!important;padding:4vh 22px 28px!important}\nhtml.tm4-login #service-info{display:flex;flex-direction:column;align-items:center;text-align:center;margin:0 0 30px!important}\nhtml.tm4-login #serviceDescription,html.tm4-login #serviceDescription .description-logo-text{display:contents!important}\nhtml.tm4-login #serviceDescription .col-3{order:0;flex:none!important;width:auto!important;max-width:none!important;padding:0!important}\nhtml.tm4-login #serviceLogo{display:block;width:80px;height:80px;object-fit:contain;padding:12px;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.1)}\nhtml.tm4-login #service-info h5{order:1;margin:18px 0 6px!important;font:700 30px/36px var(--font)!important;letter-spacing:.2px;color:var(--text)!important}\nhtml.tm4-login #serviceDescription .col-9{order:2;flex:none!important;width:auto!important;max-width:30ch!important;padding:0!important;color:var(--sub)!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .auth-forms{display:flex;flex-direction:column}\nhtml.tm4-login .loginbutton{margin:0!important;padding:0!important}\nhtml.tm4-login .loginMethod:not(.hidden){display:flex!important;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;margin:0!important;padding:12px 18px!important;\nborder:0!important;border-radius:14px!important;font:600 16px/21px var(--font)!important;box-shadow:none!important;text-align:left!important;-webkit-tap-highlight-color:transparent;transition:transform .12s,opacity .12s}\nhtml.tm4-login .loginMethod:active{transform:scale(.98);opacity:.85}\nhtml.tm4-login .loginMethod br{display:none!important}\nhtml.tm4-login #btnnextauthlogin{background:var(--accent)!important;color:#fff!important}\nhtml.tm4-login #btnnextauthlogin img{flex:none;width:32px;height:32px;margin:0!important;padding:3px;border-radius:8px;background:#fff}\nhtml.tm4-login #btnPwdLogin{background:var(--card)!important;color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--sep)!important}\nhtml.tm4-login #btnPwdLogin i,html.tm4-login .loginMethod i{flex:none;margin:0!important;font-size:24px!important;color:inherit!important}\nhtml.tm4-login .form-check:not(.hidden){display:flex!important;align-items:center;gap:10px;min-height:36px;margin:10px 4px 0!important;padding:0!important}\nhtml.tm4-login .form-check-input{position:static!important;flex:none;width:22px!important;height:22px!important;margin:0!important;accent-color:var(--accent);background-color:var(--card)}\nhtml.tm4-login .form-check-label,html.tm4-login .text-muted{color:var(--sub)!important}\nhtml.tm4-login .form-check-label{font-size:15px!important;line-height:20px}\nhtml.tm4-login #orSeperator:not(.hidden){display:flex!important;align-items:center;gap:12px;margin:18px 4px!important;padding:0!important;color:var(--sub)!important;font-size:13px!important;text-transform:uppercase;letter-spacing:.4px;background:none!important}\nhtml.tm4-login #orSeperator::before,html.tm4-login #orSeperator::after{content:\"\"!important;flex:1;height:.5px;margin:0!important;border:0!important;background:var(--sep)!important;position:static!important;width:auto!important}\nhtml.tm4-login .input-group{margin:0 0 10px!important}\nhtml.tm4-login .form-control{height:52px!important;padding:0 14px!important;border:1px solid var(--sep)!important;border-radius:12px!important;background:var(--card)!important;color:var(--text)!important;\nfont:17px var(--font)!important;box-shadow:none!important;-webkit-appearance:none;appearance:none}\nhtml.tm4-login .form-control::placeholder{color:var(--sub)!important;opacity:1}\nhtml.tm4-login .form-control:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)!important;outline:0!important}\nhtml.tm4-login .btn-primary,html.tm4-login #pwdLoginBtn{min-height:52px;border:0!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font:600 17px var(--font)!important;box-shadow:none!important}\nhtml.tm4-login .form-group{margin-bottom:0!important}\nhtml.tm4-login #pwdLoginForm .form-group{margin-top:14px!important}\nhtml.tm4-login #btnGoToMain:not(.hidden){display:flex!important;align-items:center;gap:4px;margin:16px auto 0!important;color:var(--accent)!important;font:500 16px var(--font)!important;background:none!important;border:0!important;box-shadow:none!important}\nhtml.tm4-login #revokeConsent{margin-top:14px!important}\nhtml.tm4-login .alert:not(.hidden){border:0!important;border-radius:12px!important;padding:12px 14px!important;font-size:15px!important;line-height:20px}\nhtml.tm4-login .alert-danger{background:color-mix(in srgb,var(--red) 13%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .alert-warning{background:color-mix(in srgb,#ff9500 15%,var(--card))!important;color:var(--text)!important}\nhtml.tm4-login .help{margin-top:22px!important;text-align:center}\nhtml.tm4-login .help > a{color:var(--sub)!important;font-size:15px!important;text-decoration:none!important}\nhtml.tm4-login .help-links{margin:12px 0 0!important;padding:0!important;list-style:none!important;text-align:left;background:var(--card);border-radius:12px;overflow:hidden}\nhtml.tm4-login .help-links li{margin:0!important}\nhtml.tm4-login .help-links li + li a{border-top:.5px solid var(--sep)}\nhtml.tm4-login .help-links a{display:block;padding:13px 16px;color:var(--accent)!important;font-size:15px;text-decoration:none!important}\nhtml.tm4-login #content h1,html.tm4-login #content h2,html.tm4-login #content h3,html.tm4-login #content h4{color:var(--text)!important;font-family:var(--font)!important}\nhtml.tm4-login #content p{color:var(--text)}\nhtml.tm4-login #content .btn:not(.loginMethod):not(.close):not(#btnGoToMain){min-height:50px;border-radius:14px!important;font:600 17px var(--font)!important}\nhtml.tm4-login #content .btn-secondary,html.tm4-login #content .btn-light,html.tm4-login #content .btn-outline-primary{background:var(--card)!important;color:var(--accent)!important;border:1px solid var(--sep)!important}\nhtml.tm4-login #content a{color:var(--accent)}";
   /* ================================================================== environment */
   const W = window;
-  const VERSION = '4.8.0';
+  const VERSION = '4.8.1';
   const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
@@ -1347,7 +1347,7 @@
       return `Bijgewerkt ${dayDiff(t, Date.now()) === 0 ? 'vandaag ' + hhmm(t) : dShort(t) + ' ' + hhmm(t)} · <button type="button" data-act="strefresh">Bijwerken</button>`;
     };
     function stEmpty(what) {
-      if (P.st === 'loading' || (!P.study && !P.st)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
+      if (P.st === 'loading' || (!P.study && !P.st && bridgeBusy)) return `<div class="st-hero" style="min-height:190px"><div class="sk" style="height:14px;width:35%;opacity:.5"></div><div class="sk" style="height:24px;width:70%;margin-top:12px;opacity:.5"></div></div>${skGroup(5)}`;
       return empty(what === 'isp' ? 'idcard' : 'trend', what === 'isp' ? 'ISP nog niet geladen' : 'Studievoortgang nog niet geladen', 'Deze gegevens komen uit KU Loket.' + (P.stLogin ? ' KU Loket wil dat je even opnieuw aanmeldt.' : ''), '<p style="margin-top:14px"><button type="button" class="btn" data-act="stsync">Laden uit KU Loket</button></p>');
     }
     BUILD.studie = () => '<div class="lt"><h1>Studievoortgang</h1></div><div data-k="body"></div>';
@@ -1401,8 +1401,13 @@
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
       setTabOn(SUBVIEW[id] || id);
+      if (SUBVIEW[id]) {
+        // nothing to show yet: get it, and if the hidden frame can't, open KU Loket for a moment (at most once per 5 minutes, never right after a sync)
+        const auto = !P.study && !syncM && Date.now() - (Number(ss.get('tm4-stauto')) || 0) > 5 * 60e3;
+        if (auto) ss.set('tm4-stauto', String(Date.now()));
+        refreshAgenda(auto, true);
+      }
       render(id);
-      if (SUBVIEW[id]) refreshAgenda(false, true);
       if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
@@ -1579,7 +1584,7 @@
        (the userscript runs inside it, see bridge()) and hands it over with postMessage. */
     // force = you pressed "vernieuwen": if the hidden frame can't do it quickly (or KU Loket first wants you to
     // sign in), the app opens KU Loket itself for a moment and comes straight back with the timetable.
-    let bridgeBusy = false;
+    let bridgeBusy = false, bridgeSt = false, bridgeDone = Promise.resolve();
     const studyStale = () => !P.study || Date.now() - P.study.ts > 6 * 3600e3;
     // force: you asked for it (button), so when the hidden frame can't, KU Loket opens for a moment.
     // study: also read study progress + ISP (opening those pages, or when that copy is older than 6 hours).
@@ -1588,12 +1593,19 @@
       const a = P.agenda;
       const wantStudy = !!study && (force || studyStale());
       if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
-      if (bridgeBusy) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
-      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); return Promise.resolve(); }
+      // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
+      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
+      if (bridgeBusy) {
+        if (force && !quiet) ACTS.agsync();
+        else if (wantStudy && !bridgeSt) bridgeDone.then(() => refreshAgenda(false, true, quiet));
+        return Promise.resolve();
+      }
+      if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); stIdle(); return Promise.resolve(); }
       const fail = store.get('p:bridgefail') || { n: 0, ts: 0 };
-      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); return Promise.resolve(); }
+      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); else stIdle(); return Promise.resolve(); }
       const withSt = wantStudy || studyStale();
       bridgeBusy = true;
+      bridgeSt = withSt;
       P.ag = 'loading';
       if (withSt) P.st = 'loading';
       dirty('vandaag', 'rooster', 'studie', 'isp');
@@ -1608,27 +1620,29 @@
       f.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
       let timer = 0, done = false, settle = () => {};
       const settled = new Promise((r) => { settle = r; });
-      const finish = (ok, login) => {
+      bridgeDone = settled;
+      const finish = (ok, login, noSt) => {
         if (done) return;
         done = true;
-        settle();
-        if (withSt) { P.st = ok ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
+        if (withSt) { P.st = ok && !noSt ? 'ok' : 'failed'; P.stLogin = !ok && !!login; }
         clearTimeout(timer);
         W.removeEventListener('message', onMsg);
         setTimeout(() => f.remove(), 50);
         bridgeBusy = false;
+        bridgeSt = false;
+        settle();
         P.ag = ok ? 'ok' : 'failed';
         P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
         else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
         dirty('vandaag', 'rooster', 'studie', 'isp', 'meer');
         if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
-        if (!ok && force && !quiet) ACTS.agsync();
+        if ((!ok || (withSt && noSt && SUBVIEW[P.tab])) && force && !quiet) ACTS.agsync();
         else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');
       };
       const onMsg = (e) => {
         if (e.origin !== LOKET_ORIGIN || !e.data || e.data.tm4 !== 'agenda') return;
-        if (e.data.ok && e.data.data) { saveAgenda(e.data.data); saveStudy(e.data.data); finish(true); return; }
+        if (e.data.ok && e.data.data) { const d = e.data.data; saveAgenda(d); saveStudy(d); finish(true, false, withSt && !d.study && !d.isp); return; }
         if (e.data.pending) {
           // KU Loket wants you to sign in first: that needs the real page
           if (force && !quiet) { finish(false, true); return; }
