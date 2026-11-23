@@ -186,8 +186,9 @@
       const tone = days < 0 ? '' : days <= 7 ? 'red' : days <= 21 ? 'orange' : 'blue';
       const when = days < 0 ? 'voorbij' : days === 0 ? 'vandaag' : days === 1 ? 'morgen' : `${days} d`;
       const href = x.lu ? courseHref(x.lu, P.tab) : '';
-      const sub = [x.time, x.room].filter(Boolean).join(' · ');
-      return `<div class="exam"${href ? ` data-href="${esc(href)}" role="link"` : ''}${days < 0 ? ' style="opacity:.5"' : ''}><div class="dt"><small>${MONTHS_S[d.getMonth()]}</small><b>${d.getDate()}</b><em>${DAYS_S[d.getDay()]}</em></div><div class="main"><div class="t">${esc(x.title)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}${x.note ? `<div class="s">${esc(x.note)}</div>` : ''}</div><span class="end"><span class="cap ${tone}">${when}</span></span></div>`;
+      const room = x.room ? (x.url ? `<a href="${esc(x.url)}">${ico('pin')}${esc(x.room)}</a>` : esc(x.room)) : '';
+      const sub = [x.time ? esc(x.time) : '', room].filter(Boolean).join(' · ');
+      return `<div class="exam"${href ? ` data-href="${esc(href)}" role="link"` : ''}${days < 0 ? ' style="opacity:.5"' : ''}><div class="dt"><small>${MONTHS_S[d.getMonth()]}</small><b>${d.getDate()}</b><em>${DAYS_S[d.getDay()]}</em></div><div class="main"><div class="t">${esc(x.title)}</div>${sub ? `<div class="s">${sub}</div>` : ''}${x.note ? `<div class="s">${esc(x.note)}</div>` : ''}</div><span class="end"><span class="cap ${tone}">${when}</span></span></div>`;
     }
     function courseRow(e, from) {
       const off = e.available === false;
@@ -231,7 +232,7 @@
           <div class="hero-top"><span class="hero-lbl"><i></i>${days === 0 ? 'Examen vandaag' : 'Volgend examen'}</span><span class="hero-cd">${esc(days === 0 ? (ex.time ? 'om ' + ex.time : 'vandaag') : days === 1 ? 'morgen' : `nog ${days} dagen`)}</span></div>
           <div class="hero-title">${esc(ex.title)}</div>
           <div class="hero-meta"><span>${ico('calendar')}${esc(cap(dLong(ex.start)))}${ex.time ? ' · ' + esc(ex.time) : ''}</span>${ex.room ? `<span>${ico('pin')}${esc(ex.room)}</span>` : ''}</div>
-          <div class="hero-acts">${ex.lu ? `<a class="pri" href="${esc(href)}">${ico('book')}Open vak</a>` : ''}<a href="#rooster/examens">${ico('cap')}Alle examens</a></div>
+          <div class="hero-acts">${ex.lu ? `<a class="pri" href="${esc(href)}">${ico('book')}Open vak</a>` : ''}${ex.url ? `<a href="${esc(ex.url)}">${ico('pin')}Lokaal</a>` : ''}<a href="#rooster/examens">${ico('cap')}Alle examens</a></div>
         </div>`;
       }
       if (!l) {
