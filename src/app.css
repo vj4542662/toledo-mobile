@@ -736,12 +736,8 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .card.kg{margin-top:10px;padding:12px 14px 14px}
 .tm4 .kg-h{display:flex;align-items:center;gap:12px}
 .tm4 .kg-h .kr-main{flex:1}
-.tm4 .kg-free{flex:none;max-width:42%;font-size:13.5px;font-weight:600;color:var(--green);text-align:right}
-.tm4 .kg.none .kg-free{color:var(--sub);font-weight:500}.tm4 .kg.none .kg-ic{filter:grayscale(1);opacity:.6}
-.tm4 .kg-strip{display:flex;gap:2px;margin-top:10px}
-.tm4 .kg-c{flex:1;min-width:0;height:30px;padding:0;border-radius:5px;background:var(--fill2,var(--fill));color:var(--sub);font-size:10.5px;font-weight:600}
-.tm4 .kg-c.free{background:var(--green);color:#fff}
-.tm4 .kg-c:disabled{opacity:.55}
+.tm4 .kg-free{flex:none;padding:3px 9px;border-radius:8px;background:color-mix(in srgb,var(--green) 14%,transparent);font-size:13px;font-weight:600;color:var(--green);white-space:nowrap}
+.tm4 .kg.none .kg-free{background:var(--fill);color:var(--sub);font-weight:500}.tm4 .kg.none .kg-ic{filter:grayscale(1);opacity:.6}
 .tm4 .kb-when-s{pointer-events:none}
 .tm4 .kg-in{display:block;width:100%;height:44px;margin:0 0 12px;padding:0 12px;border:0;border-radius:10px;background:var(--fill);color:var(--text);font:inherit;font-size:16px}
 .tm4 .kg-pl span{color:var(--sub)}
@@ -755,3 +751,7 @@ html.tm4 body.kfull{padding-bottom:calc(var(--sb) + var(--tab))}
 .tm4 .kg-addb .spin{width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,.4);border-top-color:#fff}
 .tm4 .kg-mates{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.tm4 .kg-mates .chip{height:30px;padding:0 11px;font-size:14px;color:var(--accent);text-transform:capitalize}
 .tm4 .kb-go:disabled{opacity:.5}
+.tm4 .kg-hours{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.tm4 .kg-hr{height:44px;border-radius:10px;background:var(--green);color:#fff;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.tm4 .kg-hr:active{opacity:.7}
+.tm4 .kg-full{margin:16px 0 0}.tm4 .kg-full summary{padding:4px 20px}.tm4 .kg-full .card.kg{padding:10px 14px}
