@@ -1,6 +1,9 @@
 {
- "version": "4.12.1",
+ "version": "4.12.2",
  "news": {
+  "4.12.2": [
+   "Testversie om de nieuwe updatemelding te zien. Verder is er niets veranderd."
+  ],
   "4.12.1": [
    "Toledo Mobile kijkt nu bij elk openen of er een nieuwe versie is."
   ],
