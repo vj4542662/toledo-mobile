@@ -48,16 +48,85 @@
     return w ? a / w : null;
   }
 
-  // the course's place among everyone who took the exam (KU Loket's "situering": groups A to E)
-  function rankHtml(c) {
-    if (!c.rk || !c.rk.length) return '';
-    const all = c.rk.reduce((a, k) => a + k[3], 0);
-    let above = 0, mine = null;
-    for (const k of c.rk) { if (k[5]) { mine = k; break; } above += k[4]; }
-    const max = Math.max(...c.rk.map((k) => k[4]), 1);
-    const bars = c.rk.map((k) => `<div class="rk${k[5] ? ' me' : ''}"><span class="rk-c">${esc(k[0])}</span><span class="rk-bar"><i style="width:${Math.max(3, (k[4] / max) * 100).toFixed(1)}%"></i></span><span class="rk-v">${esc(nl(k[1]))}–${esc(nl(k[2]))}<small>${esc(nl(k[4]))}%</small></span></div>`).join('');
-    const line = mine ? `Je zit in groep <b>${esc(mine[0])}</b>${above + mine[4] <= 50 ? `: bij de beste ${esc(nl(above + mine[4], 0))}%` : ''} van ${all} studenten.` : `${all} studenten legden dit examen af.`;
-    return `<div class="rk-box"><p class="rk-line">${line}</p>${bars}</div>`;
+  // KU Loket's "situering": the students who passed this course (in the last few years) split into groups A (best) to E,
+  // with each group's score range, head count and share. Everything here is read from those groups; "better" is an estimate.
+  function rankStats(c) {
+    const rk = c.rk || [];
+    if (!rk.length) return null;
+    const all = rk.reduce((a, k) => a + k[3], 0);
+    const tot = rk.reduce((a, k) => a + k[4], 0) || 100;
+    const pc = (k) => (k[4] / tot) * 100;
+    const i = rk.findIndex((k) => k[5]);
+    const mine = i >= 0 ? rk[i] : null;
+    let above = 0, aboveN = 0;
+    for (let j = 0; j < (mine ? i : 0); j++) { above += pc(rk[j]); aboveN += rk[j][3]; }
+    let better = null;
+    if (mine) {
+      const n = scoreOf(c), lo = mine[1], hi = Math.floor(mine[2] + 0.05) + 1;
+      const f = n != null && hi > lo ? Math.min(1, Math.max(0, (n - lo + 0.5) / (hi - lo))) : 0.5;
+      better = Math.max(0, 100 - above - pc(mine)) + pc(mine) * f;
+    }
+    let cum = 0, med = null;
+    for (const k of rk) { cum += pc(k); if (cum >= 50) { med = k; break; } }
+    return { rk, all, pc, mine, top: mine ? above + pc(mine) : null, from: aboveN + 1, to: aboveN + (mine ? mine[3] : 0), better, med };
+  }
+  const rangeTxt = (k) => `${nl(k[1])}–${nl(k[2])}`;
+  const grpCol = (k) => scoreCol(k[1] >= 10 ? k[1] + 0.5 : k[1]);
+  function findResult(S, key) {
+    const [sid, yy, code] = String(key || '').split(':');
+    for (const s of S || []) {
+      if (s.id !== sid) continue;
+      for (const y of s.years) if (y.y === yy) { const c = y.c.find((x) => x.code === code); if (c) return { s, y, c }; }
+    }
+    return null;
+  }
+  // the page you get when you tap a course with a score
+  function resultHtml(S, key) {
+    const f = findResult(S, key);
+    if (!f) return '';
+    const { s, y, c } = f;
+    const n = scoreOf(c), st = rankStats(c);
+    const failed = /niet geslaagd/i.test(c.st) || (n != null && n < 10);
+    const col = failed ? '#ff3b30' : scoreCol(n);
+    let h = `<div class="lt"><h1${c.t.length > 26 ? ' class="long"' : ''}>${esc(c.t)}</h1></div>`;
+    // hero: your score and, if KU Loket has one, your place
+    const mid = st && st.better != null ? `<b>${esc(nl(st.better, 0))}<small style="font-size:15px;margin:0">%</small></b><small>scoorde<br>lager</small>` : `<b>${esc(nl(n))}</b><small>op 20</small>`;
+    const ringV = st && st.better != null ? st.better : (n || 0) * 5;
+    h += `<div class="st-hero res-hero" style="--rc:${col}"><div class="st-top"><span class="hero-lbl"><i style="background:${col}"></i>${st && st.mine ? `Groep ${esc(st.mine[0])}` : failed ? 'Niet geslaagd' : 'Resultaat'}</span><span class="hero-cd">${esc(acy(y.y))}</span></div>
+      <div class="st-row">${ringSvg([{ v: ringV, c: col }], 100, { mid, track: 'rgba(255,255,255,.2)' })}
+      <div class="st-kpis"><div class="kpi"><b>${esc(nl(n))}<small>/20</small></b><span>jouw score</span></div>
+      ${st && st.mine ? `<div class="kpi"><b>${st.from === st.to ? st.from : `${st.from}–${st.to}`}</b><span>plaats van ${st.all} geslaagden</span></div>` : st ? `<div class="kpi"><b>${st.all}</b><span>studenten slaagden</span></div>` : ''}</div></div></div>`;
+    if (st) {
+      const asc = st.rk.slice().reverse(); // E (lowest) left, A (best) right
+      // where you are on one line, every group as wide as its share of students
+      const strip = `<div class="pos"><div class="pos-bar">${asc.map((k) => `<i class="${k[5] ? 'me' : ''}" style="flex:${Math.max(0.5, st.pc(k)).toFixed(2)};--g:${grpCol(k)}"><span>${esc(k[0])}</span></i>`).join('')}</div>
+        ${st.better != null ? `<div class="pos-me" style="left:${Math.min(96, Math.max(4, st.better)).toFixed(1)}%"><b>Jij · ${esc(nl(n))}</b></div>` : ''}
+        <div class="pos-ax"><span>lager</span><span>hoger</span></div></div>`;
+      const line = st.mine
+        ? (st.top <= 50 ? `Je hoort bij de beste <b>${esc(nl(Math.ceil(st.top), 0))}%</b> van wie slaagde.` : `Ongeveer <b>${esc(nl(st.better, 0))}%</b> van wie slaagde, scoorde lager dan jij.`)
+        : failed ? 'Je score telt hier niet mee: KU Loket vergelijkt alleen met studenten die slaagden.' : 'KU Loket gaf je voor dit vak geen groep.';
+      h += card('Waar sta je', `<p class="pos-line">${line}</p>${strip}`);
+      // the groups as a bar chart
+      const mx = Math.max(...st.rk.map((k) => k[3]), 1);
+      h += card('Verdeling', `<div class="vbars rk-hist">${asc.map((k) => `<div class="vb${k[5] ? ' me' : ''}"><span class="vb-v">${esc(nl(st.pc(k), 0))}%</span><span class="vb-bar"><i style="height:${Math.max(5, (k[3] / mx) * 100).toFixed(1)}%;background:${k[5] ? col : 'var(--ter)'}"></i></span><span class="vb-l"><b>${esc(k[0])}</b>${esc(rangeTxt(k))}</span></div>`).join('')}</div>
+        <p class="card-note">${st.all} geslaagde studenten${c.sy > 1 ? ` over de laatste ${c.sy} academiejaren` : ''}, per groep met hun scores op 20.</p>`, st.mine ? `<span>jij: groep ${esc(st.mine[0])}</span>` : '');
+    }
+    // compared with...
+    const cmp = [];
+    const dif = (a) => { const d = Math.round((n - a) * 10) / 10; return d === 0 ? '<span class="cmp-d">gelijk</span>' : `<span class="cmp-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : '−'}${esc(nl(Math.abs(d)))}</span>`; };
+    if (st && st.med) cmp.push(['De middelste geslaagde student', `groep ${st.med[0]} · ${rangeTxt(st.med)}`, n != null ? (n > st.med[2] ? '<span class="cmp-d up">hoger</span>' : n < st.med[1] ? '<span class="cmp-d down">lager</span>' : '<span class="cmp-d">gelijk</span>') : '']);
+    const ya = yearAvg(y);
+    if (ya != null && n != null) cmp.push([`Je gemiddelde in ${acy(y.y)}`, nl(ya, 1), dif(ya)]);
+    let A = 0, W = 0;
+    s.years.forEach((yr) => yr.c.forEach((x) => { const v = scoreOf(x); if (v != null && x.sp) { A += v * x.sp; W += x.sp; } }));
+    if (W && n != null && s.years.length > 1) cmp.push([`Je gemiddelde in ${shortProg(s.name).split(' ').slice(0, 3).join(' ')}`, nl(A / W, 1), dif(A / W)]);
+    if (cmp.length) h += `<div class="gh">Vergeleken met</div><div class="group">${cmp.map(([a, b, d]) => `<div class="row kv"><span class="main"><span class="t">${esc(a)}</span><span class="s">${esc(b)}</span></span><span class="end">${d}</span></div>`).join('')}</div>`;
+    // the facts
+    const word = RESULT_WORD[String(c.r || '').toUpperCase()] || '';
+    const facts = [['Status', c.st + (word && word !== c.st ? ` (${word})` : '')], ['Bekendgemaakt', dNice(c.d)], ['Studiepunten', spTxt(c.sp)], ['Poging', c.n > 1 ? `${c.n}e keer` : 'Eerste keer'], ['Tolerantie', c.tol ? 'Ja' : ''], ['Code', c.code]].filter((x) => x[1]);
+    h += `<div class="gh">Details</div><div class="group">${facts.map(([a, b]) => `<div class="row kv"><span class="main"><span class="t">${esc(a)}</span></span><span class="end"><span class="kv-v">${esc(b)}</span></span></div>`).join('')}</div>`;
+    h += `<p class="fresh">${st ? 'Groepen, aantallen en percentages komen uit KU Loket. Wie niet slaagde, telt daarin niet mee. "Lager dan jij" is een schatting binnen je groep.' : 'KU Loket toont voor dit vak geen vergelijking met andere studenten.'}</p>`;
+    return h;
   }
   function resultRow(c, key, open, current) {
     const n = scoreOf(c);
@@ -66,9 +135,11 @@
     const pill = current && !c.r ? '<span class="cap blue">Bezig</span>'
       : n != null ? `<span class="score" style="--sc:${failed ? '#ff3b30' : scoreCol(n)}">${esc(nl(n))}<small>/20</small></span>`
         : `<span class="cap${failed ? ' red' : ''}">${esc(c.r || c.st || '—')}</span>`;
-    const sub = [c.code, spTxt(c.sp), c.n > 1 ? `${c.n}e keer` : '', c.tol ? 'tolerantie' : ''].filter(Boolean).join(' · ');
+    const sub = [c.code, spTxt(c.sp), c.n > 1 ? `${c.n}e keer` : '', c.tol ? 'tolerantie' : '', c.sit && n != null ? `groep ${c.sit}` : ''].filter(Boolean).join(' · ');
+    // a score opens its own page with the statistics; anything else (exemption, not taken...) folds open in place
+    if (n != null) return `<div class="res"><a class="row${failed ? ' failed' : ''}" href="#resultaat/${encodeURIComponent(key)}"><span class="main"><span class="t">${esc(c.t)}</span><span class="s">${esc(sub)}</span></span><span class="end">${pill}${CHEV}</span></a></div>`;
     const canOpen = !current || c.r;
-    const det = open ? `<div class="res-d">${[c.d ? `Bekendgemaakt op ${esc(dNice(c.d))}` : '', c.st ? esc(c.st) + (word && word !== c.st ? ` (${esc(word)})` : '') : ''].filter(Boolean).join(' · ')}${rankHtml(c)}</div>` : '';
+    const det = open ? `<div class="res-d">${[c.d ? `Bekendgemaakt op ${esc(dNice(c.d))}` : '', c.st ? esc(c.st) + (word && word !== c.st ? ` (${esc(word)})` : '') : ''].filter(Boolean).join(' · ')}</div>` : '';
     return `<div class="res${open ? ' open' : ''}"${canOpen ? ` data-act="resopen" data-k="${esc(key)}" role="button"` : ''}><div class="row${failed ? ' failed' : ''}"><span class="main"><span class="t">${esc(c.t)}</span><span class="s">${esc(sub)}</span></span><span class="end">${pill}</span></div>${det}</div>`;
   }
 
