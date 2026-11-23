@@ -463,25 +463,44 @@
       // rooms with the same name ("Tulp 1" three times): name them by their code instead
       const cnt = {};
       list.forEach(({ a }) => { const k = nm(a.name); cnt[k] = (cnt[k] || 0) + 1; });
-      const rowOf = ({ a, b }) => {
+      // every room on the same time scale: one bar per room, green = free, so you can look down a column ("who is free at 15:00?")
+      let lo = 99, hi = 0;
+      list.forEach(({ sl }) => { if (sl.out.length) { lo = Math.min(lo, sl.out[0].i); hi = Math.max(hi, sl.out[sl.out.length - 1].i + 1); } });
+      if (lo >= hi) { lo = 8; hi = 22; }
+      const n = hi - lo, slotM = (list[0] && list[0].sl.slot) || 60;
+      GR.lo = lo; GR.n = n;
+      const pct = (i) => ((i - lo) / n) * 100;
+      const ticks = [];
+      for (let i = lo; i <= hi; i++) if ((i * slotM) % 120 === 0) ticks.push(i);
+      const nowI = day === ymd(Date.now()) ? (Date.now() - fromYmd(day)) / 60e3 / slotM : -1;
+      const nowLine = nowI > lo && nowI < hi ? `<span class="kg-now" style="left:${pct(nowI).toFixed(2)}%"></span>` : '';
+      const axis = `<div class="kg-axis"><div class="kg-ax">${ticks.map((i) => `<span style="left:${pct(i).toFixed(2)}%">${(i * slotM) / 60}</span>`).join('')}</div></div>`;
+      const bar = ({ a, sl }) => {
+        const st = {};
+        sl.out.forEach((x) => { st[x.i] = x.free ? 'f' : 'b'; });
+        const runs = [];
+        for (let i = lo; i < hi; i++) { const v = st[i] || 'c'; const l = runs[runs.length - 1]; if (l && l.v === v) l.n++; else runs.push({ v, n: 1 }); }
+        return `<div class="kg-bar" data-act="gbar" data-r="${a.id}" style="--n:${n}">${runs.map((x) => `<span class="kg-s ${x.v}" style="flex:${x.n}"></span>`).join('')}${nowLine}</div>`;
+      };
+      const rowOf = (it) => {
+        const { a, b } = it;
         const dup = cnt[nm(a.name)] > 1 && roomCode(a.name);
         const title = dup ? roomCode(a.name) : nm(a.name);
-        const sub = [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} personen`].filter(Boolean).join(' · ');
-        const when = b.length ? b.map((x) => `<i>${hm(x.s)}–${hm(x.e)}</i>`).join(' · ') : 'Volzet';
-        return `<button type="button" class="kgr${b.length ? '' : ' none'}" data-act="groom" data-r="${a.id}"${b.length ? '' : ' disabled'}><span class="kr-main"><b>${esc(title)}</b><span>${esc(sub)}</span><em>${b.length ? 'Vrij ' : ''}${when}</em></span>${b.length ? '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg>' : ''}</button>`;
+        const sub = [dup ? nm(a.name) : roomCode(a.name), `${a.minParticipants}–${a.maxParticipants} pers.`].filter(Boolean).join(' · ');
+        return `<div class="kgt${b.length ? '' : ' none'}"><button type="button" class="kgt-h" data-act="groom" data-r="${a.id}"${b.length ? '' : ' disabled'}><b>${esc(title)}</b><span>${esc(sub)}</span>${b.length ? '' : '<em>Volzet</em>'}</button>${bar(it)}</div>`;
       };
       const open = list.filter((x) => x.b.length), full = list.filter((x) => !x.b.length);
       let h = head + dayRow;
-      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen nog vrij. Tik op een lokaal om je uren te kiezen.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
-      if (open.length) h += `<div class="group kg-list">${open.map(rowOf).join('')}</div>`;
-      if (full.length) h += nFree ? `<details class="rp-more kg-full"><summary>${full.length} ${full.length === 1 ? 'lokaal' : 'lokalen'} volzet</summary><div class="group kg-list">${full.map(rowOf).join('')}</div></details>` : `<div class="group kg-list">${full.map(rowOf).join('')}</div>`;
+      h += `<p class="kg-sum">${nFree ? `<b>${nFree}</b> van ${list.length} lokalen nog vrij. <span class="kg-key"><i></i>vrij</span> Tik op het groen om te reserveren.` : `Alle ${list.length} lokalen zijn volzet ${esc(dayLbl(day).toLowerCase())}. Kies een andere dag.`}</p>`;
+      if (open.length) h += `<div class="group kg-list">${axis}${open.map(rowOf).join('')}</div>`;
+      if (full.length) h += nFree ? `<details class="rp-more kg-full"><summary>${full.length} ${full.length === 1 ? 'lokaal' : 'lokalen'} volzet</summary><div class="group kg-list">${full.map(rowOf).join('')}</div></details>` : `<div class="group kg-list">${axis}${full.map(rowOf).join('')}</div>`;
       h += `<p class="fresh"><a href="${esc(ORIG('/locations/' + lid))}">Open in de originele KURT</a></p>`;
       put(sec, h);
       const on2 = sec.querySelector('.kg-days .on'); if (on2) on2.scrollIntoView({ block: 'nearest', inline: 'center' });
     }
 
     // book a group room: until when, a subject and your group (KURT asks at least minParticipants people, you included)
-    async function pickRoom(rid) {
+    async function pickRoom(rid, at) {
       if (!GR) return;
       const it = GR.list.find((x) => String(x.a.id) === String(rid));
       if (!it) return;
@@ -494,7 +513,7 @@
       const endsFrom = (si) => { const e = []; for (let k = si; k < al.length && al[k] === 'A' && (k - si + 1) * slot <= maxMin; k++) e.push((k + 1) * slot); return e; };
       const me = ME || {};
       const st = {
-        si: starts[0],
+        si: at == null ? starts[0] : (starts.find((i) => i >= at) != null ? starts.find((i) => i >= at) : starts[starts.length - 1]),
         end: 0,
         subj: store.get('kurt:gsubj') || 'Groepswerk',
         ppl: me.uid ? [{ uid: me.uid, email: me.email, me: true }] : [],
@@ -908,6 +927,9 @@
       } else if (act === 'gday') {
         e.preventDefault();
         quiet = true; location.replace(K + '/#/g/' + b.dataset.l + '?d=' + b.dataset.d);
+      } else if (act === 'gbar') {
+        e.preventDefault();
+        if (GR && GR.n) { const rc = b.getBoundingClientRect(); const i = GR.lo + Math.floor(((e.clientX - rc.left) / rc.width) * GR.n); pickRoom(b.dataset.r, Math.max(GR.lo, i)); }
       } else if (act === 'groom') {
         e.preventDefault();
         if (!b.disabled) pickRoom(b.dataset.r);

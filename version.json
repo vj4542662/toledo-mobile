@@ -1,6 +1,9 @@
 {
- "version": "4.17.3",
+ "version": "4.17.4",
  "news": {
+  "4.17.4": [
+   "Groepswerkruimtes: elk lokaal heeft nu één tijdbalk over de hele dag (groen = vrij), allemaal op dezelfde urenschaal. Zo zie je in één oogopslag welke lokalen vrij zijn op jouw uur. Tik op het groen om te reserveren."
+  ],
   "4.17.3": [
    "Groepswerkruimtes rustiger: één lijst met per lokaal de vrije blokken (bv. 17:00–20:00). Tik op een lokaal en kies daar van wanneer tot wanneer.",
    "Studieplek begint weer met je reservaties en favorieten. Groepswerkruimtes vind je bij de bib zelf."
@@ -44,9 +47,6 @@
    "KURT: je reservaties staan altijd bovenaan, met een vuilbakje om ze te verwijderen.",
    "KURT: zet een ster bij een bibliotheek of een stoel, dan zie je meteen of je favoriete stoel vrij is.",
    "KURT: dag en uur kies je nu met één knop, en de plattegronden laden sneller."
-  ],
-  "4.12.2": [
-   "Testversie om de nieuwe updatemelding te zien. Verder is er niets veranderd."
   ]
  }
 }
