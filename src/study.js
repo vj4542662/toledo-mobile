@@ -92,13 +92,16 @@
     if (cr.rest) segs.push({ v: cr.rest, c: 'var(--fill2)', label: 'Nog te doen' });
     h += card('Studiepunten', stackHtml(segs) + (cr.failed ? `<p class="card-note">${esc(spTxt(cr.failed))} nog niet verworven uit vorige zittijden.</p>` : ''), cr.total ? `<span>${esc(spTxt(cr.total))}</span>` : '');
     // averages per year
-    const graded = s.years.map((y) => ({ y: y.y, a: yearAvg(y), n: y.c.filter((c) => scoreOf(c) != null).length })).filter((x) => x.a != null).reverse();
+    // every academic year you have results for, across all your studies (so the master continues where the bachelor ended)
+    const allYears = {};
+    S.forEach((x) => x.years.forEach((y) => { (allYears[y.y] = allYears[y.y] || []).push(...y.c); }));
+    const graded = Object.keys(allYears).sort().map((k) => ({ y: k, a: yearAvg({ c: allYears[k] }) })).filter((x) => x.a != null).slice(-6);
     if (graded.length) {
       let A = 0, W = 0;
       s.years.forEach((y) => y.c.forEach((c) => { const n = scoreOf(c); if (n != null && c.sp) { A += n * c.sp; W += c.sp; } }));
       const lo = 8, hi = 20;
       const bars = graded.map((g) => `<div class="vb"><span class="vb-v">${esc(nl(g.a, 1))}</span><span class="vb-bar"><i style="height:${Math.max(6, ((g.a - lo) / (hi - lo)) * 100).toFixed(1)}%;background:${scoreCol(g.a)}"></i></span><span class="vb-l">${esc(acyS(g.y))}</span></div>`).join('');
-      h += card('Gemiddelde per academiejaar', `<div class="vbars">${bars}</div><p class="card-note">Gewogen naar studiepunten, op 20. Over alles samen: <b>${esc(nl(A / W, 2))}</b>.</p>`);
+      h += card('Gemiddelde per academiejaar', `<div class="vbars">${bars}</div><p class="card-note">Gewogen naar studiepunten, op 20${S.length > 1 ? ', over al je opleidingen' : ''}. ${esc(shortProg(s.name))}: <b>${esc(nl(A / W, 2))}</b> gemiddeld.</p>`);
       // spread of your own scores
       const B = [['<10', 0, 10, '#ff3b30'], ['10–11', 10, 12, '#ff9500'], ['12–13', 12, 14, '#0a84ff'], ['14–15', 14, 16, '#0fa5a5'], ['16–17', 16, 18, '#30b955'], ['18–20', 18, 21, '#30b955']];
       const cnt = B.map((b) => s.years.reduce((a, y) => a + y.c.filter((c) => { const n = scoreOf(c); return n != null && n >= b[1] && n < b[2]; }).length, 0));
@@ -149,7 +152,7 @@
       const rows = mine.slice().sort((a, b) => (a.st === 'now' ? 0 : 1) - (b.st === 'now' ? 0 : 1) || (a.per || '').localeCompare(b.per || '') || a.t.localeCompare(b.t)).map((c) => {
         const sg = byId[c.g] && byId[c.g].l > 1 ? byId[c.g].t.replace(/^(Major|Minor|Electives)\s*[:-]\s*/i, '') : '';
         const sub = [c.code, spTxt(c.sp), c.st === 'now' ? PER[c.per] || '' : c.yr ? acy(c.yr) : '', sg && sg.length < 40 ? sg : ''].filter(Boolean).join(' · ');
-        return row({ href: c.url || undefined, iconHtml: `<span class="ic soft" style="--c:${col}">${c.st === 'ok' ? ico('check') : ico('book')}</span>`, title: c.t, sub, external: !!c.url, cls: c.st === 'ok' ? 'done' : '',
+        return row({ href: c.url || undefined, iconHtml: `<span class="ic soft" style="--c:${col}">${c.st === 'ok' ? ico('check') : ico('book')}</span>`, title: c.t, sub, chevron: false, cls: c.st === 'ok' ? 'done' : '',
           end: c.st === 'now' ? '<span class="cap blue">Dit jaar</span>' : '<span class="cap green">Verworven</span>' });
       }).join('');
       h += `<div class="group">${rows}${others ? `<div class="row plain-note"><span class="main"><span class="s">Nog ${others} andere keuzemogelijkhe${others === 1 ? 'id' : 'den'} in deze groep</span></span></div>` : ''}</div>`;
