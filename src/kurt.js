@@ -89,7 +89,7 @@
       return pr;
     };
     const memoClear = () => {
-      memoClear();
+      MEM.clear();
       try { Object.keys(sessionStorage).filter((k) => k.startsWith(MK)).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
     };
     const parFor = (lid, types) => memo(`par:${lid}:${mainType(types)}`, 10 * 60e3, () => get(`/parameters?locationId=${lid}&resourceTypeId=${mainType(types)}`));
