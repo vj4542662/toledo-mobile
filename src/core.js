@@ -121,15 +121,35 @@
     .reduce((all, v) => all.concat(news[v] || []), []).slice(0, 6);
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
-  // the address that makes Userscripts offer the update (?v= so Safari and GitHub's cache hand over the new file)
   const installUrl = (v) => UPDATE_URL + '?v=' + encodeURIComponent(v || Date.now());
+  // raw.githubusercontent.com keeps a file for 5 minutes and ignores ?query, so right after a push it still hands out
+  // the old version. GitHub's API is always fresh, but allows 60 calls an hour per network: use it first and fall
+  // back to raw (at most 5 minutes behind) when it says to wait.
+  const GH_API = 'https://api.github.com/repos/vj4542662/toledo-mobile';
+  function ghApi(path, accept) {
+    if (Date.now() < (Number(lsJson('tm4:apiwait')) || 0)) return Promise.reject('wait');
+    return fetch(GH_API + path, { cache: 'no-store', credentials: 'omit', headers: { Accept: accept } }).then((r) => {
+      if (r.ok) return r.text();
+      if (r.status === 403 || r.status === 429) lsSet('tm4:apiwait', Number(r.headers.get('x-ratelimit-reset')) * 1e3 || Date.now() + 30 * 60e3);
+      return Promise.reject(r.status);
+    });
+  }
+  // the newest file, by commit (an address no cache has seen yet), so Userscripts gets the new version right away
+  function openInstall(v) {
+    let done = false;
+    const go = (u) => { if (!done) { done = true; location.href = u; } };
+    setTimeout(() => go(installUrl(v)), 2500);
+    ghApi('/commits/main', 'application/vnd.github.sha')
+      .then((sha) => { sha = String(sha).trim(); go(/^[0-9a-f]{40}$/.test(sha) ? `https://raw.githubusercontent.com/vj4542662/toledo-mobile/${sha}/toledo-mobile.user.js` : installUrl(v)); }, () => go(installUrl(v)));
+  }
   function checkUpdate(cb, force) {
     if (TEST && !W.__TM_UPD_TEST__) return;
     const st = lsJson('tm4:upd');
     if (st && st.v && newerThan(st.v, VERSION)) cb(st);
     if (!force && st && Date.now() - st.ts < 2 * 60e3) return; // version.json is tiny: look (almost) every time the app opens
     const get = (u) => fetch(u + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
-    get(VERSION_URL)
+    ghApi('/contents/version.json', 'application/vnd.github.raw')
+      .catch(() => get(VERSION_URL))
       .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {} }; })
       .catch(() => get(UPDATE_URL).then((t) => { const m = /@version\s+([\d.]+)/.exec(t); return m ? { v: m[1], news: {} } : null; }))
       .then((info) => {
@@ -187,7 +207,7 @@
     const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
     scrim.addEventListener('click', close);
     layer.querySelector('.upd-later').addEventListener('click', () => { lsSet('tm4:upd-later', { v: info.v, ts: Date.now() }); close(); });
-    layer.querySelector('.upd-go').addEventListener('click', () => { lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); });
+    layer.querySelector('.upd-go').addEventListener('click', (e) => { e.preventDefault(); lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); e.currentTarget.textContent = 'Even geduld…'; openInstall(info.v); });
   }
 
   // after an update: say so once, with what is new

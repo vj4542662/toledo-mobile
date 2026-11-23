@@ -1,6 +1,9 @@
 {
- "version": "4.13.0",
+ "version": "4.13.1",
  "news": {
+  "4.13.1": [
+   "Een nieuwe versie verschijnt nu echt meteen, niet pas na een paar minuten."
+  ],
   "4.13.0": [
    "KURT: je reservaties staan altijd bovenaan, met een vuilbakje om ze te verwijderen.",
    "KURT: zet een ster bij een bibliotheek of een stoel, dan zie je meteen of je favoriete stoel vrij is.",
