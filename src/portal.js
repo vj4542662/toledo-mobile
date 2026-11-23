@@ -534,7 +534,15 @@
       const v = P.study && P.study.v;
       put($('[data-k="body"]', el), v && v.isp ? ispHtml(v.isp, v.study, stMeta()) : stEmpty('isp'));
     };
-    const SUBVIEW = { studie: 'meer', isp: 'meer' };
+    // one result with its statistics (#resultaat/<study>:<year>:<code>), opened from Studievoortgang
+    BUILD.resultaat = () => '<div data-k="body"></div>';
+    NAVS.resultaat = () => ({ back: { label: 'Terug', href: '#studie' }, title: 'Resultaat' });
+    FILL.resultaat = (el) => {
+      const S = P.study && P.study.v && P.study.v.study;
+      const h = S && S.length ? resultHtml(S, P.resKey) : '';
+      put($('[data-k="body"]', el), h || (S && S.length ? empty('trend', 'Resultaat niet gevonden', 'Dit vak staat niet meer in je studievoortgang.') : stEmpty('studie')));
+    };
+    const SUBVIEW = { studie: 'meer', isp: 'meer', resultaat: 'meer' };
 
     /* ---------------- view switching ---------------- */
     function view(id) {
@@ -567,6 +575,12 @@
       if (id === P.tab && prev && !sub) { W.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       if (prev) prev.y = W.scrollY;
       if (id === 'rooster' && sub) P.seg = sub === 'examens' ? 'examens' : 'lessen';
+      if (id === 'resultaat') {
+        const k = sub ? decodeURIComponent(sub) : P.resKey;
+        if (k !== P.resKey && V.resultaat) V.resultaat.y = 0;
+        P.resKey = k;
+        if (!k) id = 'studie';
+      }
       const first = !P.tab;
       P.tab = id;
       const v = view(id);
@@ -585,7 +599,8 @@
       setNav(NAVS[id]());
       W.scrollTo(0, v.y || 0);
       watchTitle(v.el);
-      const hash = '#' + id + (id === 'rooster' && P.seg === 'examens' ? '/examens' : '');
+      let hash = '#' + id + (id === 'rooster' && P.seg === 'examens' ? '/examens' : '');
+      if (id === 'resultaat') hash = '#resultaat/' + encodeURIComponent(P.resKey);
       if (location.hash !== hash || location.search) history.replaceState(null, '', location.pathname + hash);
       if (id === 'updates') setTimeout(() => { if (P.tab === 'updates') { P.seen = Date.now(); store.set('p:seen', P.seen); badges(); } }, 1200);
     }
@@ -596,7 +611,7 @@
       const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer', studie: 'studie', isp: 'isp' };
       if (qmap[q] && h.split('/')[0] !== qmap[q].split('/')[0]) h = qmap[q];
       const [a, b] = h.split('/');
-      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp' };
+      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp', resultaat: 'resultaat' };
       return { tab: map[a] || 'vandaag', sub: b || '' };
     }
     function badges() {
@@ -719,9 +734,9 @@
         if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
-    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp)$/;
+    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp|resultaat\/[^/]+)$/;
     W.addEventListener('hashchange', () => {
-      if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : '')); return; }
+      if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : P.tab === 'resultaat' ? '/' + encodeURIComponent(P.resKey || '') : '')); return; }
       const r = routeFromUrl(true);
       if (r.tab !== P.tab || r.sub) show(r.tab, r.sub);
     });
@@ -773,7 +788,7 @@
       const wantStudy = !!study && (force || studyStale());
       if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
       // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
-      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
+      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
       if (bridgeBusy) {
         if (force && !quiet) ACTS.agsync();
         else if (wantStudy && !bridgeSt) bridgeDone.then(() => refreshAgenda(false, true, quiet));
@@ -787,7 +802,7 @@
       bridgeSt = withSt;
       P.ag = 'loading';
       if (withSt) P.st = 'loading';
-      dirty('vandaag', 'rooster', 'studie', 'isp');
+      dirty('vandaag', 'rooster', 'studie', 'isp', 'resultaat');
       if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
       if (P.tab === 'rooster') setNav(NAVS.rooster());
       const f = document.createElement('iframe');
@@ -814,7 +829,7 @@
         P.agLogin = !ok && !!login;
         if (ok) store.del('p:bridgefail');
         else if (!login) { const fl = store.get('p:bridgefail') || { n: 0 }; store.set('p:bridgefail', { n: fl.n + 1, ts: Date.now() }); }
-        dirty('vandaag', 'rooster', 'studie', 'isp', 'meer');
+        dirty('vandaag', 'rooster', 'studie', 'isp', 'resultaat', 'meer');
         if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
         if ((!ok || (withSt && noSt && SUBVIEW[P.tab])) && force && !quiet) ACTS.agsync();
         else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');

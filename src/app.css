@@ -413,6 +413,32 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4 .rk-v small{display:inline-block;min-width:48px;margin-left:4px;font-size:12.5px}
 .tm4 .rk.me .rk-c,.tm4 .rk.me .rk-v{color:var(--accent);font-weight:700}
 .tm4 .rk.me .rk-bar i{background:var(--accent)}
+.tm4 .res-hero{background:linear-gradient(150deg,color-mix(in srgb,var(--rc) 55%,#0b2c52),#0b2c52 75%)}
+.tm4 .res-hero::after{background:var(--rc)}
+.tm4 .res-hero .st-row{margin-top:12px}
+.tm4 .res-hero .ring-mid small{line-height:1.15}
+.tm4 .pos-line{margin:0 0 14px;font-size:15px;line-height:20px}
+.tm4 .pos{position:relative}
+.tm4 .pos.has-me{padding-top:30px}
+.tm4 .pos-bar{display:flex;gap:3px;height:30px}
+.tm4 .pos-bar i{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:7px;background:color-mix(in srgb,var(--g) 22%,transparent);transform-origin:0 50%;animation:tm-grow .6s cubic-bezier(.2,.85,.25,1) both}
+.tm4 .pos-bar i span{font-size:12.5px;font-weight:700;font-style:normal;color:color-mix(in srgb,var(--g) 80%,var(--text))}
+.tm4 .pos-bar i.me{background:var(--g)}
+.tm4 .pos-bar i.me span{color:#fff}
+.tm4 .pos-me{position:absolute;top:0;width:0;height:62px;white-space:nowrap;animation:tm-fade .4s .3s ease-out both}
+.tm4 .pos-me b{position:absolute;left:0;top:0;display:block;padding:3px 8px;border-radius:9px;background:var(--text);color:var(--card);font-size:12.5px;line-height:16px}
+.tm4 .pos-me::after{content:"";position:absolute;left:0;top:21px;width:2px;height:41px;margin-left:-1px;border-radius:1px;background:var(--text)}
+.tm4 .pos-ax{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--sub)}
+.tm4 .rk-hist{height:170px}
+.tm4 .rk-hist .vb-l{display:flex;flex-direction:column;align-items:center;font-size:11.5px;line-height:14px}
+.tm4 .rk-hist .vb-l b{font-size:13px;color:var(--text)}
+.tm4 .rk-hist .vb.me .vb-v,.tm4 .rk-hist .vb.me .vb-l b{color:var(--accent)}
+.tm4 .row.kv{min-height:48px}
+.tm4 .row.kv .end{max-width:58%}
+.tm4 .kv-v{color:var(--sub);text-align:right}
+.tm4 .cmp-d{display:inline-block;min-width:48px;padding:3px 8px;border-radius:10px;background:var(--fill);color:var(--sub);font-size:14px;font-weight:600;text-align:center}
+.tm4 .cmp-d.up{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+.tm4 .cmp-d.down{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
 .tm4 .row.done .t{color:var(--sub)}
 .tm4 .row.plain-note{min-height:40px}
 .tm4 .row.failed .t{color:var(--red)}
