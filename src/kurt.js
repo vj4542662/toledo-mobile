@@ -270,7 +270,7 @@
         <div class="kmap-tools"><button type="button" data-act="zin" aria-label="Inzoomen">+</button><button type="button" data-act="zout" aria-label="Uitzoomen">−</button><button type="button" data-act="zfit" aria-label="Hele plattegrond">⤢</button></div>
         <div class="kmap-leg"><span><i class="ks free">n</i> vrij, n uur</span><span><i class="ks"></i> bezet</span></div></div></div>`;
       h += `<div class="sh"><h2>${free.length ? `${free.length} plaatsen vrij` : 'Niets vrij'}</h2><span class="sh-note">${esc(dayLbl(sel.d.value))} vanaf ${esc(sel.t.display)}</span></div>`;
-      if (free.length) h += `<div class="kfree">${free.map((s) => `<button type="button" class="kf" data-act="seat" data-r="${s.resourceId}"><b>${esc(seatNo(s.resourceName))}</b><span>${s.availableHours} u</span></button>`).join('')}</div>`;
+      if (free.length) h += `<div class="kfree">${free.map((s, i) => `<button type="button" class="kf" data-act="seat" data-r="${s.resourceId}"${i >= 24 ? ' hidden' : ''}><b>${esc(seatNo(s.resourceName))}</b><span>${s.availableHours} u</span></button>`).join('')}${free.length > 24 ? `<button type="button" class="kf more" data-act="allfree">Alle ${free.length}</button>` : ''}</div>`;
       else h += `<p class="ko-hint">${ico('info')}Kies een ander uur of een andere ruimte.</p>`;
       h += `<p class="fresh">${esc(unit)} · <a href="${esc(ORIG('/zone/' + id))}">Open in KURT</a></p>`;
       put(sec, h);
@@ -474,6 +474,7 @@
       const act = b.dataset.act;
       if (act === 'kback') { e.preventDefault(); back(); }
       else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
+      else if (act === 'allfree') { e.preventDefault(); $$('.kfree .kf[hidden]').forEach((n) => { n.hidden = false; }); b.hidden = true; }
       else if (act === 'seat') { e.preventDefault(); pickSeat(Number(b.dataset.r)); }
       else if (act === 'zin' || act === 'zout') { e.preventDefault(); if (Z && Z.zoom) Z.zoom(act === 'zin' ? 1.6 : 1 / 1.6); }
       else if (act === 'zfit') { e.preventDefault(); if (Z && Z.reset) Z.reset(true); }
