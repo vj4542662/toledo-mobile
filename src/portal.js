@@ -45,7 +45,8 @@
 
     function saveAgenda(v) {
       const old = (P.agenda && P.agenda.v) || {};
-      const merged = { lessons: v.lessons || old.lessons || [], exams: v.exams || old.exams || [], range: v.lessons ? v.range : old.range || v.range };
+      // ver 2: exams carry a link to their room (older copies don't, see examsNeedRooms)
+      const merged = { lessons: v.lessons || old.lessons || [], exams: v.exams || old.exams || [], range: v.lessons ? v.range : old.range || v.range, ver: v.exams ? 2 : old.ver };
       P.agenda = { ts: Date.now(), v: merged };
       store.set('p:agenda', P.agenda);
     }
@@ -130,12 +131,24 @@
       }
       return out.sort((a, b) => a.start - b.start);
     }
+    // a copy of the exam timetable from before 4.9.4 has no room links yet
+    const examsNeedRooms = () => { const ag = P.agenda && P.agenda.v; return !!(ag && ag.ver !== 2 && (ag.exams || []).some((x) => x.r && !x.u)); };
+    // room link from a lesson in the same room ("DV1 01.56 · aula" -> "DV1 01.56")
+    function roomUrl(r) {
+      const key = String(r || '').split(' · ')[0].trim().toLowerCase();
+      if (!key) return '';
+      const ag = P.agenda && P.agenda.v;
+      const l = ((ag && ag.lessons) || []).find((x) => x.u && String(x.r || '').split(' · ')[0].trim().toLowerCase() === key);
+      if (l) return l.u;
+      const u = (P.upcoming || []).find((x) => x.location && x.location.url && [x.location.mnemonic, x.location.roomNumber].filter(Boolean).join(' ').toLowerCase() === key);
+      return u ? u.location.url.replace(/^http:/, 'https:') : '';
+    }
     function exams() {
       const ag = P.agenda && P.agenda.v;
       const idx = byLu();
       return ((ag && ag.exams) || []).map((x) => {
         const e = idx.code[String(x.c || '').toLowerCase()];
-        return { start: fromYmd(x.d, x.s || '00:00'), time: x.s && x.s !== '00:00' ? x.s : '', end: x.e && x.e !== '00:00' ? x.e : '', title: String(x.t || '').replace(/^(evaluation|evaluatie)\s*:\s*/i, '') || (e ? cleanTitle(e.title) : 'Examen'), room: x.r, url: x.u, note: x.x, lu: e && e.learningUnitId, color: e ? e.color : 0 };
+        return { start: fromYmd(x.d, x.s || '00:00'), time: x.s && x.s !== '00:00' ? x.s : '', end: x.e && x.e !== '00:00' ? x.e : '', title: String(x.t || '').replace(/^(evaluation|evaluatie)\s*:\s*/i, '') || (e ? cleanTitle(e.title) : 'Examen'), room: x.r, url: x.u || roomUrl(x.r), note: x.x, lu: e && e.learningUnitId, color: e ? e.color : 0 };
       }).sort((a, b) => a.start - b.start);
     }
     const deadlines = (now = Date.now()) => P.events.filter((e) => e.subType === 'due' && !e.dismissed && e.date > now - 3600e3).sort((a, b) => a.date - b.date);
@@ -443,6 +456,7 @@
       const up = X.filter((x) => dayDiff(x.start, now) >= 0);
       const past = X.filter((x) => dayDiff(x.start, now) < 0);
       let h = '';
+      if (examsNeedRooms() && P.ag !== 'loading') h += `<div class="banner">${ico('pin')}<span class="main">Werk je examenrooster één keer bij om de lokalen aanklikbaar te maken.</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
       if (up.length) { const first = up[0]; h += `<div class="gh">Volgend examen ${esc(until(first.start, now))}</div><div class="group">${up.map((x) => examRow(x, now)).join('')}</div>`; }
       if (past.length) h += `<div class="gh">Voorbij</div><div class="group">${past.map((x) => examRow(x, now)).join('')}</div>`;
       return h + '<p class="fresh"><a href="https://www.kuleuven.be/kuloket/zr_0363">Open je examenrooster in KU Loket</a></p>';
@@ -786,7 +800,10 @@
     function refreshAgenda(force, study, quiet) {
       const a = P.agenda;
       const wantStudy = !!study && (force || studyStale());
-      if (!force && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
+      // once: an old copy without exam room links is read again right away
+      const upg = examsNeedRooms() && Date.now() - (Number(store.get('p:agUpg')) || 0) > 3600e3;
+      if (upg) store.set('p:agUpg', Date.now());
+      if (!force && !upg && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
       // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
       const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
       if (bridgeBusy) {
@@ -796,7 +813,7 @@
       }
       if (TEST && !W.__TM_BRIDGE__) { if (force) toast('Vernieuwen werkt op de iPhone'); stIdle(); return Promise.resolve(); }
       const fail = store.get('p:bridgefail') || { n: 0, ts: 0 };
-      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3) { if (force && !quiet) ACTS.agsync(); else stIdle(); return Promise.resolve(); }
+      if (fail.n >= 2 && Date.now() - fail.ts < 12 * 3600e3 && !upg) { if (force && !quiet) ACTS.agsync(); else stIdle(); return Promise.resolve(); }
       const withSt = wantStudy || studyStale();
       bridgeBusy = true;
       bridgeSt = withSt;

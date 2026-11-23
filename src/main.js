@@ -13,7 +13,7 @@
   else if (!PHONE) mode = 'classic';
   else if (SITE === 'portal') {
     if (!/^\/portal\/?(index\.html)?$/.test(PATH)) mode = 'none';
-    else if (ss.get('tm4-classic') === '1') mode = 'classic';
+    else if (ss.get('tm4-classic') === '1') mode = 'plain'; // "Klassieke Toledo" in Meer: the real Toledo, untouched (no v3 layer)
     else if (ss.get('tm4-login')) mode = 'login';
     else mode = 'app';
   } else if (SITE === 'ultra') {
@@ -56,6 +56,7 @@
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }
-  if (mode === 'classic') { if (SITE === 'portal' && PHONE && TOP) classicPill(); return; }
+  if (mode === 'plain') { classicPill(); return; }
+  if (mode === 'classic') return;
   if (mode !== 'app') return;
   whenRoot(SITE === 'portal' ? portalApp : ultraApp);
