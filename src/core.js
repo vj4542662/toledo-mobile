@@ -272,6 +272,21 @@
     m.setAttribute('content', isDark() ? '#000000' : '#f2f2f7');
   }
   try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (THEME === 'auto') applyTheme('auto'); }); } catch (_) {}
+  // links are drawn once and kept, so a link drawn before the choice changed still carries the old one:
+  // put the current choice in at the moment the link is used
+  const withTheme = (url) => String(url || '').replace(/([?&#]th=)(light|dark|auto)\b/, '$1' + THEME);
+  function initThemeLinks() {
+    if (W.__tm4themelinks) return;
+    W.__tm4themelinks = true;
+    const fix = (e) => {
+      const a = e.target && e.target.closest && e.target.closest('a[href*="th="]');
+      if (!a) return;
+      const h = a.getAttribute('href'), n = withTheme(h);
+      if (n !== h) a.setAttribute('href', n);
+    };
+    W.addEventListener('pointerdown', fix, true);
+    W.addEventListener('click', fix, true);
+  }
 
   const TM_ICON = 'https://toledo.kuleuven.be/portal/images/favicon/apple-touch-icon.png'; // Toledo's own icon (public)
 
@@ -302,6 +317,7 @@
     try { history.scrollRestoration = 'manual'; } catch (_) {}
     initPress();
     initMotion();
+    initThemeLinks();
     keepOut();
   }
 
@@ -355,6 +371,7 @@
     if (r) r.classList.remove('tm-leaving', 'tm-leave-fwd', 'tm-leave-back');
   }
   function goTo(url, { replace, dir } = {}) {
+    url = withTheme(url);
     if (!TEST) leaving(dir);
     if (replace) location.replace(url); else location.href = url;
   }
