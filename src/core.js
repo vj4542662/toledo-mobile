@@ -490,7 +490,7 @@
     if (!head) return;
     let m = head.querySelector('meta[name="theme-color"]');
     if (!m) { m = document.createElement('meta'); m.setAttribute('name', 'theme-color'); head.appendChild(m); }
-    m.setAttribute('content', isDark() ? '#000000' : '#f2f2f7');
+    m.setAttribute('content', isDark() ? '#0e1519' : '#e2eef1');
   }
   try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (THEME === 'auto') applyTheme('auto'); }); } catch (_) {}
   // links are drawn once and kept, so a link drawn before the choice changed still carries the old one:
@@ -822,7 +822,7 @@
   const empty = (icon, title, text, extra) => `<div class="empty">${ico(icon)}<b>${esc(title)}</b>${text ? esc(text) : ''}${extra || ''}</div>`;
   function segHtml(items, active, act) {
     const i = Math.max(0, items.findIndex((x) => x.id === active));
-    return `<div class="seg" role="tablist"><span class="thumb" style="width:calc((100% - 4px) / ${items.length});transform:translateX(${i * 100}%)"></span>${items.map((x) => `<button type="button" role="tab" data-act="${act}" data-id="${x.id}"${x.id === active ? ' class="on" aria-selected="true"' : ' aria-selected="false"'}>${esc(x.label)}</button>`).join('')}</div>`;
+    return `<div class="seg" role="tablist"><span class="thumb" style="width:calc((100% - 8px) / ${items.length});transform:translateX(${i * 100}%)"></span>${items.map((x) => `<button type="button" role="tab" data-act="${act}" data-id="${x.id}"${x.id === active ? ' class="on" aria-selected="true"' : ' aria-selected="false"'}>${esc(x.label)}</button>`).join('')}</div>`;
   }
   function segSet(scope, id) {
     const seg = scope.querySelector('.seg');

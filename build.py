@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.19.0"
+VERSION = "4.20.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.20.0": [
+        "Nieuwe, zachtere stijl: rondere kaarten, rustigere kleuren in het petrolblauw van het logo, een nieuw lettertype en een zwevende balk onderaan. Alles staat nog op dezelfde plek."
+    ],
     "4.19.0": [
         "Groepswerkruimtes eenvoudiger: kies bovenaan je beginuur en hoelang, en je ziet meteen welke lokalen dan vrij zijn, met een knop Kies. Lokalen die korter vrij zijn of bezet zijn, staan apart.",
     ],
@@ -76,6 +79,9 @@ NEWS = {
 css = (src / 'app.css').read_text()
 css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
 css = re.sub(r'\n\s*', '\n', css).strip()
+# Manrope (SIL Open Font License, src/fonts/OFL.txt) goes inside the script: the Toledo pages may not load Google Fonts
+import base64
+css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
 app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False))
 
