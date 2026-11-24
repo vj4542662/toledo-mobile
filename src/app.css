@@ -776,17 +776,21 @@ html.tm4.dark .ip-us-pop{background:#2f3237;color:#fff}html.tm4.dark .ip-us-row 
 @font-face{font-family:"TM Manrope";font-style:normal;font-weight:200 800;font-display:swap;src:url(__MANROPE__) format("woff2");
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 html.tm4{--font:"TM Manrope",-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
---bg:#f4f7f8;--top:#e2eef1;--card:#fff;--raised:#fff;--text:#18252b;--sub:#66777e;--ter:#b6c2c7;--tabi:#8e9da4;--sep:rgba(24,37,43,.09);
+--bg:#eef3f5;--card:#fff;--raised:#fff;--text:#18252b;--sub:#66777e;--ter:#b6c2c7;--tabi:#8e9da4;--sep:rgba(24,37,43,.09);
 --fill:rgba(31,111,139,.08);--fill2:rgba(31,111,139,.15);--press:rgba(24,37,43,.05);--tint:#eef4f6;
---accent:#1f6f8b;--red:#e5484d;--orange:#e8893a;--green:#2fb36b;--bar:rgba(255,255,255,.9);--sheet:rgba(255,255,255,.97);
+--accent:#1f6f8b;--red:#e5484d;--orange:#e8893a;--green:#2fb36b;--bar:rgba(238,243,245,.86);--sheet:rgba(255,255,255,.97);
 --hero1:#2a7f9c;--hero2:#164c5f;--shadow:0 1px 2px rgba(24,37,43,.04),0 6px 18px rgba(24,37,43,.06);--tab:62px;--r:20px}
-html.tm4.dark{--bg:#0e1519;--top:#12272f;--card:#172126;--raised:#2b3a41;--text:#eaf1f3;--sub:#93a4ab;--ter:#4c5b61;--tabi:#7f9096;--sep:rgba(255,255,255,.08);
+html.tm4.dark{--bg:#0e1519;--card:#172126;--raised:#2b3a41;--text:#eaf1f3;--sub:#93a4ab;--ter:#4c5b61;--tabi:#7f9096;--sep:rgba(255,255,255,.08);
 --fill:rgba(140,190,205,.12);--fill2:rgba(140,190,205,.2);--press:rgba(255,255,255,.07);--tint:#1d3038;
---accent:#5fb4d0;--red:#ff6369;--orange:#f0a050;--green:#3ccf7e;--bar:rgba(26,37,43,.9);--sheet:rgba(30,42,48,.97);--hero1:#1d5d73;--hero2:#123a48;--shadow:0 6px 18px rgba(0,0,0,.25)}
-@media (prefers-color-scheme:dark){html.tm4:not(.light){--bg:#0e1519;--top:#12272f;--card:#172126;--raised:#2b3a41;--text:#eaf1f3;--sub:#93a4ab;--ter:#4c5b61;--tabi:#7f9096;--sep:rgba(255,255,255,.08);
+--accent:#5fb4d0;--red:#ff6369;--orange:#f0a050;--green:#3ccf7e;--bar:rgba(14,21,25,.86);--sheet:rgba(30,42,48,.97);--hero1:#1d5d73;--hero2:#123a48;--shadow:0 6px 18px rgba(0,0,0,.25)}
+@media (prefers-color-scheme:dark){html.tm4:not(.light){--bg:#0e1519;--card:#172126;--raised:#2b3a41;--text:#eaf1f3;--sub:#93a4ab;--ter:#4c5b61;--tabi:#7f9096;--sep:rgba(255,255,255,.08);
 --fill:rgba(140,190,205,.12);--fill2:rgba(140,190,205,.2);--press:rgba(255,255,255,.07);--tint:#1d3038;
---accent:#5fb4d0;--red:#ff6369;--orange:#f0a050;--green:#3ccf7e;--bar:rgba(26,37,43,.9);--sheet:rgba(30,42,48,.97);--hero1:#1d5d73;--hero2:#123a48;--shadow:0 6px 18px rgba(0,0,0,.25)}}
-html.tm4 body{background:linear-gradient(180deg,var(--top) 0,var(--bg) 340px) no-repeat,var(--bg)}
+--accent:#5fb4d0;--red:#ff6369;--orange:#f0a050;--green:#3ccf7e;--bar:rgba(14,21,25,.86);--sheet:rgba(30,42,48,.97);--hero1:#1d5d73;--hero2:#123a48;--shadow:0 6px 18px rgba(0,0,0,.25)}}
+/* one even colour from the very top (status bar) down, so there is no band at the top */
+html.tm4,html.tm4 body{background:var(--bg)}
+/* content fades out softly behind the floating tab bar and Safari's own buttons, instead of a hard shadow */
+html.tm4 body:not(.no-tabs):not(.kfull)::after{content:"";position:fixed;z-index:59;left:0;right:0;bottom:0;height:calc(var(--tab) + var(--sb) + 34px);pointer-events:none;
+  background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 0%,transparent),color-mix(in srgb,var(--bg) 82%,transparent) 45%,var(--bg))}
 .tm4 .lt h1{font-weight:800;letter-spacing:-.6px}
 .tm4 .sh h2{font-weight:800;letter-spacing:-.3px}
 .tm4 .nav-t,.tm4 .t.b,.tm4 .lesson .main .t,.tm4 .exam .t{font-weight:700}
@@ -830,7 +834,9 @@ html.tm4 body{background:linear-gradient(180deg,var(--top) 0,var(--bg) 340px) no
 .tm4 .kurt-t span{color:var(--sub);opacity:1}
 .tm4 .kurt-go{background:var(--orange);color:#fff;font-weight:700}
 /* floating tab bar */
-.tm4 .tabbar{left:14px;right:14px;bottom:max(10px,calc(var(--sb) - 12px));height:var(--tab);padding:0 4px;border-radius:24px;box-shadow:0 8px 28px rgba(24,37,43,.14),0 0 0 .5px var(--sep)}
+.tm4 .tabbar{left:14px;right:14px;bottom:max(10px,calc(var(--sb) - 12px));height:var(--tab);padding:0 4px;border-radius:24px;background:color-mix(in srgb,var(--card) 88%,transparent);box-shadow:0 0 0 .5px var(--sep),0 2px 10px rgba(24,37,43,.05)}
+.tm4.dark .tabbar{background:color-mix(in srgb,var(--card) 92%,transparent)}
+@media (prefers-color-scheme:dark){.tm4:not(.light) .tabbar{background:color-mix(in srgb,var(--card) 92%,transparent)}}
 .tm4 .tabbar a{font-weight:600}
 .tm4 .tabbar .i{width:25px;height:25px}
 /* controls */

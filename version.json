@@ -1,6 +1,9 @@
 {
- "version": "4.20.0",
+ "version": "4.20.1",
  "news": {
+  "4.20.1": [
+   "Mooiere randen: bovenaan geen lichte balk meer, en onderaan loopt alles zacht weg achter de balk in plaats van met een schaduw."
+  ],
   "4.20.0": [
    "Nieuwe, zachtere stijl: rondere kaarten, rustigere kleuren in het petrolblauw van het logo, een nieuw lettertype en een zwevende balk onderaan. Alles staat nog op dezelfde plek."
   ],
@@ -38,11 +41,6 @@
   "4.16.0": [
    "Studieplek: inchecken en uitchecken gebeurt nu in de app zelf. Na het inchecken verandert de knop in Uitchecken, en uitchecken vraagt eerst of je het zeker weet.",
    "Studieplek: na reserveren, verwijderen of vernieuwen verschijnt er geen foutmelding meer."
-  ],
-  "4.15.0": [
-   "De hele app laadt sneller: Toledo Mobile zelf is een derde kleiner geworden.",
-   "Vandaag en je vakken openen vlotter, ook met een vol lessenrooster.",
-   "Een vak openen voelt sneller: de app zoekt op de achtergrond rustiger door je mappen."
   ]
  }
 }

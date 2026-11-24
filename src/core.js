@@ -490,7 +490,7 @@
     if (!head) return;
     let m = head.querySelector('meta[name="theme-color"]');
     if (!m) { m = document.createElement('meta'); m.setAttribute('name', 'theme-color'); head.appendChild(m); }
-    m.setAttribute('content', isDark() ? '#0e1519' : '#e2eef1');
+    m.setAttribute('content', isDark() ? '#0e1519' : '#eef3f5');
   }
   try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (THEME === 'auto') applyTheme('auto'); }); } catch (_) {}
   // links are drawn once and kept, so a link drawn before the choice changed still carries the old one:
