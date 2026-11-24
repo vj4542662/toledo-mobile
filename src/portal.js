@@ -338,6 +338,11 @@
       if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/cijfers?${q}`;
       return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
     }
+    // Meer > Toledo-agenda: the same way into Blackboard as Cijfers, then the subscribe screen (#/agenda in ultra.js)
+    function agendaHref() {
+      const g = gradesHref();
+      return g ? g.replace(/#\/cijfers\?.*$/, '#/agenda?th=' + THEME) : ULTRA + '/ultra/calendar';
+    }
     function favCourses() {
       const cur = curSem();
       let list = P.enr.filter((e) => e.favorite && e.available !== false);
@@ -527,7 +532,7 @@
       const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
       const I0 = P.study && P.study.v && P.study.v.isp;
       const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ href: gradesHref() || L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', iconHtml: `<span class="ic" style="--c:#5856d6">${ico('chart')}</span>`, title: 'Cijfers', sub: 'Je vakken van dit semester' })}</div>`;
+      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ href: gradesHref() || L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', iconHtml: `<span class="ic" style="--c:#5856d6">${ico('chart')}</span>`, title: 'Cijfers', sub: 'Je vakken van dit semester' })}${row({ href: agendaHref(), iconHtml: `<span class="ic" style="--c:#ff9500">${ico('calendar')}</span>`, title: 'Toledo-agenda op je iPhone', sub: 'Deadlines vanzelf in je Agenda-app' })}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;

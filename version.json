@@ -1,6 +1,9 @@
 {
- "version": "4.20.2",
+ "version": "4.21.0",
  "news": {
+  "4.21.0": [
+   "Nieuw in Meer: Toledo-agenda op je iPhone. Met één tik komen je deadlines in de Agenda-app, en ze blijven daar vanzelf bijgewerkt."
+  ],
   "4.20.2": [
    "Twee kleine verbeteringen: op de donkere kaarten van Studievoortgang is het label bovenaan weer goed leesbaar, en lijsten met een lange titel (zoals Mijn ISP) gebruiken weer de volle breedte."
   ],
@@ -36,10 +39,6 @@
   ],
   "4.16.2": [
    "De uitleg bij het updaten toont nu duidelijk waar je moet tikken: onderaan op Install, niet op het vinkje."
-  ],
-  "4.16.1": [
-   "Duidelijkere stappen bij het updaten, met plaatjes van wat je echt ziet.",
-   "Lukt een update niet, dan zegt de app dat en helpt ze je verder."
   ]
  }
 }

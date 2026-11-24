@@ -21,9 +21,9 @@
       const qs = h.includes('?') ? h.slice(h.indexOf('?')) : '';
       const resume = ss.get('tm4-resume') || '';
       ss.del('tm4-resume');
-      if (!/^#\/cijfers/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers'))) h = resume.startsWith('#/cijfers') ? resume : resume + qs;
+      if (!/^#\/(cijfers|agenda)/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers'))) h = resume.startsWith('#/cijfers') ? resume : resume + qs;
       if (/^#\/vak\//.test(h)) h = h.replace(/^#\/vak\/[^/?]*/, '#/c/' + PATH_PK);
-      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/cijfers/.test(h)) h = '#/c/' + PATH_PK + qs;
+      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda)/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
     guardPath();
@@ -43,6 +43,7 @@
       const s = path.split('/').filter(Boolean);
       const r = { path, q, type: 'none' };
       if (s[0] === 'cijfers') r.type = 'grades';
+      else if (s[0] === 'agenda') r.type = 'agenda';
       else if (s[0] === 'vak' && s[1]) { r.type = 'resolve'; r.lu = decodeURIComponent(s[1]); r.rest = s.slice(2).join('/'); }
       else if (s[0] === 'c' && /^_\d+_\d+$/.test(s[1] || '')) {
         r.pk = s[1];
@@ -55,7 +56,7 @@
       return r;
     }
     const ctxKey = (pk) => 'tm4-ctx:' + pk;
-    const tabOf = (r) => (r.type === 'grades' ? 'meer' : getCtx(r.pk).f || 'vakken');
+    const tabOf = (r) => (r.type === 'grades' || r.type === 'agenda' ? 'meer' : getCtx(r.pk).f || 'vakken');
     function getCtx(pk) { try { return JSON.parse(ss.get(ctxKey(pk)) || '{}') || {}; } catch (_) { return {}; } }
     function saveCtx(pk, q) {
       const c = getCtx(pk);
@@ -644,6 +645,61 @@
       return view;
     }
 
+    /* ---------------- Meer > Toledo-agenda: subscribe to Blackboard's own calendar feed ---------------- */
+    // Blackboard offers a personal .ics link (Calendar > settings > Share calendar) with deadlines and course events.
+    // Subscribing to it in the iPhone's Calendar keeps it up to date by itself. We look the link up and hand it over as
+    // webcal://, which makes Safari offer "Subscribe". If no lookup works, the view explains the manual steps.
+    async function calFeed() {
+      const c = store.get('calfeed');
+      if (c && c.v && Date.now() - c.ts < 30 * 864e5) return c.v;
+      const tries = ['/webapps/calendar/calendarFeed/url', '/learn/api/v1/calendars/calendarFeed/url', '/learn/api/v1/calendars/feed/url', '/learn/api/v1/calendars/calendarFeed'];
+      for (const p of tries) {
+        try {
+          const r = await fetch(ULTRA + p, { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json, text/plain, */*' } });
+          if (r.status === 401) throw new AuthError('401');
+          if (!r.ok) continue;
+          const m = /https?:\/\/[^\s"'<>\\]+?\.ics\b[^\s"'<>\\]*/.exec(await r.text());
+          if (m) { const v = m[0].replace(/\\\//g, '/'); store.set('calfeed', { ts: Date.now(), v }); return v; }
+        } catch (e) { if (e && e.auth) throw e; }
+      }
+      return '';
+    }
+    function agendaView() {
+      const el = section();
+      el.innerHTML = '<div class="lt"><h1>Toledo-agenda</h1><p class="lt-sub">Deadlines in de Agenda van je iPhone</p></div><div data-k="body"></div>';
+      const st = { url: '', state: 'loading' };
+      const steps = `<div class="group plain" style="margin-left:0;margin-right:0">${row({ icon: 'calendar', soft: true, title: '1. Open de agenda in Toledo', sub: 'Tik op het tandwiel (Kalenderinstellingen)', chevron: false })}${row({ icon: 'link', soft: true, title: '2. Kalender delen', sub: 'Tik op de drie puntjes, dan Kalender delen, en kopieer de link', chevron: false })}${row({ icon: 'calendar', soft: true, title: '3. Op je iPhone', sub: 'Instellingen › Agenda › Accounts › Account toevoegen › Andere › Voeg agenda-abonnement toe, en plak de link', chevron: false })}</div>`;
+      function draw() {
+        let h = '<p class="gf" style="margin:4px 4px 16px">Je deadlines van opdrachten en wat proffen in de vakagenda zetten, komen in de Agenda-app. Je iPhone werkt ze daarna vanzelf bij, ook als er iets verandert. Je lessen staan er niet in.</p>';
+        if (st.state === 'loading') h += '<div class="center" style="min-height:30vh"><div class="spin"></div><span>Je agendalink ophalen…</span></div>';
+        else if (st.url) {
+          const web = st.url.replace(/^https?:\/\//, 'webcal://');
+          h += `<a class="btn" style="display:flex;width:100%;height:52px" href="${esc(web)}">${ico('calendar')}Toevoegen aan Agenda</a>`;
+          h += `<button type="button" class="btn ghost" style="display:flex;width:100%;margin-top:10px" data-act="calcopy">${ico('link')}Kopieer link</button>`;
+          h += '<p class="gf" style="margin:12px 4px 0">Je iPhone vraagt of je je wil abonneren: tik op Abonneer en daarna op Voeg toe. Deze link is persoonlijk, deel hem niet.</p>';
+        } else {
+          h += '<p class="gf" style="margin:0 4px 12px">De link kon niet automatisch opgehaald worden. Zo doe je het zelf (eenmalig):</p>' + steps;
+          h += `<a class="btn" style="display:flex;width:100%;margin-top:14px" href="${ULTRA}/ultra/calendar">${ico('calendar')}Open de agenda in Toledo</a>`;
+        }
+        put($('[data-k="body"]', el), `<div style="padding:0 16px">${h}</div>`);
+      }
+      async function load() {
+        st.state = 'loading'; draw();
+        try { st.url = await calFeed(); } catch (e) { if (e && e.auth) { relogin(); return; } }
+        st.state = 'done'; draw();
+      }
+      let at = 0;
+      return { el, title: () => 'Toledo-agenda',
+        act(n) {
+          if (n !== 'calcopy') return false;
+          const done = () => toast('Link gekopieerd');
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(st.url).then(done, () => toast('Kopiëren lukte niet'));
+          return true;
+        },
+        show() { if (!at) { at = 1; load(); } },
+        refresh: () => { store.del('calfeed'); return load(); } };
+    }
+
     /* ---------------- deep link from Updates: open the thing itself ---------------- */
     function directTarget(pk, it) {
       if (it.k === 'file') return (it.f && it.f.u) || '';
@@ -721,7 +777,7 @@
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
-        v = r.type === 'grades' ? gradesView(r) : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
+        v = r.type === 'grades' ? gradesView(r) : r.type === 'agenda' ? agendaView() : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
         U.views.set(key, v);
         $('#tm-main').appendChild(v.el);
       } else if (v.route) v.route(r);
@@ -808,7 +864,7 @@
       relogging = true;
       const r = parse();
       const pk = r.pk || PATH_PK;
-      ss.set('tm4-resume', r.type === 'grades' ? location.hash : location.hash.split('?')[0]);
+      ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
       const target = `${ULTRA}/ultra/courses/${pk}/outline`;
       if (!TEST && pk && Date.now() - last > 60e3) {
