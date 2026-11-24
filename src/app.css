@@ -349,6 +349,7 @@ html.tm4 > :not(head):not(body){display:none!important}
 .tm4.dark .cap.green{color:#4cd964}
 @media (prefers-color-scheme:dark){.tm4:not(.light) .cap.green{color:#4cd964}}
 .tm4 .gh span{float:right;text-transform:none;letter-spacing:0}
+.tm4 .gh{display:flow-root}
 .tm4 .gc{display:flex;align-items:center;gap:8px;color:var(--text);text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;text-decoration:none;margin-top:22px}
 .tm4 .gc i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c)}
 .tm4 a.gc .chev{margin-left:auto;flex:none;width:7px;height:12px;stroke:var(--sub);fill:none;stroke-width:2}
@@ -811,6 +812,7 @@ html.tm4 body:not(.no-tabs):not(.kfull)::after{content:"";position:fixed;z-index
 .tm4 .hero::after{display:none}
 .tm4 .hero-lbl{color:var(--accent);opacity:1}
 .tm4 .hero-lbl i{box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--accent)) 22%,transparent)}
+.tm4 .st-hero .hero-lbl{color:rgba(255,255,255,.88)}
 .tm4 .hero-cd{background:var(--tint);color:var(--accent)}
 .tm4 .hero-meta{color:var(--sub);opacity:1}
 .tm4 .hero-prog{height:6px;border-radius:3px;background:var(--tint)}

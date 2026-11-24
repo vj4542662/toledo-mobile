@@ -1,6 +1,9 @@
 {
- "version": "4.20.1",
+ "version": "4.20.2",
  "news": {
+  "4.20.2": [
+   "Twee kleine verbeteringen: op de donkere kaarten van Studievoortgang is het label bovenaan weer goed leesbaar, en lijsten met een lange titel (zoals Mijn ISP) gebruiken weer de volle breedte."
+  ],
   "4.20.1": [
    "Mooiere randen: bovenaan geen lichte balk meer, en onderaan loopt alles zacht weg achter de balk in plaats van met een schaduw."
   ],
@@ -37,10 +40,6 @@
   "4.16.1": [
    "Duidelijkere stappen bij het updaten, met plaatjes van wat je echt ziet.",
    "Lukt een update niet, dan zegt de app dat en helpt ze je verder."
-  ],
-  "4.16.0": [
-   "Studieplek: inchecken en uitchecken gebeurt nu in de app zelf. Na het inchecken verandert de knop in Uitchecken, en uitchecken vraagt eerst of je het zeker weet.",
-   "Studieplek: na reserveren, verwijderen of vernieuwen verschijnt er geen foutmelding meer."
   ]
  }
 }
