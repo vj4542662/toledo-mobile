@@ -45,7 +45,32 @@
     const pageUrl = (slug) => O + '/nl/restaurants' + (slug ? '/' + slug : '');
     // came in on one restaurant's own page (a link from elsewhere): that one is open first
     const direct = (/^\/(?:nl|en)\/restaurants\/([a-z0-9-]+)/.exec(PATH) || [])[1] || '';
+    // opened inside the Toledo app: the app keeps your stars and filters (this frame's storage is separate from alma.be's own)
+    const FRAME = !!W.__TM_FRAME__;
+    const toApp = (msg) => { try { W.parent.postMessage(Object.assign({ tm4: 'alma' }, msg), PORTAL_ORIGIN); } catch (_) {} };
+    if (FRAME) {
+      try {
+        const seed = JSON.parse(params.get('s') || 'null');
+        if (seed) ['fav', 'flt', 'prijs'].forEach((k) => { if (seed[k] != null) store.set('alma:' + k, seed[k]); });
+      } catch (_) {}
+    }
     takeover('Alma', []);
+    if (FRAME) {
+      // a frame has no notch or home bar of its own: the app passes the real ones along
+      const px = (k) => Math.max(0, Math.min(80, Number(params.get(k)) || 0)) + 'px';
+      document.documentElement.style.setProperty('--st', px('st'));
+      document.documentElement.style.setProperty('--sb', px('sb'));
+      document.documentElement.classList.add('tm-frame');
+      // the tab bar and "Meer": close the frame in the app instead of loading the portal again inside it
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest && e.target.closest('a[href^="' + PORTAL + '"], [data-act="ameer"]');
+        if (!a) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const m = /[?&]tm=([a-z]+)/.exec(a.getAttribute('href') || '');
+        toApp({ close: true, tab: a.dataset.act === 'ameer' ? 'meer' : (m ? m[1] : 'meer') });
+      }, true);
+    }
     buildShell([
       { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
       { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
@@ -61,9 +86,10 @@
 
     /* ---------- settings (kept on this site: alma.be has its own storage) */
     const favs = () => (store.get('alma:fav') || []).filter((s) => ALMAS.some((a) => a.s === s));
-    const setFavs = (v) => store.set('alma:fav', v);
+    const syncApp = () => { if (FRAME) toApp({ save: { fav: store.get('alma:fav'), flt: store.get('alma:flt'), prijs: store.get('alma:prijs') } }); };
+    const setFavs = (v) => { store.set('alma:fav', v); syncApp(); };
     const FLT = Object.assign({ veg: false, vegan: false, alg: [], sort: false }, store.get('alma:flt') || {});
-    const saveFlt = () => store.set('alma:flt', FLT);
+    const saveFlt = () => { store.set('alma:flt', FLT); syncApp(); };
     const priceGroup = () => { const p = store.get('alma:prijs'); return PRICE_GROUPS.some((g) => g.k === p) ? p : 'kul'; };
     const almaOf = (s) => ALMAS.find((a) => a.s === s) || { s, n: s, c: '' };
     // which Alma and day you're looking at during this visit
@@ -436,7 +462,7 @@
         if (route() !== 'kies') show();
         else if (depth > 0) back();
         else location.replace(pageUrl('') + '#/');
-      } else if (act === 'aprijs') { store.set('alma:prijs', b.dataset.k); if (route() === 'kies' || SETUP) viewPick(token); else show(); }
+      } else if (act === 'aprijs') { store.set('alma:prijs', b.dataset.k); syncApp(); if (route() === 'kies' || SETUP) viewPick(token); else show(); }
     });
     pullRefresh(() => { Object.keys(MEM).forEach((k) => delete MEM[k]); dropMenus(true); show(); return new Promise((r) => setTimeout(r, 700)); });
     // back after a while (lunch tomorrow): today has moved on, and the status line with it
@@ -447,4 +473,6 @@
     });
     W.addEventListener('pageshow', (e) => { if (e.persisted) show(); });
     show();
+    // in the app: say when the first screen stands, so the app can slide it in
+    if (FRAME) requestAnimationFrame(() => requestAnimationFrame(() => toApp({ ready: true })));
   }

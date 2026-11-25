@@ -579,7 +579,7 @@
       // every service is an "app" in one grid, like the iPhone home screen
       const app = (o) => {
         const inner = `<span class="ai" style="--c:${o.c}">${ico(o.i)}${o.badge ? `<b class="ai-bd">${o.badge > 99 ? '99+' : o.badge}</b>` : ''}</span><span class="al">${esc(o.n)}</span>`;
-        return o.href ? `<a class="app" href="${esc(o.href)}">${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
+        return o.href ? `<a class="app" href="${esc(o.href)}"${o.act ? ` data-act="${o.act}"` : ''}>${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
       };
       const APPS = [
         { n: 'Studieplek', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' + (store.get('p:grps') ? '?tmgs=' + encodeURIComponent(store.get('p:grps')) : '') },
@@ -589,7 +589,7 @@
         { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
-        { n: 'Alma', i: 'food', c: '#d9534f', href: 'https://www.alma.be/nl/restaurants#/?th=' + THEME },
+        { n: 'Alma', i: 'food', c: '#d9534f', href: 'https://www.alma.be/nl/restaurants#/?th=' + THEME, act: 'alma' },
         { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
         { n: 'Attesten', i: 'cert', c: '#8e5bd6', href: `${LOKET}?tm=attest&ma=${store.get('mailApp') === 'web' ? 'web' : 'app'}&th=${THEME}` },
         { n: 'Hulp', i: 'help', c: '#8a96a3', href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student' },
@@ -817,6 +817,7 @@
       ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
       soon: () => {}, // Sport: only an icon for now, the app itself comes later
+      alma: (el) => openAlma(el.getAttribute('href'), el),
       theme: (b) => {
         const t = b.dataset.id;
         saveTheme(t);
@@ -827,6 +828,68 @@
       reload: () => { ['p:events', 'p:enr', 'p:upcoming', 'p:mail'].forEach((k) => store.del(k)); toast('Bezig met vernieuwen…'); loadAll(true); refreshAgenda(true); },
       classic: () => sheet({ title: 'Klassieke Toledo openen?', msg: 'Je kan altijd terug naar de app via de knop onderaan.', actions: [{ label: 'Open klassieke Toledo', run: () => { ss.set('tm4-classic', '1'); history.replaceState(null, '', location.pathname + '#/home'); location.reload(); } }] }),
     };
+
+    /* ---------------- Alma inside the app ----------------
+       Alma's site loads in a hidden frame on top of the app and only slides in once its app screen stands,
+       so the original alma.be never flashes. The frame is removed again as soon as you leave Alma. */
+    let almaOpen = null;
+    function openAlma(href, tile) {
+      if (almaOpen) return;
+      // the notch and home bar: a frame doesn't know them, so pass them along
+      const probe = document.createElement('div');
+      probe.setAttribute('data-tm4', '');
+      probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+      document.body.appendChild(probe);
+      const cs = getComputedStyle(probe);
+      const st = Math.round(parseFloat(cs.paddingTop) || 0), sb = Math.round(parseFloat(cs.paddingBottom) || 0);
+      probe.remove();
+      const seed = store.get('alma:sync') || {};
+      const url = 'https://www.alma.be/nl/restaurants?tm=frame&st=' + st + '&sb=' + sb + '&s=' + encodeURIComponent(JSON.stringify(seed)) + '#/?th=' + THEME;
+      const layer = document.createElement('div');
+      layer.id = 'tm-alma';
+      layer.setAttribute('data-tm4', '');
+      const f = document.createElement('iframe');
+      f.title = 'Alma';
+      f.setAttribute('data-tm4', '');
+      f.src = url;
+      layer.appendChild(f);
+      const busy = document.createElement('span');
+      busy.className = 'spin app-spin';
+      if (tile) (tile.querySelector('.ai') || tile).appendChild(busy);
+      let ready = false;
+      const st0 = { y: W.scrollY };
+      const done = () => { busy.remove(); };
+      const close = (tab) => {
+        if (!almaOpen) return;
+        W.removeEventListener('message', onMsg);
+        W.removeEventListener('popstate', onPop);
+        almaOpen = null;
+        done();
+        layer.classList.remove('on');
+        setTimeout(() => layer.remove(), 330);
+        if (tab && tab !== P.tab && (V[tab] || BUILD[tab])) show(tab);
+        else W.scrollTo(0, st0.y);
+      };
+      const onMsg = (e) => {
+        if (e.source !== f.contentWindow || !/^https:\/\/(www\.)?alma\.be$/.test(e.origin) || !e.data || e.data.tm4 !== 'alma') return;
+        if (e.data.save) store.set('alma:sync', e.data.save);
+        if (e.data.ready && !ready) {
+          ready = true;
+          done();
+          try { history.pushState({ tmAlma: 1 }, '', location.href); } catch (_) {}
+          layer.classList.add('on');
+        }
+        if (e.data.close) close(e.data.tab);
+      };
+      // the back swipe from Alma's first screen: back in the app
+      const onPop = () => { if (ready) close(); };
+      W.addEventListener('message', onMsg);
+      W.addEventListener('popstate', onPop);
+      almaOpen = { close };
+      document.body.appendChild(layer);
+      // Alma doesn't answer (offline, its site changed): open it the old way
+      setTimeout(() => { if (!ready && almaOpen) { close(); goTo(href); } }, 9000);
+    }
 
     W.addEventListener('click', (e) => {
       if (!e.target || !e.target.closest) return;

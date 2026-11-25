@@ -15,7 +15,10 @@
     else mode = 'none';
   } else if (SITE === 'alma') {
     // Alma's restaurant pages become the Alma app; the rest of alma.be (news, catering…) stays as it is
-    mode = TOP && PHONE && params.get('tm') !== 'orig' && /^\/(nl|en)\/restaurants(\/[a-z0-9-]+)?\/?$/.test(PATH) ? 'alma' : 'none';
+    // ?tm=frame: opened inside the Toledo app (Meer > Alma), which shows it only once it is ready, so the original site never flashes
+    const inFrame = !TOP && params.get('tm') === 'frame';
+    mode = (TOP || inFrame) && PHONE && params.get('tm') !== 'orig' && /^\/(nl|en)\/restaurants(\/[a-z0-9-]+)?\/?$/.test(PATH) ? 'alma' : 'none';
+    W.__TM_FRAME__ = inFrame && mode === 'alma';
   } else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
