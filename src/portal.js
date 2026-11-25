@@ -338,11 +338,9 @@
       if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/cijfers?${q}`;
       return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
     }
-    // Meer > Toledo-agenda: the same way into Blackboard as Cijfers, then the subscribe screen (#/agenda in ultra.js)
-    function agendaHref() {
-      const g = gradesHref();
-      return g ? g.replace(/#\/cijfers\?.*$/, '#/agenda?th=' + THEME) : ULTRA + '/ultra/calendar';
-    }
+    // Meer > Toledo-agenda: Blackboard's calendar page with ?tm=agenda becomes the subscribe screen (#/agenda in ultra.js).
+    // Not via a course + hash: the hash got lost on the way (sign-in, Toledo's link service), landing on a course.
+    const agendaHref = () => `${ULTRA}/ultra/calendar?tm=agenda&th=${THEME}`;
     function favCourses() {
       const cur = curSem();
       let list = P.enr.filter((e) => e.favorite && e.available !== false);

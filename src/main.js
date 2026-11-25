@@ -24,6 +24,7 @@
     const tmq = params.get('tm');
     if (!PATH.startsWith('/ultra/')) mode = 'none';
     else if (/^\/ultra\/app\/?$/.test(PATH)) mode = 'app';
+    else if (/^\/ultra\/calendar\/?$/.test(PATH) && tmq === 'agenda') { mode = 'app'; W.__TM_ROUTE__ = 'agenda'; } // Meer > Toledo-agenda
     else if (outline && tmq === 'classic') { ss.set('tm4-classic-ultra', String(Date.now())); mode = 'classic'; }
     else if (outline && tmq !== 'app' && !location.search && Date.now() - (Number(ss.get('tm4-noapp')) || 0) < 5 * 60e3) mode = 'classic';
     else if (outline && (!location.search || tmq === 'app')) { mode = 'app'; W.__TM_PK__ = outline[1]; ss.del('tm4-noapp'); }

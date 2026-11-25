@@ -1,6 +1,9 @@
 {
- "version": "4.21.0",
+ "version": "4.21.1",
  "news": {
+  "4.21.1": [
+   "Toledo-agenda in Meer opent nu altijd het juiste scherm, en niet meer een vak of de lijst met vakken."
+  ],
   "4.21.0": [
    "Nieuw in Meer: Toledo-agenda op je iPhone. Met één tik komen je deadlines in de Agenda-app, en ze blijven daar vanzelf bijgewerkt."
   ],
@@ -36,9 +39,6 @@
   "4.17.0": [
    "Studieplek: groepswerkruimtes reserveer je nu in de app. Kies een bib, zie per lokaal welke uren vrij zijn, tik op een groen uur en voeg je groepsleden toe met hun r-nummer.",
    "Studieplek: de route naar de bib staat nu als kleine link bovenaan."
-  ],
-  "4.16.2": [
-   "De uitleg bij het updaten toont nu duidelijk waar je moet tikken: onderaan op Install, niet op het vinkje."
   ]
  }
 }

@@ -26,6 +26,8 @@
       if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda)/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
+    // Meer > Toledo-agenda opens /ultra/calendar?tm=agenda: the query survives Blackboard's sign-in (the hash does not)
+    if (W.__TM_ROUTE__ === 'agenda' && !/^#(\/|%2F)agenda/i.test(location.hash)) history.replaceState({ tm: 1, d: 0 }, '', location.origin + location.pathname + location.search + '#/agenda');
     guardPath();
     const U = { depth: (history.state && history.state.tm && history.state.d) || 0, views: new Map(), titles: {}, items: {}, cur: null, curKey: '', animBack: false, scroll: {} };
     try { U.scroll = JSON.parse(ss.get('tm4-uscroll') || '{}') || {}; } catch (_) {}
@@ -866,8 +868,8 @@
       const pk = r.pk || PATH_PK;
       ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
-      const target = `${ULTRA}/ultra/courses/${pk}/outline`;
-      if (!TEST && pk && Date.now() - last > 60e3) {
+      const target = r.type === 'agenda' ? `${ULTRA}/ultra/calendar?tm=agenda` : `${ULTRA}/ultra/courses/${pk}/outline`;
+      if (!TEST && (pk || r.type === 'agenda') && Date.now() - last > 60e3) {
         ss.set('tm4-relogin', String(Date.now()));
         ss.set('tm4-noapp', String(Date.now()));
         location.replace(target);
