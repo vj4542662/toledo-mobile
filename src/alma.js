@@ -289,6 +289,7 @@
             const folded = ALMA_FOLDED.includes(c.n) && !OPEN[c.n];
             const fold = ALMA_FOLDED.includes(c.n);
             h += `<div class="sh al-sh">${fold ? `<button type="button" class="al-fold" data-act="afold" data-c="${esc(c.n)}"><h2>${esc(c.n)}</h2><span class="sh-note">${items.length}</span><span class="al-chev${folded ? '' : ' up'}">${CHEV}</span></button>` : `<h2>${esc(c.n)}</h2>`}</div>`;
+            sum.shown += items.length;
             if (folded) return;
             // within each little group (Maaltijd I, Maaltijd II…) keep Alma's order, or cheapest first
             const groups = [];
@@ -296,7 +297,6 @@
             const pg = priceGroup();
             if (FLT.sort) groups.forEach((g) => g.l.sort((p, q) => (p.it.p[pg] ?? 99) - (q.it.p[pg] ?? 99)));
             h += `<div class="group al-g">${groups.map((g) => (g.n && groups.length > 1 && !/^(snacks|broodje)$/i.test(g.n) ? `<div class="al-sub">${esc(g.n)}</div>` : '') + g.l.map((x) => dishRow(x.it, String(ci), x.i)).join('')).join('')}</div>`;
-            sum.shown += items.length;
           });
           if (!sum.shown) h += `<div class="card ko-empty">${ico('food')}<span>${FLT.veg || FLT.vegan || FLT.alg.length ? 'Niets op het menu dat bij je filters past.' : 'Geen menu voor deze dag.'}</span></div>`;
         }
