@@ -1,6 +1,6 @@
 {
- "version": "4.28.2",
- "built": 1795629238921,
+ "version": "4.28.3",
+ "built": 1795629317413,
  "builds": [
   {
    "v": "4.26.1",
@@ -25,9 +25,16 @@
   {
    "v": "4.28.2",
    "built": 1795629238921
+  },
+  {
+   "v": "4.28.3",
+   "built": 1795629317413
   }
  ],
  "news": {
+  "4.28.3": [
+   "Alma: uitklappen of een filter aanzetten laat je op je plek staan, en broodjes staan nu meteen onder de soep."
+  ],
   "4.28.2": [
    "Alma: de eerste keer zet je meteen een ster bij al je Alma's en tik je op Klaar."
   ],
@@ -64,9 +71,6 @@
   ],
   "4.25.0": [
    "Updaten gaat nu via Userscripts zelf: tik op het wolkje, dan op Check Updates en dan op Update. De app toont je de stappen met plaatjes."
-  ],
-  "4.24.1": [
-   "Printen: laadt soepeler, zonder verspringende lijsten, en toont je nieuwe saldo meteen als je terugkomt na het opladen."
   ]
  }
 }
