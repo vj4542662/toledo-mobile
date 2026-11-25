@@ -3,7 +3,7 @@
 import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.27.0"
+VERSION = "4.28.0"
 # Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
 # The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
 # build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
@@ -15,6 +15,10 @@ assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.28.0": [
+        "Nieuw in Meer: Alma. Zie wat er vandaag op het menu staat in jouw Alma, met prijzen en openingsuren.",
+        "Geef je vaste Alma een ster, dan opent die meteen. Filter op veggie, vegan of allergenen, of zet de goedkoopste gerechten eerst.",
+    ],
     "4.27.0": [
         "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
         "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar.",
@@ -146,7 +150,7 @@ css = re.sub(r'\n\s*', '\n', css).strip()
 # Manrope (SIL Open Font License, src/fonts/OFL.txt) goes inside the script: the Toledo pages may not load Google Fonts
 import base64
 css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
-app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'print.js', 'main.js'])
+app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'print.js', 'alma.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False)).replace('__BRANCH__', CHANNEL)
 
 classic = (src / 'classic-v3.js').read_text()
@@ -229,6 +233,8 @@ header = f"""// ==UserScript==
 // @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
 // @match        https://kurt3.ghum.kuleuven.be/*
 // @match        https://print.kuleuven.be/*
+// @match        https://www.alma.be/*
+// @match        https://alma.be/*
 // @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
@@ -244,6 +250,7 @@ header = f"""// ==UserScript==
   - The timetable and exams come from KU Loket (same KU Leuven sign-in), read in a hidden frame.
   - Pages the app doesn't cover (submitting an assignment, tests, KU Loket apps) keep the phone layout of version 3.
   - KURT (study places, kurt3.ghum.kuleuven.be) becomes an app screen: libraries with live occupancy, rooms with free seats, and the floor plan to tap a seat and book it.
+  - Alma (www.alma.be, the student restaurants) becomes an app screen: the menu of your own Alma with prices, hours and filters.
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - The update page on GitHub (this file) shows simple steps instead of code, and the app checks GitHub's small
