@@ -103,8 +103,10 @@
 
     /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>], #/g/<location>[?d=<day>] group rooms */
     // KURT's own addresses (/locations/10, /zone/1) become the app's
-    // Groepswerken (on Toledo) hands over a group: ?tmg=<name>&tmm=<email,email>. Kept as a saved group (kurt:groups)
-    // and made the active one for this visit, so the booking sheet adds everyone in one go.
+    // Groepswerken (on Toledo) hands over a group: ?tmg=<name>&tmm=<email,email>. It opens #/gk (pick a library), then
+    // KURT's normal group-room steps; the booking sheet adds the whole group at once. The group is only "active" during
+    // that trip (sessionStorage tm4-kurt-g, dropped as soon as you go elsewhere in Studieplek). It is also kept in
+    // kurt:groups, so the booking sheet can offer it later when you start from Studieplek yourself.
     const GRPS = () => store.get('kurt:groups') || [];
     {
       const sp = new URLSearchParams(location.search);
@@ -114,16 +116,11 @@
         g.id = (g.c + '|' + g.n).toLowerCase();
         store.set('kurt:groups', [g].concat(GRPS().filter((x) => x.id !== g.id)).slice(0, 8));
         ss.set('tm4-kurt-g', g.id);
-        const gl = store.get('kurt:glast');
-        if (!/^#\/g\//.test(location.hash)) { try { history.replaceState(null, '', K + '/' + (gl ? '#/g/' + gl : '#/')); } catch (_) {} }
+        if (/^https:\/\/ultra\.edu\.kuleuven\.cloud\//.test(document.referrer)) ss.set('tm4-kurt-gback', document.referrer); else ss.del('tm4-kurt-gback');
+        try { history.replaceState(null, '', K + '/#/gk'); } catch (_) {}
       }
     }
     const activeGrp = () => { const id = ss.get('tm4-kurt-g'); return id ? GRPS().find((x) => x.id === id) || null : null; };
-    const grpBanner = (where) => {
-      const g = activeGrp();
-      if (!g) return '';
-      return `<div class="card kgb">${GROUP}<span class="kr-main"><b>${esc(g.n)}</b><span>${esc(g.m.length + 1)} personen${g.c ? ' · ' + esc(g.c) : ''}. ${where === 'g' ? 'Kies een lokaal: je groep staat al klaar.' : 'Kies een bibliotheek met groepswerkruimtes.'}</span></span><button type="button" class="kg-x" data-act="gstop" aria-label="Stop">${ico('close')}</button></div>`;
-    };
     {
       const m = /^\/(locations|zone)\/(\d+)/.exec(location.pathname);
       const r = m ? `#/${m[1] === 'zone' ? 'z' : 'l'}/${m[2]}` : (/^#\//.test(location.hash) ? location.hash : '#/');
@@ -137,12 +134,13 @@
     };
     let depth = 0;
     const nav = (hash) => { depth++; location.hash = hash; };
-    const back = () => { if (depth > 0) { depth--; history.back(); } else { const r = route(); location.replace(K + '/' + (r.name === 'z' && zoneLoc[r.id] ? '#/l/' + zoneLoc[r.id] : r.name === 'g' ? '#/l/' + r.id : '#/')); } };
+    const back = () => { if (depth > 0) { depth--; history.back(); } else { const r = route(); location.replace(K + '/' + (r.name === 'z' && zoneLoc[r.id] ? '#/l/' + zoneLoc[r.id] : r.name === 'g' ? (activeGrp() ? '#/gk' : '#/l/' + r.id) : '#/')); } };
     const zoneLoc = store.get('kurt:zl') || {};
     let token = 0, keepY = 0;
     const show = (anim) => {
       const my = ++token;
       const r = route();
+      if (r.name !== 'g' && r.name !== 'gk') ss.del('tm4-kurt-g'); // the group from Groepswerken doesn't stay behind in Studieplek
       closeBook();
       document.body.classList.toggle('kfull', r.name === 'z');
       sec.classList.remove('push', 'pop');
@@ -151,6 +149,7 @@
       if (r.name === 'l') viewLoc(r.id, my);
       else if (r.name === 'z') viewZone(r.id, r.q, my);
       else if (r.name === 'g') viewGroup(r.id, r.q, my);
+      else if (r.name === 'gk' && activeGrp()) viewGk(my);
       else viewHome(my);
     };
     let lastLen = history.length, quiet = false;
@@ -247,8 +246,7 @@
         if (my !== token) return;
         const { tiles, extra } = d.loc || { tiles: null, extra: {} };
         const name = (ME && ME.firstName) || '';
-        let h = `<div class="lt"><h1>Studieplek</h1><p class="lt-sub">KURT${name ? ' · hoi ' + esc(name) : ''}</p></div>`;
-        h += grpBanner('home');
+        let h = `<div class="lt"><h1>Studieplek</h1><p class="lt-sub">KURT</p></div>`;
         // bookings: always first
         const res = (d.res || []).slice().sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime));
         h += `<div class="sh"><h2>Mijn reservaties</h2>${res.length ? `<span class="sh-note">${res.length}</span>` : ''}</div>`;
@@ -457,13 +455,45 @@
       return b;
     };
     let GR = null; // the group room page on screen
+    // from Groepswerken: first which library (only those with group rooms, your favourites first), then the normal steps
+    async function viewGk(my) {
+      const g = activeGrp();
+      document.title = 'Groepsruimte boeken';
+      setNav({ back: { label: ss.get('tm4-kurt-gback') ? 'Groepswerken' : 'Studieplek', act: 'gkback', href: '#/' }, title: '', always: true });
+      const head = `<div class="lt"><h1>Groepsruimte boeken</h1><p class="lt-sub">Voor ${esc(g.n)}${g.c ? ' · ' + esc(g.c) : ''} · ${g.m.length + 1} personen</p></div><div class="sh"><h2>Kies een bibliotheek</h2></div>`;
+      const draw = (d) => {
+        if (my !== token) return;
+        if (!d) { put(sec, head + skGroup(6)); return; }
+        const all = d.tiles.flatMap((t) => t.locations).filter((l) => ((d.extra[l.id] || {}).l || {}).types && d.extra[l.id].l.types.includes(1));
+        const fav = favs();
+        const rowG = (l) => {
+          const x = d.extra[l.id] || {}, li = x.l || {};
+          const closed = li.closedToday || /closed/i.test(li.openingHoursToday || '');
+          const th = l.thumbnailUrl ? `<span class="ko-th" style="background-image:url('${esc(K + '/' + l.thumbnailUrl)}')"></span>` : `<span class="ic soft">${GROUP}</span>`;
+          return row({ href: '#/g/' + l.id, iconHtml: th, title: (fav.includes(l.id) ? '★ ' : '') + l.unit, sub: openTxt(li) || li.address || '', cls: 'ko-row' + (closed ? ' off' : '') });
+        };
+        const top = fav.map((id) => all.find((l) => l.id === id)).filter(Boolean);
+        let h = head;
+        if (!all.length) h += empty('info', 'Geen bibliotheken gevonden', 'KURT geeft nu geen bibliotheken met groepswerkruimtes.');
+        if (top.length) h += `<div class="gh">Favorieten</div><div class="group">${top.map(rowG).join('')}</div>`;
+        d.tiles.forEach((t) => {
+          const ls = t.locations.filter((l) => all.includes(l) && !top.includes(l));
+          if (ls.length) h += `<div class="gh">${esc(NL_CITY[t.name] || t.name)}</div><div class="group">${ls.map(rowG).join('')}</div>`;
+        });
+        put(sec, h);
+      };
+      const cached = store.get('kurt:locs');
+      draw(cached && cached.v);
+      if (!cached || Date.now() - cached.ts > 3 * 60e3) once('kurt:locs', locData).then((v) => { store.set('kurt:locs', { ts: Date.now(), v }); draw(v); }, () => { if (!cached) put(sec, head + empty('warn', 'KURT reageert niet', 'Probeer het straks opnieuw.')); });
+    }
     async function viewGroup(lid, q, my) {
       const info = ((store.get('kurt:locinfo') || {}).info || {})[lid] || {};
       const unit = info.unit || (((store.get('kurt:loc:' + lid) || {}).l) || {}).unit || '';
       document.title = 'Groepswerkruimtes';
       setNav({ back: { label: 'Terug', act: 'kback', href: '#/l/' + lid }, title: 'Groepsruimtes', always: true });
       store.set('kurt:glast', Number(lid));
-      const head = `<div class="lt"><h1>Groepswerkruimtes</h1><p class="lt-sub">${esc(unit)}</p></div>` + grpBanner('g');
+      const ag = activeGrp();
+      const head = `<div class="lt"><h1>Groepswerkruimtes</h1><p class="lt-sub">${esc(unit)}${ag ? ' · voor ' + esc(ag.n) : ''}</p></div>`;
       put(sec, head + '<div class="kg-days sk" style="height:50px"></div>' + skGroup(4));
       let par;
       try { par = await parFor(lid, [1]); } catch (e) { if (my === token && !(e && e.auth)) put(sec, head + empty('warn', 'Groepsruimtes konden niet geladen worden', '', `<p style="margin-top:14px"><a class="btn" href="${esc(ORIG('/locations/' + lid))}">Open in KURT</a></p>`)); return; }
@@ -598,7 +628,7 @@
           <div class="kg-ppl">${st.ppl.map((x) => `<div class="kg-p"><span class="kg-av">${esc((x.me ? (me.firstName || 'Jij') : x.email || x.uid).slice(0, 1).toUpperCase())}</span><span class="kr-main"><b>${esc(x.me ? 'Jij' : String(x.email || '').split('@')[0].replace(/\./g, ' ') || x.uid)}</b><span>${esc(x.uid)}</span></span>${x.me ? '' : `<button type="button" class="kg-x" data-act="gdel" data-u="${esc(x.uid)}" aria-label="Verwijder">${ico('close')}</button>`}</div>`).join('')}</div>
           ${n < max ? `<form class="kg-add"><input id="kg-q" class="kg-in" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="r-nummer of e-mail" value="${esc(st.q)}"><button type="submit" class="kg-addb"${st.busy ? ' disabled' : ''}>${st.busy ? '<span class="spin"></span>' : 'Voeg toe'}</button></form>` : ''}
           ${st.err ? `<p class="ko-hint err">${ico('warn')}${esc(st.err)}</p>` : ''}
-          ${n < max && grpsLeft().length ? `<div class="kb-l kg-ml">Je groepjes</div><div class="kg-mates kg-grps">${grpsLeft().map(({ g, i }) => `<button type="button" class="chip" data-act="ggrp" data-i="${i}">${GROUP}${esc(g.n)} <small>${g.m.length + 1}</small></button>`).join('')}</div>` : ''}
+          ${n < max && grpsLeft().length ? `<div class="kb-l kg-ml">Je groepen</div><div class="kg-mates kg-grps">${grpsLeft().map(({ g, i }) => `<button type="button" class="chip" data-act="ggrp" data-i="${i}">${GROUP}${esc(g.n)} <small>${g.m.length + 1}</small></button>`).join('')}</div>` : ''}
           ${n < max && mates().length ? `<div class="kb-l kg-ml">Eerder in je groep</div><div class="kg-mates">${mates().slice(0, 8).map((m) => `<button type="button" class="chip" data-act="gmate" data-u="${esc(m.uid)}">+ ${esc(String(m.email || '').split('@')[0].replace(/\./g, ' ') || m.uid)}</button>`).join('')}</div>` : ''}
           <button type="button" class="btn kb-go" data-act="gbook"${ok ? '' : ' disabled'}>${need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : !subjOk ? 'Vul een onderwerp in (min. 4 tekens)' : `Reserveer · ${hm(start)}–${hm(st.end)}`}</button>
           <p class="kb-legal">Je gaat akkoord met het ${rules ? `<a href="${esc(rules)}">reglement</a>` : 'reglement'}. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</p>`;
@@ -979,7 +1009,7 @@
       if (!b || b.closest('.kb')) return;
       const act = b.dataset.act;
       if (act === 'kback') { e.preventDefault(); back(); }
-      else if (act === 'gstop') { e.preventDefault(); ss.del('tm4-kurt-g'); show(); }
+      else if (act === 'gkback') { e.preventDefault(); const u = ss.get('tm4-kurt-gback'); ss.del('tm4-kurt-g'); if (u && history.length > 1) history.back(); else if (u) goTo(ULTRA + '/ultra/calendar?tm=groepen', { dir: 'back' }); else location.replace(K + '/#/'); }
       else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
       else if (act === 'when') { e.preventDefault(); whenSheet(); }
       else if (act === 'list') { e.preventDefault(); listSheet(); }

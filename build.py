@@ -3,7 +3,7 @@
 import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.29.0"
+VERSION = "4.29.1"
 # Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
 # The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
 # build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
@@ -15,6 +15,11 @@ assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.29.1": [
+        "Groepsruimte boeken vanuit Groepswerken: kies eerst een bibliotheek, daarna gaat het zoals altijd in Studieplek, met je groep al ingevuld.",
+        "Reserveer je via Studieplek zelf een groepsruimte, dan kies je je groep in één tik.",
+        "Groepswerken heeft rustigere kleuren.",
+    ],
     "4.29.0": [
         "Nieuw in Meer: Attesten. Vraag je inschrijvingsbewijs, transcript of een ander attest aan met één tik; KU Loket mailt het meteen naar je studentenmail.",
     ],
