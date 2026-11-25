@@ -1,11 +1,7 @@
 {
- "version": "4.29.1",
- "built": 1795630740377,
+ "version": "4.29.2",
+ "built": 1795630967379,
  "builds": [
-  {
-   "v": "4.28.1",
-   "built": 1795629110175
-  },
   {
    "v": "4.28.2",
    "built": 1795629238921
@@ -33,9 +29,17 @@
   {
    "v": "4.29.1",
    "built": 1795630740377
+  },
+  {
+   "v": "4.29.2",
+   "built": 1795630967379
   }
  ],
  "news": {
+  "4.29.2": [
+   "Groepsruimte reserveren: het uur dat je al koos staat er gewoon, je hoeft het niet opnieuw te kiezen.",
+   "Al je groepen uit Groepswerken staan in het reserveerblad: één tik op Voeg toe en je hele groep staat erin."
+  ],
   "4.29.1": [
    "Groepsruimte boeken vanuit Groepswerken: kies eerst een bibliotheek, daarna gaat het zoals altijd in Studieplek, met je groep al ingevuld.",
    "Reserveer je via Studieplek zelf een groepsruimte, dan kies je je groep in één tik.",
@@ -72,10 +76,6 @@
   "4.27.0": [
    "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
    "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar."
-  ],
-  "4.26.1": [
-   "Studieplek heet nu Studieplek (KURT) en heeft een nieuw icoon.",
-   "Studievoortgang en Mijn ISP openen altijd bovenaan."
   ]
  }
 }

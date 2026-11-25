@@ -25,6 +25,8 @@
         store.set('p:done', P.done);
       }
     }
+    // your groups (Groepswerken on the course site hands them over: name~course~e-mails!...), passed on to Studieplek
+    if (params.get('gx') != null) store.set('p:grps', String(params.get('gx')).slice(0, 4000));
     // your student number, handed over by the course pages (?rn=r0123456); Toledo itself only gives the login id
     {
       const rn = String(params.get('rn') || '').toLowerCase();
@@ -580,7 +582,7 @@
         return o.href ? `<a class="app" href="${esc(o.href)}">${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
       };
       const APPS = [
-        { n: 'Studieplek', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
+        { n: 'Studieplek', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' + (store.get('p:grps') ? '?tmgs=' + encodeURIComponent(store.get('p:grps')) : '') },
         { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
         { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
         { n: 'Groepswerken', i: 'people', c: '#c2477a', href: groupsHref() },
