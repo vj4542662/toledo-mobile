@@ -1,11 +1,7 @@
 {
- "version": "4.29.2",
- "built": 1795631024045,
+ "version": "4.29.3",
+ "built": 1795631672169,
  "builds": [
-  {
-   "v": "4.28.2",
-   "built": 1795629238921
-  },
   {
    "v": "4.28.3",
    "built": 1795629317413
@@ -33,9 +29,16 @@
   {
    "v": "4.29.2",
    "built": 1795631024045
+  },
+  {
+   "v": "4.29.3",
+   "built": 1795631672169
   }
  ],
  "news": {
+  "4.29.3": [
+   "Attesten: de app zegt nu dat het tot een 5-tal minuten kan duren voor je attest in je mailbox staat."
+  ],
   "4.29.2": [
    "Groepsruimte reserveren: het uur dat je al koos staat er gewoon, je hoeft het niet opnieuw te kiezen.",
    "Al je groepen uit Groepswerken staan in het reserveerblad: één tik op Voeg toe en je hele groep staat erin."
@@ -72,10 +75,6 @@
   ],
   "4.27.1": [
    "Groepswerken opent nu altijd je groepen, niet meer soms een vak."
-  ],
-  "4.27.0": [
-   "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
-   "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar."
   ]
  }
 }

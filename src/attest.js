@@ -94,7 +94,7 @@
         if (g.opts.length > 1) h += `<div class="at-l">${/\d/.test(g.opts.map((o) => yrTxt(o.yr)).join('')) ? 'Academiejaar' : 'Opleiding'}</div><div class="at-opts">${g.opts.slice(0, all ? 99 : 2).map((o, i) => `<button type="button" class="at-o${i === pick ? ' on' : ''}" data-o="${i}"><span><b>${esc(yrTxt(o.yr) || o.progT || 'Algemeen')}</b>${yrTxt(o.yr) && o.progT ? `<small>${esc(o.progT)}</small>` : ''}</span>${i === pick ? ico('check') : ''}</button>`).join('')}${all ? '' : `<button type="button" class="at-o at-more" data-all="1"><span>Oudere jaren (${g.opts.length - 2})</span>${ico('more')}</button>`}</div>`;
         else h += `<p class="at-one">${esc(optLabel(opt()))}</p>`;
         if (opt().en) h += `<div class="at-l">Taal</div><div class="at-seg"><button type="button" data-en="0"${en ? '' : ' class="on"'}>Nederlands</button><button type="button" data-en="1"${en ? ' class="on"' : ''}>Engels</button></div>`;
-        h += `<button type="button" class="btn at-go">${ico('mail')}Mail naar mij</button><p class="at-note">Je krijgt het als pdf in je studentenmail.</p>`;
+        h += `<button type="button" class="btn at-go">${ico('mail')}Mail naar mij</button><p class="at-note">Je krijgt het als pdf in je studentenmail, binnen een 5-tal minuten.</p>`;
         return h;
       };
       const { sh, close } = openLayer(`<div class="sg at-sh"></div><div class="sg"><button type="button" class="sa bold" data-x="1">Annuleer</button></div>`, '', g.title);
@@ -116,7 +116,7 @@
           send(opt(), en).then(() => {
             busy = false;
             store.set(sentKey(opt()), Date.now());
-            put(box, `<div class="at-ok">${ico('check')}<b>Verstuurd</b><p>${esc(g.title)}${optLabel(opt()) !== 'Algemeen' ? ' (' + esc(optLabel(opt())) + ')' : ''} komt binnen enkele minuten in je studentenmail.</p><button type="button" class="btn" data-mail="1">${ico('mail')}Open mail</button></div>`);
+            put(box, `<div class="at-ok">${ico('check')}<b>Verstuurd</b><p>${esc(g.title)}${optLabel(opt()) !== 'Algemeen' ? ' (' + esc(optLabel(opt())) + ')' : ''} komt naar je studentenmail. Het kan tot een 5-tal minuten duren voor het in je mailbox staat.</p><button type="button" class="btn" data-mail="1">${ico('mail')}Open mail</button></div>`);
             sh.querySelector('[data-x]').textContent = 'Klaar';
             draw(LIST);
           }, (err) => {
