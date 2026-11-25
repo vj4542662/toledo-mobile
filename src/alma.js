@@ -124,9 +124,10 @@
           });
         });
       }
-      const route = (d.querySelector('a[href*="google.com/maps"]') || {}).href || '';
-      const h3 = route ? d.querySelector('a[href*="google.com/maps"]').closest('div.relative') : null;
-      const addr = h3 ? $$('.not-italic > div', h3).map(txt).filter(Boolean).join(', ') : '';
+      const box2 = (d.querySelector('div.relative > .not-italic') || {}).parentNode;
+      const rl = (box2 && box2.querySelector('a[href*="google.com/maps"]')) || d.querySelector('a[href*="google.com/maps"]');
+      const route = rl ? rl.getAttribute('href').replace(/\s+/g, '') : '';
+      const addr = box2 ? $$('.not-italic > div', box2).map(txt).filter(Boolean).join(', ') : '';
       return { date, cats, hours, route, addr };
     }
     // in-memory + session cache: switching Alma's or days is instant once loaded
@@ -344,7 +345,7 @@
       const pg = priceGroup();
       h += `<div class="gh">Toon prijzen voor</div><div class="group">${PRICE_GROUPS.map((g) => `<button type="button" class="row" data-act="aprijs" data-k="${g.k}"><span class="main"><span class="t">${esc(g.n)}</span></span>${g.k === pg ? `<span class="end al-check">${ico('check')}</span>` : ''}</button>`).join('')}</div>`;
       h += `<div class="group" style="margin-top:24px">${row({ href: pageUrl('') + '?tm=orig', iconHtml: `<span class="ic" style="--c:#d9534f">${ico('globe')}</span>`, title: 'Website van Alma', external: true })}</div>`;
-      put(sec, h);
+      put(sec, `<div class="al-pick">${h}</div>`);
       watchTitle(sec);
     }
 

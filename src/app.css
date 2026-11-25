@@ -1056,7 +1056,8 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .al-pr{flex:none;font-weight:800;font-size:15.5px}
 .tm4 .al-foot{margin-top:22px;line-height:22px}
 .tm4 .al-foot a{color:var(--accent)}
-.tm4 .al-row{padding:0;display:flex;align-items:center}
+.tm4 .al-row{padding:0;display:flex;align-items:center;--inset:16px}
+.tm4 .al-pick .group:not(:last-child),.tm4 .al-g{--inset:16px}
 .tm4 .al-open{flex:1;display:flex;align-items:center;min-height:52px;padding:8px 0 8px 16px;text-align:left}
 .tm4 .al-up{color:var(--accent);font-size:13.5px;padding:0}
 .tm4 .al-star{flex:none;width:52px;height:52px;display:flex;align-items:center;justify-content:center;color:var(--ter)}
