@@ -236,6 +236,8 @@
     let SETUP = false; // the very first time: star as many Alma's as you like, then Klaar
     const nav = (hash) => { depth++; location.hash = hash; };
     const back = () => { if (depth > 0) { depth--; history.back(); } else location.replace(pageUrl('') + '#/'); };
+    // redraw the screen you're on without moving it (fold open, filters): only a new screen starts at the top
+    const redraw = () => { ++token; if (route() === 'kies' || SETUP) viewPick(token); else viewMenu(token, true); };
     const show = (anim) => {
       const my = ++token;
       sec.classList.remove('push', 'pop');
@@ -251,7 +253,7 @@
     /* ---------- your Alma: chips, day, hours, filters, menu */
     let LAST = null; // the menu on screen (for the dish sheet)
     const OPEN = (() => { try { return JSON.parse(ss.get('tm4-alma-open') || '{}'); } catch (_) { return {}; } })();
-    function viewMenu(my) {
+    function viewMenu(my, keep) {
       const fs = favs();
       if (!CUR) setCur(fs[0]);
       const a = almaOf(CUR);
@@ -285,7 +287,10 @@
           const warm = m.cats.filter((c) => /warm|soep/i.test(c.n)).some((c) => c.items.some((it) => !/optioneel/i.test(it.sub)));
           if (DAY > today() && !warm) h += `<p class="ko-hint">${ico('info')}<span>Het menu van deze dag staat nog niet online. Dit vind je er elke dag.</span></p>`;
           const sum = { shown: 0 };
-          m.cats.forEach((c, ci) => {
+          // what you eat first: warm, soup and sandwiches on top; breakfast, dessert and drinks folded at the bottom
+          const RANK = ['warm buffet', 'soep', 'broodjes', 'salades', 'diverse snacks'];
+          const rank = (n) => { const i = RANK.indexOf(n.toLowerCase()); return i < 0 ? (ALMA_FOLDED.includes(n) ? 50 + ALMA_FOLDED.indexOf(n) : 20) : i; };
+          m.cats.map((c, ci) => [c, ci]).sort((x, y) => rank(x[0].n) - rank(y[0].n) || x[1] - y[1]).forEach(([c, ci]) => {
             let items = c.items.map((it, i) => ({ it, i })).filter((x) => passes(x.it));
             if (!items.length) return;
             const folded = ALMA_FOLDED.includes(c.n) && !OPEN[c.n];
@@ -310,7 +315,7 @@
         if (on && on.scrollIntoView && on.offsetLeft > sec.clientWidth - 120) on.parentNode.scrollLeft = on.offsetLeft - 16;
       };
       const cached = peek(CUR, DAY);
-      draw(cached);
+      if (cached || !keep) draw(cached); // a redraw keeps the old menu on screen until the new one is there
       load(CUR, DAY).then((m) => {
         // the first answer brings the opening hours: maybe today isn't a day to show any more
         if (my !== token) return;
@@ -375,7 +380,7 @@
         if (!b) return;
         if (b.dataset.k) { if (pick.has(b.dataset.k)) pick.delete(b.dataset.k); else pick.add(b.dataset.k); draw(); return; }
         if (b.dataset.x === 'clear') { pick.clear(); draw(); return; }
-        if (b.dataset.x === 'go') { FLT.alg = ALLERGENS.filter((a) => pick.has(a.k)).map((a) => a.k); saveFlt(); close(); show(); }
+        if (b.dataset.x === 'go') { FLT.alg = ALLERGENS.filter((a) => pick.has(a.k)).map((a) => a.k); saveFlt(); close(); redraw(); }
       });
     }
 
@@ -399,12 +404,12 @@
         FLT[k] = !FLT[k];
         if (k === 'vegan' && FLT.vegan) FLT.veg = false;
         if (k === 'veg' && FLT.veg) FLT.vegan = false;
-        saveFlt(); show();
+        saveFlt(); redraw();
       } else if (act === 'agluten') {
         FLT.alg = FLT.alg.includes('gluten') ? FLT.alg.filter((x) => x !== 'gluten') : FLT.alg.concat('gluten');
-        saveFlt(); show();
+        saveFlt(); redraw();
       } else if (act === 'aalg') allergenSheet();
-      else if (act === 'afold') { const c = b.dataset.c; OPEN[c] = !OPEN[c]; ss.set('tm4-alma-open', JSON.stringify(OPEN)); show(); }
+      else if (act === 'afold') { const c = b.dataset.c; OPEN[c] = !OPEN[c]; ss.set('tm4-alma-open', JSON.stringify(OPEN)); redraw(); }
       else if (act === 'adish') { const c = LAST && LAST.cats[Number(b.dataset.c)]; const it = c && c.items[Number(b.dataset.i)]; if (it) dishSheet(it); }
       else if (act === 'astar') {
         const s = b.dataset.s, fs = favs();
