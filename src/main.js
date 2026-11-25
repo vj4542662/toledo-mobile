@@ -3,6 +3,7 @@
   let mode = 'classic', target = '';
   if (SITE === 'install') mode = 'none'; // GitHub: only the update page below
   else if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
+  else if (SITE === 'kurt' && !TOP && params.get('tm') === 'krb') mode = 'krbridge'; // hidden frame of the Agenda: reads your bookings
   else if (SITE === 'kurt') mode = TOP && PHONE && params.get('tm') !== 'orig' && !/^\/(check-in|login|logout|signin|saml|api)\b/i.test(PATH) ? 'kurt' : 'none'; // study places
   else if (SITE === 'print') {
     // KU Leuven Print (PaperCut): its own pages become the Print app; /topup is the payment page
@@ -82,6 +83,7 @@
   if (mode === 'attest') { whenRoot(attestPage); return; }
   if (mode === 'attpass') { attestPass(); return; }
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
+  if (mode === 'krbridge') { kurtBridge(); return; }
   if (mode === 'alma') { whenRoot(almaApp); return; }
   if (mode === 'print') {
     // signed out, the server sends a small page that forwards to the KU Leuven login: let it (or send it on ourselves)

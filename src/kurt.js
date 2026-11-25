@@ -4,6 +4,20 @@
   // library shows its rooms with how many seats are free at the chosen hour, and a room opens straight on its floor
   // plan: tap a green seat, pick until when, book. Things the app doesn't cover (group rooms, laptops, check-in)
   // open KURT's own pages (?tm=orig).
+  // your bookings that haven't ended yet, short, for the Agenda tab on the portal
+  function krList(list) {
+    const now = Date.now();
+    return (Array.isArray(list) ? list : []).filter((r) => r && r.id != null && r.startDate && r.endDate && (String(r.endTime).slice(0, 5) === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime)) > now)
+      .slice(0, 20).map((r) => ({ id: String(r.id), sd: r.startDate, st: String(r.startTime).slice(0, 5), ed: r.endDate, et: String(r.endTime).slice(0, 5), n: String(r.resourceName || '') }));
+  }
+  // the Agenda opens KURT in a hidden frame (?tm=krb, same site so you're signed in): read the bookings and hand them over
+  function kurtBridge() {
+    const say = (m) => { try { W.parent.postMessage(Object.assign({ tm4: 'kr' }, m), PORTAL_ORIGIN); } catch (_) {} };
+    fetch(location.origin + '/api/reservations', { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((list) => { if (!Array.isArray(list)) throw new Error('geen lijst'); store.set('kurt:res', { ts: Date.now(), v: list }); say({ ok: true, list: krList(list) }); })
+      .catch(() => say({ ok: false }));
+  }
   function kurtApp() {
     const K = location.origin;
     const ORIG = (p) => K + (p || '/') + ((p || '/').includes('?') ? '&' : '?') + 'tm=orig';
@@ -1126,9 +1140,7 @@
     const withRes = (u) => {
       const c = store.get('kurt:res');
       if (!c || !Array.isArray(c.v) || !/^https:\/\/toledo\.kuleuven\.be\/portal/.test(u)) return u;
-      const now = Date.now();
-      const kr = c.v.filter((r) => r && r.id != null && r.startDate && (r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime)) > now)
-        .slice(0, 20).map((r) => [r.id, r.startDate, String(r.startTime).slice(0, 5), r.endDate, String(r.endTime).slice(0, 5), String(r.resourceName || '').replace(/[~!]/g, ' ')].join('~')).join('!');
+      const kr = krList(c.v).map((r) => [r.id, r.sd, r.st, r.ed, r.et, r.n.replace(/[~!]/g, ' ')].join('~')).join('!');
       return u + (u.includes('?') ? '&' : '?') + 'kr=' + encodeURIComponent(kr);
     };
     /* ---------- taps */

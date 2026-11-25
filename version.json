@@ -1,11 +1,7 @@
 {
- "version": "4.33.0",
- "built": 1795647445058,
+ "version": "4.33.1",
+ "built": 1795647686072,
  "builds": [
-  {
-   "v": "4.29.0",
-   "built": 1795630726968
-  },
   {
    "v": "4.29.1",
    "built": 1795630740377
@@ -33,9 +29,16 @@
   {
    "v": "4.33.0",
    "built": 1795647445058
+  },
+  {
+   "v": "4.33.1",
+   "built": 1795647686072
   }
  ],
  "news": {
+  "4.33.1": [
+   "Je studieplek-reservaties staan meteen in de Agenda, ook als je Studieplek nog niet geopend hebt. Examens van januari, juni en augustus staan elk in een eigen blok."
+  ],
   "4.33.0": [
    "Rooster heet nu Agenda: je lessen, studieplek-reservaties, deadlines en examens staan samen per dag, en de lijst springt meteen naar vandaag. Onder Examens zie je hoeveel dagen studietijd je tussen twee examens hebt."
   ],
@@ -73,9 +76,6 @@
   ],
   "4.28.4": [
    "Alma: een andere dag of Alma kiezen gaat meteen, en het menu van vorige keer staat er al terwijl het nieuwe laadt."
-  ],
-  "4.28.3": [
-   "Alma: uitklappen of een filter aanzetten laat je op je plek staan, en broodjes staan nu meteen onder de soep."
   ]
  }
 }

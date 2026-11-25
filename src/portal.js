@@ -585,11 +585,18 @@
       let h = '';
       if (examsNeedRooms() && P.ag !== 'loading') h += `<div class="banner">${ico('pin')}<span class="main">Werk je examenrooster één keer bij om de lokalen aanklikbaar te maken.</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
       if (up.length) {
-        const first = up[0], last = up[up.length - 1];
-        const d0 = dayDiff(first.start, now);
+        // exam periods (January, June, August): more than 3 weeks apart means a new period, with its own block
+        const per = [];
+        up.forEach((x, i) => { if (!i || dayDiff(x.start, up[i - 1].start) > 21) per.push([]); per[per.length - 1].push(x); });
         const span = (t) => `${new Date(t).getDate()} ${MONTHS_S[new Date(t).getMonth()]}`;
-        h += `<div class="card ex-sum"><small>${up.length === 1 ? 'Volgend examen' : 'Examenperiode'}</small><b>${d0 === 0 ? 'Vandaag examen' : d0 === 1 ? 'Morgen je eerste examen' : `Eerste examen over ${d0} dagen`}</b><span>${up.length} ${up.length === 1 ? 'examen' : 'examens'} · ${esc(up.length > 1 ? span(first.start) + ' – ' + span(last.start) : dLong(first.start))}</span></div>`;
-        h += `<div class="group">${up.map((x, i) => (i ? examGap(up[i - 1], x) : '') + examRow(x, now)).join('')}</div>`;
+        const perName = (t) => { const m = new Date(t).getMonth(); return (m <= 2 ? 'Januari' : m <= 6 ? 'Juni' : m <= 8 ? 'Augustus' : cap(MONTHS[m])) + ' ' + new Date(t).getFullYear(); };
+        const first = per[0][0], last = per[0][per[0].length - 1], n = per[0].length;
+        const d0 = dayDiff(first.start, now);
+        h += `<div class="card ex-sum"><small>${n === 1 ? 'Volgend examen' : 'Examenperiode ' + esc(perName(first.start).toLowerCase())}</small><b>${d0 === 0 ? 'Vandaag examen' : d0 === 1 ? 'Morgen je eerste examen' : `Eerste examen over ${d0} dagen`}</b><span>${n} ${n === 1 ? 'examen' : 'examens'} · ${esc(n > 1 ? span(first.start) + ' – ' + span(last.start) : dLong(first.start))}</span></div>`;
+        per.forEach((g) => {
+          if (per.length > 1) h += `<div class="gh">Examens ${esc(perName(g[0].start).toLowerCase())}</div>`;
+          h += `<div class="group">${g.map((x, i) => (i ? examGap(g[i - 1], x) : '') + examRow(x, now)).join('')}</div>`;
+        });
       }
       if (past.length) h += `<div class="gh">Voorbij</div><div class="group">${past.map((x) => examRow(x, now)).join('')}</div>`;
       return h + '<p class="fresh"><a href="https://www.kuleuven.be/kuloket/zr_0363">Open je examenrooster in KU Loket</a></p>';
@@ -751,7 +758,7 @@
       if (id === P.tab && prev && !sub) { W.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       if (prev) prev.y = W.scrollY;
       if (id === 'rooster' && sub) P.seg = sub === 'examens' ? 'examens' : 'lessen';
-      if (id === 'rooster') P.agScrolled = !!(V.rooster && V.rooster.y);
+      if (id === 'rooster') { P.agScrolled = !!(V.rooster && V.rooster.y); refreshKurt(); }
       if (id === 'resultaat') {
         const k = sub ? decodeURIComponent(sub) : P.resKey;
         if (k !== P.resKey && V.resultaat) V.resultaat.y = 0;
@@ -1115,6 +1122,31 @@
       return settled;
     }
 
+    /* Studieplek (KURT) is another site too: a hidden frame reads your bookings there (kurtBridge), so the Agenda
+       has them without opening Studieplek first. At most every 2 minutes. */
+    let krAt = 0;
+    function refreshKurt(force) {
+      if (!force && Date.now() - krAt < 120e3) return;
+      krAt = Date.now();
+      const f = document.createElement('iframe');
+      f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+      f.style.cssText = 'position:fixed;left:-10px;top:-10px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+      let timer = 0;
+      const done = () => { clearTimeout(timer); W.removeEventListener('message', onMsg); f.remove(); };
+      const onMsg = (e) => {
+        if (e.origin !== KURT || !e.data || e.data.tm4 !== 'kr') return;
+        done();
+        if (!e.data.ok || !Array.isArray(e.data.list)) return;
+        P.kurt = { ts: Date.now(), v: e.data.list.filter((r) => r && r.id && /^\d{4}-\d\d-\d\d$/.test(r.sd) && /^\d{4}-\d\d-\d\d$/.test(r.ed) && /^\d\d:\d\d$/.test(r.st) && /^\d\d:\d\d$/.test(r.et)) };
+        store.set('p:kurt', P.kurt);
+        dirty('rooster');
+      };
+      W.addEventListener('message', onMsg);
+      timer = setTimeout(done, 15000);
+      f.src = KURT + '/?tm=krb';
+      document.body.appendChild(f);
+    }
+
     /* ---------------- start ---------------- */
     guardPath();
     learnPk();
@@ -1123,6 +1155,7 @@
     badges();
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
+    if (!params.get('kr')) setTimeout(() => refreshKurt(), r0.tab === 'rooster' ? 500 : 2500);
     updateWatch((info) => { P.upd = info; dirty('vandaag', 'meer'); });
     justUpdated();
     setTimeout(countUser, 4000);
@@ -1130,6 +1163,7 @@
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
     pullRefresh(() => {
       if (SUBVIEW[P.tab]) return refreshAgenda(true, true, true);
+      refreshKurt(true);
       return Promise.all([loadAll(true), refreshAgenda(true, false, true)]);
     });
     keepAlive('portal', [[PORTAL_ORIGIN + '/portal/api/user'], [LOKET_ORIGIN + '/sap/bc/ui2/start_up', 'no-cors']]);
