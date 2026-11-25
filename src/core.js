@@ -460,7 +460,7 @@
   const EXT = ico('ext', 'ext');
 
   /* ================================================================== light / dark */
-  // 'auto' follows the phone. The choice is kept per site (localStorage), on *.kuleuven.be in a cookie
+  // 'auto' follows the phone; without a choice of their own everyone starts in light mode. The choice is kept per site (localStorage), on *.kuleuven.be in a cookie
   // (so the login page knows it too) and handed to the course pages on ultra.edu.kuleuven.cloud in the link (th=).
   const THEME_KEY = 'tm4:theme';
   function readTheme() {
@@ -469,7 +469,7 @@
     let t = '';
     try { t = localStorage.getItem(THEME_KEY) || ''; } catch (_) {}
     if (!t) { try { const c = /(?:^|;\s*)tm4theme=(light|dark|auto)/.exec(document.cookie || ''); if (c) t = c[1]; } catch (_) {} }
-    return t || 'auto';
+    return t || 'light';
   }
   function saveTheme(t) {
     try { localStorage.setItem(THEME_KEY, t); } catch (_) {}

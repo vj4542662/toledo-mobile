@@ -1,7 +1,10 @@
 {
- "version": "4.25.0",
- "built": 1795613367537,
+ "version": "4.25.1",
+ "built": 1795613418235,
  "news": {
+  "4.25.1": [
+   "De app start nu altijd in lichte modus. Liever donker of automatisch? Kies het bij Meer, Weergave."
+  ],
   "4.25.0": [
    "Updaten gaat nu via Userscripts zelf: tik op het wolkje, dan op Check Updates en dan op Update. De app toont je de stappen met plaatjes."
   ],
@@ -36,9 +39,6 @@
   ],
   "4.20.1": [
    "Mooiere randen: bovenaan geen lichte balk meer, en onderaan loopt alles zacht weg achter de balk in plaats van met een schaduw."
-  ],
-  "4.20.0": [
-   "Nieuwe, zachtere stijl: rondere kaarten, rustigere kleuren in het petrolblauw van het logo, een nieuw lettertype en een zwevende balk onderaan. Alles staat nog op dezelfde plek."
   ]
  }
 }

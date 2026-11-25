@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.25.0"
+VERSION = "4.25.1"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.25.1": [
+        "De app start nu altijd in lichte modus. Liever donker of automatisch? Kies het bij Meer, Weergave.",
+    ],
     "4.25.0": [
         "Updaten gaat nu via Userscripts zelf: tik op het wolkje, dan op Check Updates en dan op Update. De app toont je de stappen met plaatjes.",
     ],
