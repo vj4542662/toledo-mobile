@@ -11,7 +11,7 @@
     buildShell([
       { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
       { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
-      { id: 'rooster', label: 'Rooster', icon: 'calendar', href: PORTAL + '?tm=rooster' },
+      { id: 'rooster', label: 'Agenda', icon: 'calendar', href: PORTAL + '?tm=rooster' },
       { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
       { id: 'meer', label: 'Meer', icon: 'grid', href: PORTAL + '?tm=meer' },
     ], 'meer');
@@ -238,7 +238,7 @@
       const st = res && res.status, msgs = (res && res.messages) || [];
       if (st === 10 || st === 13) setIn(id, true);
       if (st === 14) setIn(id, false);
-      store.del('kurt:res'); memoClear(); show();
+      freshRes(); memoClear(); show();
       if (st === 10) ciDone(true, 'Ingecheckt', n, msgs);
       else if (st === 13) ciDone(true, 'Je bent al ingecheckt', n, msgs);
       else if (st === 14) ciDone(true, 'Uitgecheckt', n, msgs);
@@ -744,7 +744,7 @@
           store.set('kurt:gsubj', subject);
           const others = parts.filter((x) => !me.uid || x.uid !== me.uid);
           store.set('kurt:mates', others.concat((store.get('kurt:mates') || []).filter((m) => !others.some((o) => o.uid === m.uid))).slice(0, 12));
-          store.del('kurt:res'); memoClear();
+          freshRes(); memoClear();
           kb.querySelector('.kb-when').hidden = true;
           body.innerHTML = `<div class="kb-ok">${ico('check')}<b>Gereserveerd</b><span>${esc(nm(a.name))} · ${esc(dayLbl(day))} ${hm(start)}–${hm(end)}</span><span>${parts.length} personen. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</span></div><button type="button" class="btn kb-go" data-act="done">Klaar</button>`;
         } catch (err) {
@@ -1074,7 +1074,7 @@
         if (res.additionalFields) payload.additionalFields = res.additionalFields;
         try {
           await send('POST', '/reservations/', payload);
-          store.del('kurt:res'); memoClear();
+          freshRes(); memoClear();
           book = null;
           kb.querySelector('.kb-when').hidden = true;
           put(body, `<div class="kb-ok">${ico('check')}<b>Gereserveerd</b><span>${esc(nm(st.resourceName))} · ${esc(dayLbl(d.value))} ${esc(t.display)}–${hm(end)}</span><span>Check in met de QR-code op je plek, binnen het eerste halfuur.</span></div><button type="button" class="btn kb-go" data-act="done">Klaar</button>`);
@@ -1120,10 +1120,21 @@
       book.draw();
     }
 
+    // after booking or cancelling: get the list again right away, so the Agenda tab gets the new one
+    function freshRes() { store.del('kurt:res'); get('/reservations').then((r) => { if (Array.isArray(r)) store.set('kurt:res', { ts: Date.now(), v: r }); }, () => {}); }
+    /* ---------- your bookings go along to the Agenda tab (the portal is another site): ?kr=id~day~from~day~until~name!... */
+    const withRes = (u) => {
+      const c = store.get('kurt:res');
+      if (!c || !Array.isArray(c.v) || !/^https:\/\/toledo\.kuleuven\.be\/portal/.test(u)) return u;
+      const now = Date.now();
+      const kr = c.v.filter((r) => r && r.id != null && r.startDate && (r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime)) > now)
+        .slice(0, 20).map((r) => [r.id, r.startDate, String(r.startTime).slice(0, 5), r.endDate, String(r.endTime).slice(0, 5), String(r.resourceName || '').replace(/[~!]/g, ' ')].join('~')).join('!');
+      return u + (u.includes('?') ? '&' : '?') + 'kr=' + encodeURIComponent(kr);
+    };
     /* ---------- taps */
     W.addEventListener('click', (e) => {
       const t = e.target.closest && e.target.closest('#tm-tabs a');
-      if (t) { e.preventDefault(); goTo(t.getAttribute('href'), { dir: 'back' }); return; }
+      if (t) { e.preventDefault(); goTo(withRes(t.getAttribute('href')), { dir: 'back' }); return; }
       const a = e.target.closest && e.target.closest('a[href^="#/"]');
       if (a) {
         e.preventDefault();
@@ -1136,7 +1147,7 @@
       const act = b.dataset.act;
       if (act === 'kback') { e.preventDefault(); back(); }
       else if (act === 'gkback') { e.preventDefault(); const u = ss.get('tm4-kurt-gback'); ss.del('tm4-kurt-g'); if (u && history.length > 1) history.back(); else if (u) goTo(ULTRA + '/ultra/calendar?tm=groepen', { dir: 'back' }); else location.replace(K + '/#/'); }
-      else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
+      else if (act === 'meer') { e.preventDefault(); goTo(withRes(PORTAL + '?tm=meer'), { dir: 'back' }); }
       else if (act === 'when') { e.preventDefault(); whenSheet(); }
       else if (act === 'list') { e.preventDefault(); listSheet(); }
       else if (act === 'seat') { e.preventDefault(); pickSeat(Number(b.dataset.r)); }
@@ -1168,11 +1179,11 @@
         e.preventDefault();
         const id = b.dataset.id;
         sheet({ title: 'Reservatie verwijderen?', msg: b.dataset.n, actions: [{ label: 'Reservatie verwijderen', red: true, run: () => {
-          send('DELETE', '/reservations/' + encodeURIComponent(id) + '/').then(() => { toast('Reservatie verwijderd'); store.del('kurt:res'); memoClear(); show(); }, (err) => toast(err.message || 'Annuleren lukte niet'));
+          send('DELETE', '/reservations/' + encodeURIComponent(id) + '/').then(() => { toast('Reservatie verwijderd'); freshRes(); memoClear(); show(); }, (err) => toast(err.message || 'Annuleren lukte niet'));
         } }] });
       }
     });
-    pullRefresh(() => { store.del('kurt:locs'); store.del('kurt:res'); memoClear(); show(); return new Promise((r) => setTimeout(r, 900)); });
+    pullRefresh(() => { store.del('kurt:locs'); freshRes(); memoClear(); show(); return new Promise((r) => setTimeout(r, 900)); });
     show();
   }
 

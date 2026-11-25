@@ -147,12 +147,12 @@
     buildShell([
       { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
       { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
-      { id: 'rooster', label: 'Rooster', icon: 'calendar', href: PORTAL + '?tm=rooster' },
+      { id: 'rooster', label: 'Agenda', icon: 'calendar', href: PORTAL + '?tm=rooster' },
       { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
       { id: 'meer', label: 'Meer', icon: 'grid', href: PORTAL + '?tm=meer' },
     ], 'rooster');
     const canBack = history.length > 1 && /^https:\/\/(toledo\.kuleuven\.be|ultra\.edu\.kuleuven\.cloud)\//.test(document.referrer);
-    setNav({ back: { label: canBack ? 'Terug' : 'Rooster', act: 'back', href: PORTAL + '?tm=rooster' }, title: '' });
+    setNav({ back: { label: canBack ? 'Terug' : 'Agenda', act: 'back', href: PORTAL + '?tm=rooster' }, title: '' });
     const main = $('#tm-main');
     const sec = document.createElement('section');
     sec.className = 'view on';
@@ -277,7 +277,7 @@
     // cover whatever KU Loket shows meanwhile, without touching it (its sign-in step has to keep running)
     const dark = isDark();
     const cover = document.createElement('style');
-    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"${/^(studie|isp)/.test(back) ? 'KU Loket openen' : 'Rooster bijwerken'}\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
+    cover.textContent = `html{background:${dark ? '#000' : '#f2f2f7'}!important}html::after{content:"${/^(studie|isp)/.test(back) ? 'KU Loket openen' : 'Lessen bijwerken'}\\2026";position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:${dark ? '#000' : '#f2f2f7'};color:${dark ? '#98989f' : '#6d6d72'};font:600 17px -apple-system,system-ui,sans-serif}`;
     (document.head || document.documentElement).appendChild(cover);
     let gone = false;
     W.addEventListener('pagehide', () => { gone = true; });
@@ -288,7 +288,7 @@
     const fail = (title, text, detail) => {
       ss.del('tm4-sync');
       ss.del('tm4-sync-x');
-      takeover('Rooster bijwerken', [PORTAL_ORIGIN]);
+      takeover('Lessen bijwerken', [PORTAL_ORIGIN]);
       document.body.classList.add('no-tabs');
       document.body.innerHTML = `<div class="sync" data-tm4>${ico('warn')}<b style="color:var(--text);font-size:19px">${esc(title)}</b><span>${esc(text)}</span><button type="button" class="btn" id="tm4-retry">Opnieuw proberen</button><a class="btn ghost" href="${PORTAL}?tm=${back.split('/')[0]}">Terug naar Toledo</a>${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
       document.getElementById('tm4-retry').addEventListener('click', again);

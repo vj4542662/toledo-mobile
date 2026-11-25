@@ -1157,3 +1157,28 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .ai .app-spin{position:absolute;inset:0;margin:auto;width:22px;height:22px;border-color:rgba(255,255,255,.35);border-top-color:#fff}
 @media (prefers-reduced-motion:reduce){.tm4 #tm-alma,.tm4 #tm-alma.on{transition:none}}
 .tm4 .ai:has(.app-spin) .i{opacity:.3}
+/* ---------- Agenda (v4.33.0): lessons, study places, deadlines and exams together ---------- */
+.tm4 .ag-chips{margin-bottom:4px}
+.tm4 .ag-chips{gap:5px}.tm4 .ag-chips .chip{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;font-size:14px}
+.tm4 .ag-chips .chip i{width:8px;height:8px;border-radius:50%}
+.tm4 .wd .ag-dots{display:flex;gap:2px;height:5px}
+.tm4 .wd .ag-dots i{width:5px;height:5px;border-radius:50%;opacity:1}
+.tm4 .ag-tag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:.4px;vertical-align:2px}
+.tm4 .ag-tag.dl{background:color-mix(in srgb,var(--orange) 16%,var(--card));color:#c46a00}
+.tm4 .ag-tag.plek{background:color-mix(in srgb,#3d8fa8 15%,var(--card));color:#2f7a91}
+.tm4.dark .ag-tag.dl{color:var(--orange)}.tm4.dark .ag-tag.plek{color:#7cc1d6}
+@media (prefers-color-scheme:dark){.tm4:not(.light) .ag-tag.dl{color:var(--orange)}.tm4:not(.light) .ag-tag.plek{color:#7cc1d6}}
+.tm4 .exam-tag{background:color-mix(in srgb,var(--red) 14%,var(--card));color:var(--red);font-size:10.5px;font-weight:800;letter-spacing:.4px}
+.tm4 .lesson.ag-dl .bar{background:var(--orange)}
+.tm4 .lesson.ag-dl .tm span{font-size:12px}
+.tm4 .lesson.ag-plek .bar{background:repeating-linear-gradient(var(--c) 0 5px,transparent 5px 8px)}
+.tm4 .lesson .end{display:flex;align-items:center;flex:none}
+/* Examens: how many days you get between two exams */
+.tm4 .ex-sum{display:flex;flex-direction:column;gap:3px;margin:4px 16px 12px;padding:14px 16px;background:var(--card)}
+.tm4 .ex-sum small{font-size:12.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--red)}
+.tm4 .ex-sum b{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.tm4 .ex-sum span{color:var(--sub);font-size:14.5px}
+.tm4 .ex-gap{display:flex;align-items:center;gap:10px;padding:2px 16px 2px 40px;background:var(--tint)}
+.tm4 .ex-gap i{width:2px;height:22px;border-radius:1px;background:var(--g);opacity:.55}
+.tm4 .ex-gap .cap{height:20px;font-size:12px}
+.tm4 .ex-gap + .exam::before{display:none}

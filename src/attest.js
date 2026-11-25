@@ -23,7 +23,7 @@
     buildShell([
       { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
       { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
-      { id: 'rooster', label: 'Rooster', icon: 'calendar', href: PORTAL + '?tm=rooster' },
+      { id: 'rooster', label: 'Agenda', icon: 'calendar', href: PORTAL + '?tm=rooster' },
       { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
       { id: 'meer', label: 'Meer', icon: 'grid', href: meer },
     ], 'meer');

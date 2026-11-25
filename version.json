@@ -1,11 +1,7 @@
 {
- "version": "4.32.0",
- "built": 1795646508330,
+ "version": "4.33.0",
+ "built": 1795647342351,
  "builds": [
-  {
-   "v": "4.28.6",
-   "built": 1795629882046
-  },
   {
    "v": "4.29.0",
    "built": 1795630726968
@@ -33,9 +29,16 @@
   {
    "v": "4.32.0",
    "built": 1795646508330
+  },
+  {
+   "v": "4.33.0",
+   "built": 1795647342351
   }
  ],
  "news": {
+  "4.33.0": [
+   "Rooster heet nu Agenda: je lessen, studieplek-reservaties, deadlines en examens staan samen per dag, en de lijst springt meteen naar vandaag. Onder Examens zie je hoeveel dagen studietijd je tussen twee examens hebt."
+  ],
   "4.32.0": [
    "Alma opent nu binnen de app en schuift pas in beeld als het menu klaarstaat: je ziet de oude website niet meer even flitsen. Kies je Alma's één keer opnieuw."
   ],
@@ -73,9 +76,6 @@
   ],
   "4.28.3": [
    "Alma: uitklappen of een filter aanzetten laat je op je plek staan, en broodjes staan nu meteen onder de soep."
-  ],
-  "4.28.2": [
-   "Alma: de eerste keer zet je meteen een ster bij al je Alma's en tik je op Klaar."
   ]
  }
 }
