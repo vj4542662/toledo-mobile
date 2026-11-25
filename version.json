@@ -1,7 +1,11 @@
 {
- "version": "4.26.1",
- "built": 1795627749299,
+ "version": "4.27.0",
+ "built": 1795628284930,
  "news": {
+  "4.27.0": [
+   "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
+   "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar."
+  ],
   "4.26.1": [
    "Studieplek heet nu Studieplek (KURT) en heeft een nieuw icoon.",
    "Studievoortgang en Mijn ISP openen altijd bovenaan."
@@ -37,10 +41,6 @@
   ],
   "4.23.0": [
    "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
-  ],
-  "4.22.0": [
-   "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
-   "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester."
   ]
  }
 }

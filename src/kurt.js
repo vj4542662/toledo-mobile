@@ -103,6 +103,27 @@
 
     /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>], #/g/<location>[?d=<day>] group rooms */
     // KURT's own addresses (/locations/10, /zone/1) become the app's
+    // Groepswerken (on Toledo) hands over a group: ?tmg=<name>&tmm=<email,email>. Kept as a saved group (kurt:groups)
+    // and made the active one for this visit, so the booking sheet adds everyone in one go.
+    const GRPS = () => store.get('kurt:groups') || [];
+    {
+      const sp = new URLSearchParams(location.search);
+      const mm = (sp.get('tmm') || '').split(',').map((x) => x.trim().toLowerCase()).filter((x) => /^[^@\s]+@[^@\s]+$/.test(x)).slice(0, 12);
+      if (mm.length) {
+        const g = { n: (sp.get('tmg') || 'Groep').slice(0, 60), m: mm, c: (sp.get('tmc') || '').slice(0, 80), ts: Date.now() };
+        g.id = (g.c + '|' + g.n).toLowerCase();
+        store.set('kurt:groups', [g].concat(GRPS().filter((x) => x.id !== g.id)).slice(0, 8));
+        ss.set('tm4-kurt-g', g.id);
+        const gl = store.get('kurt:glast');
+        if (!/^#\/g\//.test(location.hash)) { try { history.replaceState(null, '', K + '/' + (gl ? '#/g/' + gl : '#/')); } catch (_) {} }
+      }
+    }
+    const activeGrp = () => { const id = ss.get('tm4-kurt-g'); return id ? GRPS().find((x) => x.id === id) || null : null; };
+    const grpBanner = (where) => {
+      const g = activeGrp();
+      if (!g) return '';
+      return `<div class="card kgb">${GROUP}<span class="kr-main"><b>${esc(g.n)}</b><span>${esc(g.m.length + 1)} personen${g.c ? ' · ' + esc(g.c) : ''}. ${where === 'g' ? 'Kies een lokaal: je groep staat al klaar.' : 'Kies een bibliotheek met groepswerkruimtes.'}</span></span><button type="button" class="kg-x" data-act="gstop" aria-label="Stop">${ico('close')}</button></div>`;
+    };
     {
       const m = /^\/(locations|zone)\/(\d+)/.exec(location.pathname);
       const r = m ? `#/${m[1] === 'zone' ? 'z' : 'l'}/${m[2]}` : (/^#\//.test(location.hash) ? location.hash : '#/');
@@ -227,6 +248,7 @@
         const { tiles, extra } = d.loc || { tiles: null, extra: {} };
         const name = (ME && ME.firstName) || '';
         let h = `<div class="lt"><h1>Studieplek</h1><p class="lt-sub">KURT${name ? ' · hoi ' + esc(name) : ''}</p></div>`;
+        h += grpBanner('home');
         // bookings: always first
         const res = (d.res || []).slice().sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime));
         h += `<div class="sh"><h2>Mijn reservaties</h2>${res.length ? `<span class="sh-note">${res.length}</span>` : ''}</div>`;
@@ -441,7 +463,7 @@
       document.title = 'Groepswerkruimtes';
       setNav({ back: { label: 'Terug', act: 'kback', href: '#/l/' + lid }, title: 'Groepsruimtes', always: true });
       store.set('kurt:glast', Number(lid));
-      const head = `<div class="lt"><h1>Groepswerkruimtes</h1><p class="lt-sub">${esc(unit)}</p></div>`;
+      const head = `<div class="lt"><h1>Groepswerkruimtes</h1><p class="lt-sub">${esc(unit)}</p></div>` + grpBanner('g');
       put(sec, head + '<div class="kg-days sk" style="height:50px"></div>' + skGroup(4));
       let par;
       try { par = await parFor(lid, [1]); } catch (e) { if (my === token && !(e && e.auth)) put(sec, head + empty('warn', 'Groepsruimtes konden niet geladen worden', '', `<p style="margin-top:14px"><a class="btn" href="${esc(ORIG('/locations/' + lid))}">Open in KURT</a></p>`)); return; }
@@ -555,6 +577,8 @@
       scrim.addEventListener('click', closeBook);
       let res = null;
       memo('res:' + a.id, 30 * 60e3, () => get(`/resources/${a.id}?withDetails=true`)).then((x) => { res = x; draw(); }, () => {});
+      // saved groups with someone who isn't in the list yet
+      const grpsLeft = () => GRPS().map((g, i) => ({ g, i })).filter(({ g }) => g.m.some((em) => !st.ppl.some((y) => String(y.email || '').toLowerCase() === em)));
       const mates = () => (store.get('kurt:mates') || []).filter((m) => !st.ppl.some((x) => x.uid.toUpperCase() === m.uid.toUpperCase()));
       const draw = () => {
         if (!layer.isConnected) return;
@@ -574,6 +598,7 @@
           <div class="kg-ppl">${st.ppl.map((x) => `<div class="kg-p"><span class="kg-av">${esc((x.me ? (me.firstName || 'Jij') : x.email || x.uid).slice(0, 1).toUpperCase())}</span><span class="kr-main"><b>${esc(x.me ? 'Jij' : String(x.email || '').split('@')[0].replace(/\./g, ' ') || x.uid)}</b><span>${esc(x.uid)}</span></span>${x.me ? '' : `<button type="button" class="kg-x" data-act="gdel" data-u="${esc(x.uid)}" aria-label="Verwijder">${ico('close')}</button>`}</div>`).join('')}</div>
           ${n < max ? `<form class="kg-add"><input id="kg-q" class="kg-in" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="r-nummer of e-mail" value="${esc(st.q)}"><button type="submit" class="kg-addb"${st.busy ? ' disabled' : ''}>${st.busy ? '<span class="spin"></span>' : 'Voeg toe'}</button></form>` : ''}
           ${st.err ? `<p class="ko-hint err">${ico('warn')}${esc(st.err)}</p>` : ''}
+          ${n < max && grpsLeft().length ? `<div class="kb-l kg-ml">Je groepjes</div><div class="kg-mates kg-grps">${grpsLeft().map(({ g, i }) => `<button type="button" class="chip" data-act="ggrp" data-i="${i}">${GROUP}${esc(g.n)} <small>${g.m.length + 1}</small></button>`).join('')}</div>` : ''}
           ${n < max && mates().length ? `<div class="kb-l kg-ml">Eerder in je groep</div><div class="kg-mates">${mates().slice(0, 8).map((m) => `<button type="button" class="chip" data-act="gmate" data-u="${esc(m.uid)}">+ ${esc(String(m.email || '').split('@')[0].replace(/\./g, ' ') || m.uid)}</button>`).join('')}</div>` : ''}
           <button type="button" class="btn kb-go" data-act="gbook"${ok ? '' : ' disabled'}>${need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : !subjOk ? 'Vul een onderwerp in (min. 4 tekens)' : `Reserveer · ${hm(start)}–${hm(st.end)}`}</button>
           <p class="kb-legal">Je gaat akkoord met het ${rules ? `<a href="${esc(rules)}">reglement</a>` : 'reglement'}. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</p>`;
@@ -593,6 +618,25 @@
         st.busy = false; draw();
         const q = body.querySelector('#kg-q'); if (q && !st.q && st.ppl.length < (a.maxParticipants || 99) && st.ppl.length < (a.minParticipants || 1)) q.focus();
       };
+      // a whole group at once (from Groepswerken): look everyone up by e-mail, one after the other
+      const addGroup = async (g) => {
+        if (!g || st.busy) return;
+        st.busy = true; st.err = ''; draw();
+        const miss = [];
+        for (const em of g.m) {
+          if (st.ppl.length >= (a.maxParticipants || 99)) { miss.push(em); continue; }
+          if (st.ppl.some((y) => String(y.email || '').toLowerCase() === em || (me.email && String(me.email).toLowerCase() === em))) continue;
+          try {
+            const x = await memo('pp:' + em, 24 * 3600e3, () => get('/participants/' + encodeURIComponent(em)));
+            if (!x || !x.uid) throw new Error('');
+            if (!st.ppl.some((y) => y.uid.toUpperCase() === x.uid.toUpperCase())) st.ppl.push({ uid: x.uid, email: x.email });
+          } catch (_) { miss.push(em); }
+        }
+        if (g.n && (!st.subj || st.subj === 'Groepswerk')) st.subj = (g.c ? g.c + ' – ' : '') + g.n;
+        st.busy = false;
+        if (miss.length) st.err = st.ppl.length >= (a.maxParticipants || 99) ? `Dit lokaal is voor max. ${a.maxParticipants} personen: niet iedereen past erin.` : `Niet gevonden in KURT: ${miss.join(', ')}. Voeg ze toe met hun r-nummer.`;
+        draw();
+      };
       body.addEventListener('input', (e) => { if (e.target.id === 'kg-subj') { st.subj = e.target.value; const b = body.querySelector('[data-act="gbook"]'); const need = Math.max(0, (a.minParticipants || 1) - st.ppl.length); const ok = !need && (!(res && res.subjectIsRequired) || st.subj.trim().length >= 4); b.disabled = !ok; b.textContent = need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : ok ? `Reserveer · ${hm(st.si * slot)}–${hm(st.end)}` : 'Vul een onderwerp in (min. 4 tekens)'; } else if (e.target.id === 'kg-q') st.q = e.target.value; });
       body.addEventListener('submit', (e) => { e.preventDefault(); add(st.q); });
       kb.addEventListener('click', async (e) => {
@@ -603,7 +647,8 @@
         if (act === 'start') { st.si = Number(b.dataset.i); pickEnd(); draw(); return; }
         if (act === 'gdel') { st.ppl = st.ppl.filter((x) => x.me || x.uid !== b.dataset.u); draw(); return; }
         if (act === 'gmate') { const m = (store.get('kurt:mates') || []).find((x) => x.uid === b.dataset.u); if (m && st.ppl.length < (a.maxParticipants || 99)) { st.ppl.push({ uid: m.uid, email: m.email }); draw(); } return; }
-        if (act === 'done') { closeBook(); nav('#/'); return; }
+        if (act === 'ggrp') { addGroup(GRPS()[Number(b.dataset.i)]); return; }
+        if (act === 'done') { closeBook(); ss.del('tm4-kurt-g'); nav('#/'); return; }
         if (act !== 'gbook' || b.disabled) return;
         b.disabled = true; b.innerHTML = '<span class="spin"></span> Reserveren…';
         try {
@@ -633,6 +678,7 @@
         }
       });
       draw();
+      if (activeGrp()) addGroup(activeGrp());
     }
 
     /* ---------- a room: the floor plan */
@@ -933,6 +979,7 @@
       if (!b || b.closest('.kb')) return;
       const act = b.dataset.act;
       if (act === 'kback') { e.preventDefault(); back(); }
+      else if (act === 'gstop') { e.preventDefault(); ss.del('tm4-kurt-g'); show(); }
       else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
       else if (act === 'when') { e.preventDefault(); whenSheet(); }
       else if (act === 'list') { e.preventDefault(); listSheet(); }

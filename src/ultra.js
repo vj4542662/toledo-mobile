@@ -21,9 +21,9 @@
       const qs = h.includes('?') ? h.slice(h.indexOf('?')) : '';
       const resume = ss.get('tm4-resume') || '';
       ss.del('tm4-resume');
-      if (!/^#\/(cijfers|agenda|zoek)/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || /^#\/(cijfers|zoek)/.test(resume))) h = /^#\/(cijfers|zoek)/.test(resume) ? resume : resume + qs;
+      if (!/^#\/(cijfers|agenda|zoek|groepen)/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || /^#\/(cijfers|zoek|groepen)/.test(resume))) h = /^#\/(cijfers|zoek|groepen)/.test(resume) ? resume : resume + qs;
       if (/^#\/vak\//.test(h)) h = h.replace(/^#\/vak\/[^/?]*/, '#/c/' + PATH_PK);
-      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda|zoek)/.test(h)) h = '#/c/' + PATH_PK + qs;
+      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda|zoek|groepen)/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
     // Meer > Toledo-agenda opens /ultra/calendar?tm=agenda: the query survives Blackboard's sign-in (the hash does not)
@@ -47,6 +47,7 @@
       if (s[0] === 'cijfers') r.type = 'grades';
       else if (s[0] === 'agenda') r.type = 'agenda';
       else if (s[0] === 'zoek') r.type = 'search';
+      else if (s[0] === 'groepen') r.type = 'groups';
       else if (s[0] === 'vak' && s[1]) { r.type = 'resolve'; r.lu = decodeURIComponent(s[1]); r.rest = s.slice(2).join('/'); }
       else if (s[0] === 'c' && /^_\d+_\d+$/.test(s[1] || '')) {
         r.pk = s[1];
@@ -59,7 +60,7 @@
       return r;
     }
     const ctxKey = (pk) => 'tm4-ctx:' + pk;
-    const tabOf = (r) => (r.type === 'grades' || r.type === 'agenda' ? 'meer' : r.type === 'search' ? 'vakken' : getCtx(r.pk).f || 'vakken');
+    const tabOf = (r) => (r.type === 'grades' || r.type === 'agenda' || r.type === 'groups' ? 'meer' : r.type === 'search' ? 'vakken' : getCtx(r.pk).f || 'vakken');
     function getCtx(pk) { try { return JSON.parse(ss.get(ctxKey(pk)) || '{}') || {}; } catch (_) { return {}; } }
     function saveCtx(pk, q) {
       const c = getCtx(pk);
@@ -767,6 +768,161 @@
       return view;
     }
 
+    /* ---------------- Meer > Groepswerken: your groups in this semester's courses ---------------- */
+    // Blackboard only shows a group inside its own course, and a student can't open the member list through the
+    // public API. Ultra's own API can: /learn/api/v1/courses/<pk>/groups?expand=memberships lists every group with
+    // its member ids (only the groups you may see), /learn/api/v1/users/<id> gives a member's name and e-mail.
+    // The portal names the courses (?cs=, like Cijfers) and your mail choice (?ma=).
+    const userOf = (id) => {
+      const c = store.get('usr:' + id);
+      if (c && Date.now() - c.ts < 14 * 864e5) return Promise.resolve(c.v);
+      return once('usr:' + id, () => uget(`/learn/api/v1/users/${id}`).then((u) => { const v = { n: [u.givenName, u.familyName].filter(Boolean).join(' ') || u.userName || 'Onbekend', e: u.emailAddress || '' }; store.set('usr:' + id, { ts: Date.now(), v }); return v; }));
+    };
+    const shortCourse = (t) => String(t || '').replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+    function groupsView(r) {
+      const el = section();
+      let list = courseList(r.q.get('cs'), 'tm4-grcs');
+      if (r.q.get('ma')) store.set('mailApp', r.q.get('ma') === 'web' ? 'web' : 'app');
+      const st = { g: {}, err: {}, u: {}, me: '', at: 0 };
+      el.innerHTML = '<div class="lt"><h1>Groepswerken</h1><p class="lt-sub">Je groepen in je vakken van dit semester</p></div><div data-k="body"></div>';
+      const when = (iso) => { const t = Date.parse(iso); return t ? `${dShort(t)} ${hhmm(t)}` : ''; };
+      const people = (g) => g.m.map((id) => ({ id, me: id === st.me, u: st.u[id] }));
+      const mails = (g) => people(g).filter((p) => !p.me && p.u && p.u.e).map((p) => p.u.e);
+      function card(c, g) {
+        const name = c.t || meta(c.pk).name || 'Vak';
+        const ppl = people(g).sort((a, b) => (b.me - a.me) || String(a.u ? a.u.n : '').localeCompare(String(b.u ? b.u.n : ''), 'nl'));
+        const rows = ppl.map((p) => {
+          if (!p.u) return `<div class="sk-row"><span class="sk ic"></span><span class="lines"><span class="sk" style="display:block;width:60%"></span><span class="sk" style="display:block"></span></span></div>`;
+          const av = `<span class="gw-av${p.me ? ' me' : ''}">${esc(initials(p.u.n))}</span>`;
+          return p.me || !p.u.e ? row({ iconHtml: av, title: p.me ? `${p.u.n} (jij)` : p.u.n, sub: p.u.e, chevron: false })
+            : row({ act: 'gwmail1', attrs: ` data-e="${esc(p.u.e)}" data-s="${esc(shortCourse(name) + ' – ' + g.t)}"`, iconHtml: av, title: p.u.n, sub: p.u.e, end: `<span class="gw-m">${ico('mail')}</span>`, chevron: false });
+        }).join('');
+        const sub = [g.set, g.self ? 'je schreef je zelf in' : 'ingedeeld door je docent'].filter(Boolean).join(' · ');
+        const ready = ppl.every((p) => p.u);
+        const kurt = `https://kurt3.ghum.kuleuven.be/?tmg=${encodeURIComponent(g.t)}&tmc=${encodeURIComponent(shortCourse(name))}&tmm=${encodeURIComponent(mails(g).join(','))}`;
+        return `<div class="card gw">
+          <div class="gw-h"><span class="gw-ic">${ico('people')}</span><span class="main"><b>${esc(g.t)}</b><span>${esc(sub)}</span></span><span class="gw-n">${g.m.length}</span></div>
+          ${g.d ? `<p class="gw-d">${esc(g.d)}</p>` : ''}
+          <div class="group plain gw-ppl">${rows}</div>
+          <div class="gw-acts">
+            <button type="button" class="pri" data-act="gwmail" data-pk="${c.pk}" data-g="${g.id}"${ready && mails(g).length ? '' : ' disabled'}>${ico('mail')}Mail de groep</button>
+            <a href="${esc(ULTRA + '/ultra/courses/' + c.pk + '/messages')}" data-act="gwmsg" data-t="${esc(g.t)}">${ico('bubble')}Bericht in Toledo</a>
+            <a href="${esc(kurt)}"${ready ? '' : ' aria-disabled="true"'}>${ico('desk')}Groepsruimte boeken</a>
+            <button type="button" data-act="gwcopy" data-pk="${c.pk}" data-g="${g.id}"${ready ? '' : ' disabled'}>${ico('pagemenu')}Kopieer mailadressen</button>
+          </div></div>`;
+      }
+      function draw() {
+        const body = $('[data-k="body"]', el);
+        if (!list.length) { put(body, empty('people', 'Geen vakken', 'Open Groepswerken via Meer in de app.')); return; }
+        let h = '', none = [], waiting = 0, nGroups = 0;
+        list.forEach((c) => {
+          const x = st.g[c.pk];
+          const name = c.t || (c.pk && meta(c.pk).name) || 'Vak';
+          if (!x) { if (st.err[c.pk]) none.push(name); else waiting++; return; }
+          if (!x.mine.length && !x.open.length) { none.push(name); return; }
+          h += `<a class="gh gc" data-nav="1" href="#/c/${c.pk}?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=meer" style="${colorVars(c.k)}"><i></i>${esc(name)}${CHEV}</a>`;
+          x.mine.forEach((g) => { nGroups++; h += card(c, g); });
+          x.open.forEach((o) => {
+            h += `<div class="group">${row({ href: `${ULTRA}/ultra/courses/${c.pk}/groups/enrollments`, icon: 'plus', soft: true, title: `Kies een groep: ${o.set}`, sub: o.end ? `Inschrijven kan tot ${when(o.end)}` : 'Inschrijven is open', external: true })}</div>`;
+          });
+        });
+        if (waiting) h += `<p class="fresh"><span class="spin" style="width:12px;height:12px;border-width:2px;vertical-align:-1px;margin-right:6px"></span>Nog ${waiting} ${waiting === 1 ? 'vak' : 'vakken'} nakijken…</p>${nGroups ? '' : skGroup(3)}`;
+        else if (!nGroups && !h) h = empty('people', 'Geen groepen', 'Je zit in geen enkele groep in je vakken van dit semester. Zodra je docent je indeelt of je je inschrijft, verschijnt je groep hier.');
+        if (!waiting && none.length && (nGroups || h)) h += `<p class="fresh">Geen groepen in: ${esc(none.map(shortCourse).join(', '))}</p>`;
+        put(body, h);
+      }
+      async function courseGroups(pk) {
+        const [gr, sets] = await Promise.all([
+          uget(`/learn/api/v1/courses/${pk}/groups?limit=1000&expand=memberships,signUpSheet&membershipAvailable=true`),
+          uget(`/learn/api/v1/courses/${pk}/groupsets?limit=1000&expand=signUpSheet`).catch((e) => { if (e && e.auth) throw e; return { results: [] }; }),
+        ]);
+        const setT = {};
+        (sets.results || []).forEach((s) => { setT[s.id] = s; });
+        const all = (gr.results || []).filter((g) => g.isAvailable !== false);
+        const mine = all.filter((g) => (g.memberships || []).some((m) => m.userId === st.me)).map((g) => ({
+          id: g.id, t: g.title || 'Groep', set: g.groupSetId && setT[g.groupSetId] ? setT[g.groupSetId].title : '',
+          self: !!(g.isSelfEnrolledAllowed || g.signUpSheet), m: (g.memberships || []).map((m) => m.userId).slice(0, 40),
+          d: String((g.description && (g.description.rawText || '')) || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240),
+        }));
+        // sign-up sheets that are open now and where you have no group yet
+        const inSet = new Set(mine.map((g) => all.find((x) => x.id === g.id).groupSetId).filter(Boolean));
+        const open = [];
+        const seen = new Set();
+        all.forEach((g) => {
+          const s = g.signUpSheet;
+          if (!s || !g.groupSetId || inSet.has(g.groupSetId) || seen.has(g.groupSetId)) return;
+          const now = Date.now(), a = Date.parse(s.enrollmentStartDate || '') || 0, b = Date.parse(s.enrollmentEndDate || '') || Infinity;
+          if (now < a || now > b || !g.isShowSignUp) return;
+          seen.add(g.groupSetId);
+          open.push({ set: s.name || (setT[g.groupSetId] || {}).title || 'Groepen', end: s.enrollmentEndDate || '' });
+        });
+        return { mine, open };
+      }
+      async function load(force) {
+        list.forEach((c) => { if (!c.pk && c.lu) { const k = store.get('lu:' + c.lu); if (k && k.v) c.pk = k.v; } });
+        list.forEach((c) => { const x = c.pk && store.get('grp:' + c.pk); if (x && !st.g[c.pk]) st.g[c.pk] = x.v; });
+        const fillUsers = () => list.forEach((c) => { const x = st.g[c.pk]; if (x) x.mine.forEach((g) => g.m.forEach((id) => { if (!st.u[id]) { const k = store.get('usr:' + id); if (k) st.u[id] = k.v; } })); });
+        try {
+          st.me = (await getMe()).id;
+          fillUsers();
+          draw();
+          await Promise.all(list.map(resolveCourse));
+          const seen = new Set();
+          list = list.filter((c) => c.pk && !seen.has(c.pk) && seen.add(c.pk));
+          ss.set('tm4-grcs', JSON.stringify(list));
+          draw();
+          const q = list.filter((c) => force || !store.get('grp:' + c.pk) || Date.now() - store.get('grp:' + c.pk).ts > 10 * 60e3);
+          const work = async () => {
+            while (q.length) {
+              const c = q.shift();
+              try { const v = await courseGroups(c.pk); st.g[c.pk] = v; delete st.err[c.pk]; store.set('grp:' + c.pk, { ts: Date.now(), v }); }
+              catch (e) { if (e && e.auth) throw e; if (!st.g[c.pk]) st.err[c.pk] = 1; }
+              fillUsers(); draw();
+            }
+          };
+          await Promise.all([work(), work(), work()]);
+          // the members' names and addresses (kept two weeks)
+          const ids = new Set();
+          list.forEach((c) => { const x = st.g[c.pk]; if (x) x.mine.forEach((g) => g.m.forEach((id) => { if (!st.u[id] || force) ids.add(id); })); });
+          const uq = [...ids];
+          const uwork = async () => { while (uq.length) { const id = uq.shift(); try { st.u[id] = await userOf(id); } catch (e) { if (e && e.auth) throw e; st.u[id] = { n: 'Onbekend', e: '' }; } draw(); } };
+          await Promise.all([uwork(), uwork(), uwork()]);
+          draw();
+        } catch (e) { if (e && e.auth) relogin(); else draw(); }
+      }
+      const groupOf = (b) => { const x = st.g[b.dataset.pk]; return x && x.mine.find((g) => g.id === b.dataset.g); };
+      const courseName = (pk) => shortCourse((list.find((c) => c.pk === pk) || {}).t || meta(pk).name || '');
+      // a new mail to everyone: the Outlook app (if that's your choice in Instellingen) or Outlook on the web
+      function compose(to, subject) {
+        const q = `to=${encodeURIComponent(to.join(','))}&subject=${encodeURIComponent(subject)}`;
+        if (store.get('mailApp') === 'web') { goTo(`https://outlook.office.com/mail/deeplink/compose?${q}`); return; }
+        const t0 = Date.now();
+        const fb = setTimeout(() => { if (document.visibilityState === 'visible' && Date.now() - t0 < 4000) location.href = `mailto:${to.map(encodeURIComponent).join(',')}?subject=${encodeURIComponent(subject)}`; }, 2600);
+        document.addEventListener('visibilitychange', () => clearTimeout(fb), { once: true });
+        location.href = `ms-outlook://compose?${q}`;
+      }
+      const view = {
+        el,
+        title: () => 'Groepswerken',
+        show() { draw(); if (Date.now() - st.at > 120e3) { st.at = Date.now(); load(false); } },
+        refresh: () => { st.at = Date.now(); return load(true); },
+        act(n, b) {
+          if (n === 'gwmail') { const g = groupOf(b); if (g && !b.disabled) compose(mails(g), `${courseName(b.dataset.pk)} – ${g.t}`); return true; }
+          if (n === 'gwmail1') { compose([b.dataset.e], b.dataset.s); return true; }
+          if (n === 'gwcopy') {
+            const g = groupOf(b);
+            if (!g || b.disabled) return true;
+            const txt = mails(g).join(', ');
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast('Mailadressen gekopieerd'), () => toast('Kopiëren lukte niet'));
+            return true;
+          }
+          if (n === 'gwmsg') { toast(`Kies "${b.dataset.t}" bij Aan`); setTimeout(() => goTo(b.getAttribute('href')), 700); return true; }
+          return false;
+        },
+      };
+      return view;
+    }
+
     /* ---------------- Meer > Toledo-agenda: subscribe to Blackboard's own calendar feed ---------------- */
     // Blackboard offers a personal .ics link (Calendar > settings > Share calendar) with deadlines and course events.
     // Subscribing to it in the iPhone's Calendar keeps it up to date by itself. We look the link up and hand it over as
@@ -899,7 +1055,7 @@
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
-        v = r.type === 'grades' ? gradesView(r) : r.type === 'search' ? searchView(r) : r.type === 'agenda' ? agendaView() : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
+        v = r.type === 'grades' ? gradesView(r) : r.type === 'groups' ? groupsView(r) : r.type === 'search' ? searchView(r) : r.type === 'agenda' ? agendaView() : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
         U.views.set(key, v);
         $('#tm-main').appendChild(v.el);
       } else if (v.route) v.route(r);
@@ -986,7 +1142,7 @@
       relogging = true;
       const r = parse();
       const pk = r.pk || PATH_PK;
-      ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' || r.type === 'search' ? location.hash : location.hash.split('?')[0]);
+      ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' || r.type === 'search' || r.type === 'groups' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
       const target = r.type === 'agenda' ? `${ULTRA}/ultra/calendar?tm=agenda` : `${ULTRA}/ultra/courses/${pk}/outline`;
       if (!TEST && (pk || r.type === 'agenda') && Date.now() - last > 60e3) {

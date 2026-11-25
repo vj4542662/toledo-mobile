@@ -576,6 +576,7 @@
         { n: 'Studieplek (KURT)', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
         { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
         { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
+        { n: 'Groepswerken', i: 'people', c: '#c2477a', href: ultraListHref('groepen', { ma: store.get('mailApp') === 'web' ? 'web' : 'app' }) || ULTRA + '/ultra/course' },
         { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
