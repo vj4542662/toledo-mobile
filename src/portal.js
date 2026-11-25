@@ -324,20 +324,22 @@
       </div>`;
     }
     // Meer > Cijfers: only this semester's courses (Blackboard's own page lists every course you ever had)
-    function gradesHref() {
+    // (and Vakken > zoeken in al je vakken: the same courses, searched on the course site)
+    function ultraListHref(route, extra) {
       const cur = curSem();
       let list = P.enr.filter((e) => e.type !== 'community' && e.available !== false && (e.semester === cur || e.semester === 'YEAR' || e.favorite));
       if (!list.length) list = favCourses();
-      list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
+      list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0) || cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
       if (!list.length) return '';
       const cs = list.map((e) => [P.lu2pk[e.learningUnitId] || e.learningUnitId, e.color || '', cleanTitle(e.title).replace(/[~!]/g, ' ')].join('~')).join('!');
-      const q = new URLSearchParams({ cs, th: THEME });
+      const q = new URLSearchParams(Object.assign({}, extra || {}, { cs, th: THEME }));
       const first = list.find((e) => P.lu2pk[e.learningUnitId]) || list[0];
       const pk = P.lu2pk[first.learningUnitId];
       const ultraOk = Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
-      if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/cijfers?${q}`;
-      return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
+      if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/${route}?${q}`;
+      return `${ULTRA}/ultra/courses/${pk}/outline#/${route}?${q}`;
     }
+    const gradesHref = () => ultraListHref('cijfers');
     // Meer > Toledo-agenda: Blackboard's calendar page with ?tm=agenda becomes the subscribe screen (#/agenda in ultra.js).
     // Not via a course + hash: the hash got lost on the way (sign-in, Toledo's link service), landing on a course.
     const agendaHref = () => `${ULTRA}/ultra/calendar?tm=agenda&th=${THEME}`;
@@ -383,7 +385,7 @@
     };
 
     // ---- Vakken
-    BUILD.vakken = () => `<div class="lt"><h1>Vakken</h1></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek een vak" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek een vak"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="list"></div>`;
+    BUILD.vakken = () => `<div class="lt"><h1>Vakken</h1></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek een vak of bestand" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek een vak"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="list"></div>`;
     NAVS.vakken = () => ({ title: 'Vakken' });
     FILL.vakken = (el) => {
       const list = $('[data-k="list"]', el);
@@ -410,7 +412,12 @@
       h += sec(fav.length ? 'Andere vakken' : 'Vakken', crs);
       h += sec('Gemeenschappen', com, { limit: 3, open: P.showComm, act: 'comm' });
       h += sec('Niet beschikbaar', off, { limit: 2, open: P.showOff, act: 'offall' });
-      if (!h) h = empty('search', 'Geen resultaten', `Geen vak gevonden voor "${P.search.trim()}".`);
+      // look inside the courses too (files, folders, assignments): that search runs on the course site
+      const qq = P.search.trim();
+      const zoek = qq.length >= 2 ? ultraListHref('zoek', { q: qq }) : '';
+      const zrow = zoek ? `<div class="group">${row({ href: zoek, icon: 'search', soft: true, title: `Zoek "${qq}" in al je vakken`, sub: 'In bestanden, mappen en opdrachten' })}</div>` : '';
+      if (!h) h = zrow ? `<div class="gh">Geen vak met die naam</div>${zrow}` : empty('search', 'Geen resultaten', `Geen vak gevonden voor "${qq}".`);
+      else if (zrow) h += `<div class="gh">In je vakken</div>${zrow}`;
       put(list, h);
     };
 
