@@ -220,10 +220,13 @@
         watchTitle(sec);
       };
       draw();
+      // answers that arrive close together are drawn once (no jumping list while the page fills)
+      let queued = false;
+      const redraw = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; draw(); }); } };
       const keep = (k, v) => store.set('print:' + k, { ts: Date.now(), v });
-      loadSummary().then((v) => { d.sum = v; keep('sum', v); draw(); }, (e) => { if ((e && e.auth) || !d.sum) failed(e, my); });
-      loadHeld().then((v) => { d.held = v; keep('held', v); draw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.held === undefined) { d.held = null; draw(); } });
-      loadLogs().then((v) => { d.logs = v.slice(0, 30); keep('logs', d.logs); draw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.logs === undefined) { d.logs = null; draw(); } });
+      loadSummary().then((v) => { d.sum = v; keep('sum', v); redraw(); }, (e) => { if ((e && e.auth) || !d.sum) failed(e, my); });
+      loadHeld().then((v) => { d.held = v; keep('held', v); redraw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.held === undefined) { d.held = null; redraw(); } });
+      loadLogs().then((v) => { d.logs = v.slice(0, 30); keep('logs', d.logs); redraw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.logs === undefined) { d.logs = null; redraw(); } });
       // jobs that are still being prepared: follow them until they wait at the printer
       const poll = (n) => loadFresh().then((f) => {
         if (my !== token) return;
@@ -232,7 +235,7 @@
         if (f.some((x) => !x.j.status.complete && !/error|fail/i.test(x.j.status.code)) && n < 40) setTimeout(() => poll(n + 1), 2500);
         else if (was) loadHeld().then((v) => { d.held = v; keep('held', v); draw(); }, () => {});
       }, () => {});
-      poll(0);
+      if (Date.now() - (Number(store.get('print:sent')) || 0) < 30 * 60e3) poll(0);
     }
     function logRow(l) {
       const bad = l.st && !/^printed$/i.test(l.st);
@@ -367,6 +370,7 @@
       b.disabled = true;
       const set = (t) => { b.innerHTML = `<span class="spin"></span>${esc(t)}`; };
       try {
+        store.set('print:sent', Date.now());
         const res = await sendJob(set);
         const bad = res.filter((j) => j.status && /error|fail|cancel/i.test(j.status.code));
         const pg = res.reduce((a, j) => a + (Number(j.pages) || 0), 0);
@@ -589,7 +593,16 @@
         } }] });
       }
     });
-    pullRefresh(() => { ['sum', 'held', 'logs', 'trans'].forEach((k) => store.del('print:' + k)); show(); return new Promise((r) => setTimeout(r, 900)); });
+    pullRefresh(() => { show(); return new Promise((r) => setTimeout(r, 700)); });
+    // back in the app after a while (after paying, from another app, the back button): fetch fresh numbers,
+    // except while you are filling in a form
+    let away = 0;
+    const fresh = () => { if (!GOING && !/^#\/(nieuw|overmaken|kaart)/.test(location.hash)) show(); };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') away = Date.now();
+      else if (away && Date.now() - away > 60e3) fresh();
+    });
+    W.addEventListener('pageshow', (e) => { if (e.persisted) fresh(); });
     show();
   }
 
