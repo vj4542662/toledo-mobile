@@ -1087,3 +1087,6 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .al-algs-clear{padding:12px;color:var(--accent);font-size:15px}
 
 .tm4 .al-route{color:var(--accent)}
+.tm4 .al-done{position:sticky;z-index:5;bottom:calc(var(--tab,62px) + var(--sb,0px) + 22px);margin:18px 16px 0}
+.tm4 .al-done .btn{display:flex;justify-content:center;width:100%;box-shadow:0 6px 20px rgba(0,0,0,.16)}
+.tm4 .al-done .btn:disabled{opacity:.55;box-shadow:none}

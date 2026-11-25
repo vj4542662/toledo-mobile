@@ -233,6 +233,7 @@
     }
     const route = () => (location.hash.replace(/^#\/?/, '').split(/[?/]/)[0] || 'home');
     let depth = 0, token = 0;
+    let SETUP = false; // the very first time: star as many Alma's as you like, then Klaar
     const nav = (hash) => { depth++; location.hash = hash; };
     const back = () => { if (depth > 0) { depth--; history.back(); } else location.replace(pageUrl('') + '#/'); };
     const show = (anim) => {
@@ -240,7 +241,8 @@
       sec.classList.remove('push', 'pop');
       if (anim) { void sec.offsetWidth; sec.classList.add(anim); }
       W.scrollTo(0, 0);
-      if (route() === 'kies' || !favs().length && !CUR) viewPick(my);
+      if (!favs().length && !CUR) SETUP = true;
+      if (route() === 'kies' || SETUP) viewPick(my);
       else viewMenu(my);
     };
     let lastLen = history.length;
@@ -327,21 +329,22 @@
     /* ---------- all Alma's: pick and star yours */
     function viewPick(my) {
       const fs = favs();
-      const first = !fs.length;
+      const first = SETUP;
       document.title = "Alma's";
       setNav({ title: "Alma's", back: first ? { label: 'Meer', href: PORTAL + '?tm=meer', act: 'ameer' } : { label: almaOf(CUR || fs[0]).n, href: '#/', act: 'aback' } });
       if (my !== token) return;
-      let h = `<div class="lt"><h1>${first ? 'Welke Alma is de jouwe?' : "Alle Alma's"}</h1><p class="lt-sub">${first ? 'Tik op de ster bij de Alma waar je meestal eet. Die opent voortaan meteen. Meer sterren mag ook: die staan dan bovenaan om snel te wisselen.' : 'De Alma met een ster bovenaan opent meteen.'}</p></div>`;
+      let h = `<div class="lt"><h1>${first ? "Welke Alma's zijn de jouwe?" : "Alle Alma's"}</h1><p class="lt-sub">${first ? 'Zet een ster bij elke Alma waar je eet en tik op Klaar. Ze staan dan bovenaan om snel te wisselen, en de eerste opent meteen.' : 'De Alma met een ster bovenaan opent meteen.'}</p></div>`;
       const starBtn = (s) => `<button type="button" class="al-star${fs.includes(s) ? ' on' : ''}" data-act="astar" data-s="${esc(s)}" aria-label="${fs.includes(s) ? 'Ster weghalen' : 'Ster geven'}">${ico('star')}</button>`;
       const rowOf = (a, extra) => `<div class="row al-row"><button type="button" class="al-open" data-act="aopen" data-s="${esc(a.s)}"><span class="main"><span class="t">${esc(a.n)}</span>${extra ? `<span class="s">${extra}</span>` : ''}</span></button>${starBtn(a.s)}</div>`;
-      if (fs.length) {
+      if (fs.length && !first) {
         h += `<div class="gh">Jouw Alma's</div><div class="group">${fs.map((s, i) => rowOf(almaOf(s), i === 0 ? 'Opent meteen' : `<button type="button" class="al-up" data-act="aup" data-s="${esc(s)}">Bovenaan zetten</button>`)).join('')}</div>`;
       }
       const camps = [...new Set(ALMAS.map((a) => a.c))];
       camps.forEach((c) => {
-        const list = ALMAS.filter((a) => a.c === c && !fs.includes(a.s));
+        const list = ALMAS.filter((a) => a.c === c && (first || !fs.includes(a.s)));
         if (list.length) h += `<div class="gh">${esc(c)}</div><div class="group">${list.map((a) => rowOf(a, '')).join('')}</div>`;
       });
+      if (first) h += `<div class="al-done"><button type="button" class="btn" data-act="adone"${fs.length ? '' : ' disabled'}>${fs.length ? `Klaar (${fs.length})` : 'Kies minstens één Alma'}</button></div>`;
       const pg = priceGroup();
       h += `<div class="gh">Toon prijzen voor</div><div class="group">${PRICE_GROUPS.map((g) => `<button type="button" class="row" data-act="aprijs" data-k="${g.k}"><span class="main"><span class="t">${esc(g.n)}</span></span>${g.k === pg ? `<span class="end al-check">${ico('check')}</span>` : ''}</button>`).join('')}</div>`;
       h += `<div class="group" style="margin-top:24px">${row({ href: pageUrl('') + '?tm=orig', iconHtml: `<span class="ic" style="--c:#d9534f">${ico('globe')}</span>`, title: 'Website van Alma', external: true })}</div>`;
@@ -405,17 +408,17 @@
       else if (act === 'adish') { const c = LAST && LAST.cats[Number(b.dataset.c)]; const it = c && c.items[Number(b.dataset.i)]; if (it) dishSheet(it); }
       else if (act === 'astar') {
         const s = b.dataset.s, fs = favs();
-        const was = !fs.length;
         setFavs(fs.includes(s) ? fs.filter((x) => x !== s) : fs.concat(s));
-        if (was) { setCur(s); toast(almaOf(s).n + ' opent voortaan meteen'); }
-        if (route() === 'kies') show(); else location.replace(pageUrl('') + '#/kies');
-      } else if (act === 'aup') { const s = b.dataset.s; setFavs([s].concat(favs().filter((x) => x !== s))); show(); }
+        viewPick(token); // redraw in place: no jump to the top, the list stays where it is
+      } else if (act === 'adone') { SETUP = false; setCur(favs()[0]); show('push'); }
+      else if (act === 'aup') { const s = b.dataset.s; setFavs([s].concat(favs().filter((x) => x !== s))); show(); }
+      else if (act === 'aopen' && SETUP) { const s = b.dataset.s, fs = favs(); setFavs(fs.includes(s) ? fs.filter((x) => x !== s) : fs.concat(s)); viewPick(token); }
       else if (act === 'aopen') {
         setCur(b.dataset.s);
         if (route() !== 'kies') show();
         else if (depth > 0) back();
         else location.replace(pageUrl('') + '#/');
-      } else if (act === 'aprijs') { store.set('alma:prijs', b.dataset.k); show(); }
+      } else if (act === 'aprijs') { store.set('alma:prijs', b.dataset.k); if (route() === 'kies' || SETUP) viewPick(token); else show(); }
     });
     pullRefresh(() => { Object.keys(MEM).forEach((k) => delete MEM[k]); try { Object.keys(sessionStorage).filter((k) => k.startsWith('tm4-alma:')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {} show(); return new Promise((r) => setTimeout(r, 700)); });
     // back after a while (lunch tomorrow): today has moved on, and the status line with it
