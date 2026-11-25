@@ -587,7 +587,7 @@
         { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
-        { n: 'Alma', i: 'food', c: '#d9534f', act: 'soon' },
+        { n: 'Alma', i: 'food', c: '#d9534f', href: 'https://www.alma.be/nl/restaurants#/?th=' + THEME },
         { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
         { n: 'Attesten', i: 'cert', c: '#8e5bd6', act: 'soon' },
         { n: 'Hulp', i: 'help', c: '#8a96a3', href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student' },
@@ -814,7 +814,7 @@
         { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
       ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
-      soon: () => {}, // Alma, Sport, Attesten: only an icon for now, the app itself comes later
+      soon: () => {}, // Sport, Attesten: only an icon for now, the app itself comes later
       theme: (b) => {
         const t = b.dataset.id;
         saveTheme(t);
