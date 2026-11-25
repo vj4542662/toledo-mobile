@@ -1,7 +1,10 @@
 {
- "version": "4.25.1",
- "built": 1795613418235,
+ "version": "4.25.2",
+ "built": 1795613559815,
  "news": {
+  "4.25.2": [
+   "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd."
+  ],
   "4.25.1": [
    "De app start nu altijd in lichte modus. Liever donker of automatisch? Kies het bij Meer, Weergave."
   ],
@@ -36,9 +39,6 @@
   ],
   "4.20.2": [
    "Twee kleine verbeteringen: op de donkere kaarten van Studievoortgang is het label bovenaan weer goed leesbaar, en lijsten met een lange titel (zoals Mijn ISP) gebruiken weer de volle breedte."
-  ],
-  "4.20.1": [
-   "Mooiere randen: bovenaan geen lichte balk meer, en onderaan loopt alles zacht weg achter de balk in plaats van met een schaduw."
   ]
  }
 }
