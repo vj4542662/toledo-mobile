@@ -20,15 +20,17 @@
     sec.className = 'view on';
     sec.setAttribute('data-tm4', '');
     main.appendChild(sec);
-    keepAlive('print', [[PG('UserReleaseJobs'), 'no-cors']]);
+    // no keepAlive here: a background ping that hits an expired PaperCut session can be sent on to its sign-out address
 
     /* ---------- reading PaperCut's pages */
     let DEAD = false;
     const parse = (t) => new DOMParser().parseFromString(t, 'text/html');
     async function page(url, opt) {
       let r;
-      try { r = await fetch(url, Object.assign({ credentials: 'include', cache: 'no-store' }, opt || {})); }
-      catch (_) { throw new AuthError('net'); } // a redirect to the KU Leuven login can't be read from here
+      try { r = await fetch(url, Object.assign({ credentials: 'include', cache: 'no-store', redirect: 'manual' }, opt || {})); }
+      catch (_) { throw new AuthError('net'); }
+      // a redirect here means PaperCut lost your session (it would lead to signing out): don't follow it, sign in again
+      if (r.type === 'opaqueredirect' || (r.status >= 300 && r.status < 400)) throw new AuthError('redirect');
       if (new URL(r.url).host !== location.host) throw new AuthError('login');
       const d = parse(await r.text());
       // signed out, the server answers with its own "Shibboleth Authentication Request" page instead
@@ -106,13 +108,13 @@
     }
     // Web Print jobs you just sent and that are still being processed (not yet waiting at the printer)
     async function loadFresh() {
-      const d = parse(await (await fetch(PG('UserWebPrint'), { credentials: 'include', cache: 'no-store' })).text());
+      const d = parse(await (await fetch(PG('UserWebPrint'), { credentials: 'include', cache: 'no-store', redirect: 'manual' })).text());
       const rows = $$('img[id^="spinner-"]', d).map((img) => { const tr = img.closest('tr'); return { uid: img.id.slice(8), t: when(txt(tr.querySelector('td.submitTimeColumnValue'))), doc: txt(tr.querySelector('#document-name')) }; });
       const recent = rows.filter((r) => Date.now() - r.t < 30 * 60e3);
       const st = await Promise.all(recent.map((r) => jobStatus(r.uid).then((j) => Object.assign(r, { j }), () => null)));
       return st.filter((r) => r && r.j && r.j.status && r.j.status.code !== 'hold-release' && !(r.j.status.complete && !/error|fail|cancel/i.test(r.j.status.code)));
     }
-    const jobStatus = (uid) => fetch(O + '/rpc/web-print/job-status/' + encodeURIComponent(uid) + '.json', { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } }).then((r) => r.json());
+    const jobStatus = (uid) => fetch(O + '/rpc/web-print/job-status/' + encodeURIComponent(uid) + '.json', { credentials: 'include', cache: 'no-store', redirect: 'manual', headers: { Accept: 'application/json' } }).then((r) => r.json());
 
     // sign in again the way a browser does: load the page once without the app, so the server's own page can
     // send you through the KU Leuven login (main.js lets that one load through); it brings you back here
@@ -122,7 +124,7 @@
       GOING = true;
       ss.set('tm4-print-login', String(Date.now()));
       ss.set('tm4-print-pass', String(Date.now()));
-      location.replace(PG('UserSummary'));
+      location.replace(O + '/');
     };
     const signIn = () => {
       if (GOING) return true;
@@ -333,13 +335,13 @@
       let d = await post({ service: 'direct/1/UserWebPrintSelectPrinter/$Form', sp: 'S0', Form0: '$Hidden,$Hidden$0,$TextField,$Submit,$RadioGroup,$Submit$0,$Submit$1', $Hidden: pr.s, $Hidden$0: pr.p });
       if (!d.querySelector('#copies-input')) throw new Error(msgOf(d) || 'Deze printer kon niet gekozen worden');
       // step 2 answers with the upload page; its upload address sits in a script, so read the raw page
-      const r2 = await fetch(O + '/app', { method: 'POST', credentials: 'include', body: new URLSearchParams({ service: 'direct/1/UserWebPrintOptionsAndAccountSelection/$Form', sp: 'S0', Form0: 'copies,$Submit,$Submit$0', copies: String(OPT.copies), $Submit: '3. Upload Documents »' }) });
+      const r2 = await fetch(O + '/app', { method: 'POST', credentials: 'include', redirect: 'manual', body: new URLSearchParams({ service: 'direct/1/UserWebPrintOptionsAndAccountSelection/$Form', sp: 'S0', Form0: 'copies,$Submit,$Submit$0', copies: String(OPT.copies), $Submit: '3. Upload Documents »' }) });
       const raw = await r2.text();
       const up = (/uploadFormSubmitURL\s*=\s*'([^']+)'/.exec(raw) || [])[1];
       if (!up) throw new Error(msgOf(parse(raw)) || 'Uploaden kon niet starten');
       await upload(O + up, FILES.map((f) => f.file), (p) => onStep(`Uploaden… ${Math.round(p * 100)}%`));
       onStep('Verwerken…');
-      const r = await fetch(O + '/app', { method: 'POST', credentials: 'include', body: new URLSearchParams({ service: 'direct/1/UserWebPrintUpload/$Form$0', sp: 'S1', Form1: '' }) });
+      const r = await fetch(O + '/app', { method: 'POST', credentials: 'include', redirect: 'manual', body: new URLSearchParams({ service: 'direct/1/UserWebPrintUpload/$Form$0', sp: 'S1', Form1: '' }) });
       const done = parse(await r.text());
       const names = FILES.map((f) => f.file.name);
       const uids = $$('img[id^="spinner-"]', done).map((img) => ({ uid: img.id.slice(8), doc: txt(img.closest('tr').querySelector('#document-name')) })).filter((x) => names.includes(x.doc) || !names.length);
