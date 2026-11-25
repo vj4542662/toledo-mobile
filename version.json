@@ -1,6 +1,10 @@
 {
- "version": "4.21.1",
+ "version": "4.22.0",
  "news": {
+  "4.22.0": [
+   "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
+   "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester."
+  ],
   "4.21.1": [
    "Toledo-agenda in Meer opent nu altijd het juiste scherm, en niet meer een vak of de lijst met vakken."
   ],
@@ -35,10 +39,6 @@
   ],
   "4.17.1": [
    "Groepswerkruimtes: elk lokaal toont nu alleen de vrije uren, als grote knoppen in nette rijen. Volzette lokalen staan apart onderaan."
-  ],
-  "4.17.0": [
-   "Studieplek: groepswerkruimtes reserveer je nu in de app. Kies een bib, zie per lokaal welke uren vrij zijn, tik op een groen uur en voeg je groepsleden toe met hun r-nummer.",
-   "Studieplek: de route naar de bib staat nu als kleine link bovenaan."
   ]
  }
 }

@@ -869,3 +869,9 @@ html.tm4 body:not(.no-tabs):not(.kfull)::after{content:"";position:fixed;z-index
 .tm4 .kb{border-radius:22px 22px 0 0}
 .tm4 .upn{border-radius:22px}
 .tm4 .toast{border-radius:20px;background:rgba(24,37,43,.92)}
+
+/* Kies favorieten (Vakken): a star per course */
+.tm4 .fav-star{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--ter)}
+.tm4 .fav-star .i{width:24px;height:24px}
+.tm4 .fav-star.on{color:var(--orange)}
+.tm4 .fav-star.on .i{fill:currentColor}

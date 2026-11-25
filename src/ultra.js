@@ -21,9 +21,9 @@
       const qs = h.includes('?') ? h.slice(h.indexOf('?')) : '';
       const resume = ss.get('tm4-resume') || '';
       ss.del('tm4-resume');
-      if (!/^#\/(cijfers|agenda)/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || resume.startsWith('#/cijfers'))) h = resume.startsWith('#/cijfers') ? resume : resume + qs;
+      if (!/^#\/(cijfers|agenda|zoek)/.test(h) && (resume.startsWith('#/c/' + PATH_PK) || /^#\/(cijfers|zoek)/.test(resume))) h = /^#\/(cijfers|zoek)/.test(resume) ? resume : resume + qs;
       if (/^#\/vak\//.test(h)) h = h.replace(/^#\/vak\/[^/?]*/, '#/c/' + PATH_PK);
-      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda)/.test(h)) h = '#/c/' + PATH_PK + qs;
+      if (!/^#\/c\/_\d+_\d+/.test(h) && !/^#\/(cijfers|agenda|zoek)/.test(h)) h = '#/c/' + PATH_PK + qs;
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
     // Meer > Toledo-agenda opens /ultra/calendar?tm=agenda: the query survives Blackboard's sign-in (the hash does not)
@@ -46,6 +46,7 @@
       const r = { path, q, type: 'none' };
       if (s[0] === 'cijfers') r.type = 'grades';
       else if (s[0] === 'agenda') r.type = 'agenda';
+      else if (s[0] === 'zoek') r.type = 'search';
       else if (s[0] === 'vak' && s[1]) { r.type = 'resolve'; r.lu = decodeURIComponent(s[1]); r.rest = s.slice(2).join('/'); }
       else if (s[0] === 'c' && /^_\d+_\d+$/.test(s[1] || '')) {
         r.pk = s[1];
@@ -58,7 +59,7 @@
       return r;
     }
     const ctxKey = (pk) => 'tm4-ctx:' + pk;
-    const tabOf = (r) => (r.type === 'grades' || r.type === 'agenda' ? 'meer' : getCtx(r.pk).f || 'vakken');
+    const tabOf = (r) => (r.type === 'grades' || r.type === 'agenda' ? 'meer' : r.type === 'search' ? 'vakken' : getCtx(r.pk).f || 'vakken');
     function getCtx(pk) { try { return JSON.parse(ss.get(ctxKey(pk)) || '{}') || {}; } catch (_) { return {}; } }
     function saveCtx(pk, q) {
       const c = getCtx(pk);
@@ -584,12 +585,7 @@
     // The portal names the courses (?cs=pk~color~title!...): Blackboard's own grades page lists every course you ever had.
     function gradesView(r) {
       const el = section();
-      let list = [];
-      const raw = r.q.get('cs');
-      if (raw) {
-        list = raw.split('!').map((x) => { const [id, k, ...t] = x.split('~'); return /^_\d+_\d+$/.test(id) ? { pk: id, k, t: t.join('~') } : /^ULTRA-[\w.-]+$/.test(id) ? { lu: id, k, t: t.join('~') } : null; }).filter(Boolean).slice(0, 16);
-        ss.set('tm4-gcs', JSON.stringify(list));
-      } else { try { list = JSON.parse(ss.get('tm4-gcs') || '[]') || []; } catch (_) {} }
+      let list = courseList(r.q.get('cs'), 'tm4-gcs');
       const st = { g: {}, err: {}, open: {} };
       el.innerHTML = '<div class="lt"><h1>Cijfers</h1><p class="lt-sub">Je vakken van dit semester</p></div><div data-k="body"></div>';
       const num = (g) => { const m = /^(-?\d+(?:[.,]\d+)?)\/(\d+(?:[.,]\d+)?)$/.exec(g || ''); return m ? parseFloat(m[1].replace(',', '.')) / parseFloat(m[2].replace(',', '.')) : null; };
@@ -620,12 +616,7 @@
         put($('[data-k="body"]', el), h + `<p class="fresh"><a href="${ULTRA}/ultra/grades">Alle vakken in Blackboard</a></p>`);
       }
       // courses the portal only knew by name (ULTRA-...): ask Blackboard for their id once
-      const resolve = (c) => {
-        if (c.pk) return Promise.resolve();
-        const known = store.get('lu:' + c.lu);
-        if (known && known.v) { c.pk = known.v; return Promise.resolve(); }
-        return uget(`/learn/api/public/v3/courses/courseId:${encodeURIComponent(c.lu)}?fields=id,name`).then((x) => { store.set('lu:' + c.lu, { ts: Date.now(), v: x.id }); saveMeta(x.id, { name: x.name, lu: c.lu }); c.pk = x.id; }, (e) => { if (e && e.auth) throw e; c.gone = 1; });
-      };
+      const resolve = resolveCourse;
       async function load() {
         list.forEach((c) => { if (!c.pk && c.lu) { const k = store.get('lu:' + c.lu); if (k && k.v) c.pk = k.v; } });
         list.forEach((c) => { const x = c.pk && store.get('g:' + c.pk); if (x && !st.g[c.pk]) st.g[c.pk] = x.v; });
@@ -644,6 +635,135 @@
       }
       let at = 0;
       const view = { el, title: () => 'Cijfers', act(n, b) { if (n !== 'gwait') return false; st.open[b.dataset.pk] = 1; draw(); return true; }, show() { if (Date.now() - at > 120e3) { at = Date.now(); load(); } }, refresh: () => { at = Date.now(); return load(); } };
+      return view;
+    }
+
+    /* ---------------- Vakken > zoeken in al je vakken ---------------- */
+    // Toledo only searches inside one course. The portal hands over your courses (?cs=, like Cijfers); we walk their
+    // folders here (the same cached lists a course page uses) and search titles, descriptions and file names at once.
+    function courseList(raw, key) {
+      let list = [];
+      if (raw) {
+        list = raw.split('!').map((x) => { const [id, k, ...t] = x.split('~'); return /^_\d+_\d+$/.test(id) ? { pk: id, k, t: t.join('~') } : /^ULTRA-[\w.-]+$/.test(id) ? { lu: id, k, t: t.join('~') } : null; }).filter(Boolean).slice(0, 24);
+        ss.set(key, JSON.stringify(list));
+      } else { try { list = JSON.parse(ss.get(key) || '[]') || []; } catch (_) {} }
+      return list;
+    }
+    function resolveCourse(c) {
+      if (c.pk) return Promise.resolve();
+      const known = store.get('lu:' + c.lu);
+      if (known && known.v) { c.pk = known.v; return Promise.resolve(); }
+      return uget(`/learn/api/public/v3/courses/courseId:${encodeURIComponent(c.lu)}?fields=id,name`).then((x) => { store.set('lu:' + c.lu, { ts: Date.now(), v: x.id }); saveMeta(x.id, { name: x.name, lu: c.lu }); c.pk = x.id; }, (e) => { if (e && e.auth) throw e; c.gone = 1; });
+    }
+    function searchView(r) {
+      const el = section();
+      let list = courseList(r.q.get('cs'), 'tm4-zcs');
+      const st = { q: r.q.get('q') || ss.get('tm4-zq') || '', done: {}, err: {}, more: {}, running: false, at: 0, t: 0 };
+      el.innerHTML = `<div class="lt"><h1>Zoeken</h1><p class="lt-sub">In de inhoud van al je vakken</p></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek in al je vakken" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek in al je vakken"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="state"></div><div data-k="res"></div>`;
+      const inp = $('input', el), clr = $('.clr', el);
+      inp.value = st.q; clr.hidden = !st.q;
+      list.forEach((c) => { if (c.pk && c.k) saveMeta(c.pk, { color: c.k }); });
+      // every item of one course from the cached folder lists, with the folders it sits in
+      function indexOf(pk) {
+        const out = [];
+        const walk = (items, path, depth) => items.forEach((it) => {
+          if (it.ub) return;
+          out.push({ it, path });
+          if (it.k === 'folder' && depth < 7) { const c = cachedKids(pk, it.id); if (c) walk(c.v, path.concat(it.t), depth + 1); }
+        });
+        const root = cachedKids(pk, 'ROOT');
+        if (root) walk(root.v, [], 0);
+        return out;
+      }
+      const pathLabel = (x) => [x.path.join(' › ') || 'Hoofdmap', x.it.m ? shortWhen(x.it.m) : ''].filter(Boolean).join(' · ');
+      function draw() {
+        const res = $('[data-k="res"]', el), state = $('[data-k="state"]', el);
+        const words = fold(st.q.trim()).split(/\s+/).filter(Boolean);
+        const ready = list.filter((c) => c.pk && st.done[c.pk]).length;
+        const total = list.filter((c) => !c.gone).length;
+        put(state, st.running && ready < total ? `<p class="fresh"><span class="spin" style="width:12px;height:12px;border-width:2px;vertical-align:-1px;margin-right:6px"></span>${ready} van ${total} vakken doorzocht…</p>` : '');
+        if (!list.length) { put(res, empty('book', 'Geen vakken', 'Open Zoeken via Vakken in de app.')); return; }
+        if (!words.length) { put(res, empty('search', 'Zoek in al je vakken', 'Typ een woord uit de naam van een bestand, map of opdracht. Je zoekt in alle vakken van dit semester tegelijk.')); return; }
+        // every word must be somewhere (also in the folders above), at least one in the item itself
+        const has = (own, path) => { const o = fold(own), pa = fold(path || ''); return words.some((w) => o.includes(w)) && words.every((w) => o.includes(w) || pa.includes(w)); };
+        let h = '', n = 0;
+        list.forEach((c) => {
+          if (!c.pk) return;
+          const hits = [];
+          indexOf(c.pk).forEach((x) => {
+            const path = x.path.join(' ');
+            if (has(x.it.t + ' ' + (x.it.d || '') + ' ' + (x.it.f ? x.it.f.n : ''), path)) hits.push({ x });
+            else if (x.it.files) x.it.files.forEach((f) => { if (has(f.n, path + ' ' + x.it.t)) hits.push({ x, f }); });
+          });
+          if (!hits.length) return;
+          n += hits.length;
+          const name = c.t || meta(c.pk).name || 'Vak';
+          const lim = st.more[c.pk] ? 60 : 5;
+          h += `<a class="gh gc" data-nav="1" href="#/c/${c.pk}?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=vakken" style="${colorVars(c.k)}"><i></i>${esc(name)}${CHEV}</a>`;
+          h += `<div class="group">${hits.slice(0, lim).map(({ x, f }) => (f ? fileRow(f, { sub: `${pathLabel(x)} › ${x.it.t}` }) : itemRow(x.it, c.pk, { path: pathLabel(x), flat: true }))).join('')}${hits.length > lim ? `<button type="button" class="more-row" data-act="zmore" data-pk="${c.pk}">Toon alle ${hits.length}</button>` : ''}</div>`;
+        });
+        if (!h) h = empty('search', 'Niets gevonden', st.running ? 'Nog niet alle vakken zijn doorzocht. Even geduld…' : `Niets in je vakken past bij "${st.q.trim()}".`);
+        else h = `<div class="gh">${n} resulta${n === 1 ? 'at' : 'ten'}</div>` + h;
+        put(res, h);
+      }
+      const later = () => { if (!st.t) st.t = setTimeout(() => { st.t = 0; draw(); }, 350); };
+      // walk one course's folders: what was read in the last half hour comes from the phone, the rest from Blackboard
+      async function crawlCourse(pk, force) {
+        const queue = [['ROOT', 0]];
+        const seen = new Set();
+        let n = 0;
+        while (queue.length && n < 120) {
+          const [id, depth] = queue.shift();
+          if (seen.has(id)) continue;
+          seen.add(id);
+          n++;
+          const c = cachedKids(pk, id);
+          let kids = !force && c && Date.now() - c.ts < 30 * 60e3 ? c.v : null;
+          if (!kids) { try { kids = await fetchChildren(pk, id); later(); } catch (e) { if (e.auth) throw e; kids = c ? c.v : []; } }
+          kids.forEach((k) => { if (k.k === 'folder' && depth < 6) queue.push([k.id, depth + 1]); });
+        }
+        st.done[pk] = 1;
+        later();
+      }
+      async function load(force) {
+        if (st.running) return;
+        st.running = true;
+        list.forEach((c) => { if (!c.pk && c.lu) { const k = store.get('lu:' + c.lu); if (k && k.v) c.pk = k.v; } });
+        if (force) st.done = {};
+        draw();
+        try {
+          await Promise.all(list.map(resolveCourse));
+          const seen = new Set();
+          list = list.filter((c) => c.pk && !seen.has(c.pk) && seen.add(c.pk));
+          ss.set('tm4-zcs', JSON.stringify(list));
+          // three courses at a time
+          const q = list.slice();
+          const work = async () => { while (q.length) { const c = q.shift(); try { await crawlCourse(c.pk, force); } catch (e) { if (e && e.auth) throw e; st.done[c.pk] = 1; } } };
+          await Promise.all([work(), work(), work()]);
+        } catch (e) { if (e && e.auth) { st.running = false; relogin(); return; } }
+        st.running = false;
+        draw();
+      }
+      inp.addEventListener('input', () => { st.q = inp.value; clr.hidden = !inp.value; ss.set('tm4-zq', st.q); draw(); });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+      const view = {
+        el,
+        title: () => 'Zoeken',
+        route(r2) { const q = r2.q.get('q'); if (q != null && q !== st.q) { st.q = inp.value = q; clr.hidden = !q; ss.set('tm4-zq', q); draw(); } },
+        show() {
+          draw();
+          if (!st.q) setTimeout(() => { if (U.cur === view) inp.focus(); }, 350);
+          if (Date.now() - st.at < 120e3) return;
+          st.at = Date.now();
+          load(false);
+        },
+        refresh() { st.at = Date.now(); return load(true); },
+        act(n, b) {
+          if (n === 'clr') { inp.value = ''; st.q = ''; clr.hidden = true; ss.set('tm4-zq', ''); draw(); inp.focus(); return true; }
+          if (n === 'zmore') { st.more[b.dataset.pk] = 1; draw(); return true; }
+          return false;
+        },
+      };
       return view;
     }
 
@@ -779,7 +899,7 @@
       const key = keyOf(r);
       let v = U.views.get(key);
       if (!v) {
-        v = r.type === 'grades' ? gradesView(r) : r.type === 'agenda' ? agendaView() : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
+        v = r.type === 'grades' ? gradesView(r) : r.type === 'search' ? searchView(r) : r.type === 'agenda' ? agendaView() : r.type === 'course' ? courseView(r) : r.type === 'folder' ? folderView(r) : r.type === 'doc' ? docView(r) : itemView(r);
         U.views.set(key, v);
         $('#tm-main').appendChild(v.el);
       } else if (v.route) v.route(r);
@@ -866,7 +986,7 @@
       relogging = true;
       const r = parse();
       const pk = r.pk || PATH_PK;
-      ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' ? location.hash : location.hash.split('?')[0]);
+      ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' || r.type === 'search' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
       const target = r.type === 'agenda' ? `${ULTRA}/ultra/calendar?tm=agenda` : `${ULTRA}/ultra/courses/${pk}/outline`;
       if (!TEST && (pk || r.type === 'agenda') && Date.now() - last > 60e3) {

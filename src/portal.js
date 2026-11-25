@@ -6,7 +6,7 @@
     { const ub = Number(params.get('ub')) || 0; if (ub > 0 && ub * 1e3 <= Date.now() + 60e3) store.set('p:ultraok', ub * 1e3); }
     const cv = (k) => { const c = store.get(k); return c ? c.v : null; };
     const P = {
-      tab: '', seg: 'lessen', filter: 'alles', search: '', showComm: false, showOff: false, feedN: 50,
+      tab: '', seg: 'lessen', filter: 'alles', search: '', favEdit: false, favBusy: {}, showComm: false, showOff: false, feedN: 50,
       weekOff: 0, sel: ymd(Date.now()),
       user: cv('p:user'), enr: cv('p:enr') || [], events: cv('p:events') || [], upcoming: cv('p:upcoming') || [],
       links: cv('p:links') || [], mail: cv('p:mail'), agenda: store.get('p:agenda'),
@@ -324,20 +324,22 @@
       </div>`;
     }
     // Meer > Cijfers: only this semester's courses (Blackboard's own page lists every course you ever had)
-    function gradesHref() {
+    // (and Vakken > zoeken in al je vakken: the same courses, searched on the course site)
+    function ultraListHref(route, extra) {
       const cur = curSem();
       let list = P.enr.filter((e) => e.type !== 'community' && e.available !== false && (e.semester === cur || e.semester === 'YEAR' || e.favorite));
       if (!list.length) list = favCourses();
-      list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
+      list = list.filter((e) => /^ULTRA-/.test(e.learningUnitId || '') || P.lu2pk[e.learningUnitId]).sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0) || cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl')).slice(0, 16);
       if (!list.length) return '';
       const cs = list.map((e) => [P.lu2pk[e.learningUnitId] || e.learningUnitId, e.color || '', cleanTitle(e.title).replace(/[~!]/g, ' ')].join('~')).join('!');
-      const q = new URLSearchParams({ cs, th: THEME });
+      const q = new URLSearchParams(Object.assign({}, extra || {}, { cs, th: THEME }));
       const first = list.find((e) => P.lu2pk[e.learningUnitId]) || list[0];
       const pk = P.lu2pk[first.learningUnitId];
       const ultraOk = Date.now() - (Number(store.get('p:ultraok')) || 0) < 45 * 60e3;
-      if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/cijfers?${q}`;
-      return `${ULTRA}/ultra/courses/${pk}/outline#/cijfers?${q}`;
+      if (/^ULTRA-/.test(first.learningUnitId) && (!ultraOk || !pk)) return `${JOURNEY}${encodeURIComponent(first.learningUnitId)}#/${route}?${q}`;
+      return `${ULTRA}/ultra/courses/${pk}/outline#/${route}?${q}`;
     }
+    const gradesHref = () => ultraListHref('cijfers');
     // Meer > Toledo-agenda: Blackboard's calendar page with ?tm=agenda becomes the subscribe screen (#/agenda in ultra.js).
     // Not via a course + hash: the hash got lost on the way (sign-in, Toledo's link service), landing on a course.
     const agendaHref = () => `${ULTRA}/ultra/calendar?tm=agenda&th=${THEME}`;
@@ -383,11 +385,50 @@
     };
 
     // ---- Vakken
-    BUILD.vakken = () => `<div class="lt"><h1>Vakken</h1></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek een vak" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek een vak"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="list"></div>`;
-    NAVS.vakken = () => ({ title: 'Vakken' });
+    BUILD.vakken = () => `<div class="lt"><h1>Vakken</h1></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek een vak of bestand" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek een vak"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="list"></div>`;
+    NAVS.vakken = () => ({ title: 'Vakken', right: P.enr.length ? (P.favEdit ? '<button type="button" class="nb" data-act="favdone"><b>Klaar</b></button>' : `<button type="button" class="nb" data-act="favedit" aria-label="Kies favorieten">${ico('star')}</button>`) : '' });
+    // Kies favorieten: the same star as in Toledo itself (PATCH /portal/api/enrollments/<id>), so it shows up everywhere
+    function favEditList() {
+      const byT = (a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl');
+      const q = fold(P.search.trim());
+      const all = P.enr.filter((e) => !q || fold(e.title).includes(q) || fold(e.learningUnitId).includes(q));
+      const star = (e) => `<span class="fav-star${e.favorite ? ' on' : ''}">${P.favBusy[e.id] ? '<span class="spin" style="width:18px;height:18px;border-width:2px"></span>' : ico('star')}</span>`;
+      const r = (e) => row({ act: 'fav', attrs: ` data-id="${esc(e.id)}" aria-pressed="${e.favorite ? 'true' : 'false'}"`, iconHtml: `<span class="ic txt" style="${colorVars(e.color)}">${esc(initials(e.title))}</span>`,
+        title: cleanTitle(e.title) || e.title, sub: [codeOf(e.title), e.type === 'community' ? 'Gemeenschap' : ''].filter(Boolean).join(' · '), end: star(e), chevron: false });
+      const crs = all.filter((e) => e.type !== 'community').sort(byT), com = all.filter((e) => e.type === 'community').sort(byT);
+      let h = '<p class="fresh" style="margin-top:0">Tik op een vak om het een ster te geven. Favorieten staan bovenaan bij Vakken en op Vandaag, en ook in Toledo zelf.</p>';
+      if (crs.length) h += `<div class="gh">Vakken</div><div class="group">${crs.map(r).join('')}</div>`;
+      if (com.length) h += `<div class="gh">Gemeenschappen</div><div class="group">${com.map(r).join('')}</div>`;
+      return h || empty('search', 'Geen resultaten', `Geen vak gevonden voor "${P.search.trim()}".`);
+    }
+    async function toggleFav(id) {
+      const e = P.enr.find((x) => x.id === id);
+      if (!e || P.favBusy[id]) return;
+      const want = !e.favorite;
+      const setFav = (v) => {
+        // a new list, never a changed one (see memo in portal: lists are cached by identity)
+        P.enr = P.enr.map((x) => (x.id === id ? Object.assign({}, x, { favorite: v }) : x));
+        const c = store.get('p:enr');
+        if (c && Array.isArray(c.v)) store.set('p:enr', { ts: c.ts, v: c.v.map((x) => (x.id === id ? Object.assign({}, x, { favorite: v }) : x)) });
+      };
+      P.favBusy[id] = 1;
+      setFav(want);
+      FILL.vakken(V.vakken.el);
+      try {
+        const r = await fetch(PORTAL_ORIGIN + '/portal/api/enrollments/' + encodeURIComponent(id), { method: 'PATCH', credentials: 'include', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'Toledo-Language': 'nl' }, body: JSON.stringify({ favorite: want }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      } catch (_) {
+        setFav(!want);
+        toast('Dat lukte niet. Probeer het zo opnieuw.');
+      }
+      delete P.favBusy[id];
+      dirty('vandaag', 'rooster');
+      FILL.vakken(V.vakken.el);
+    }
     FILL.vakken = (el) => {
       const list = $('[data-k="list"]', el);
       if (!P.enr.length) { put(list, P.loadedAt ? empty('book', 'Geen vakken', 'Je bent nog voor geen enkel vak ingeschreven.') : skGroup(7)); return; }
+      if (P.favEdit) { put(list, favEditList()); return; }
       const q = fold(P.search.trim());
       const match = (e) => !q || fold(e.title).includes(q) || fold(e.learningUnitId).includes(q);
       const all = P.enr.filter(match);
@@ -410,7 +451,12 @@
       h += sec(fav.length ? 'Andere vakken' : 'Vakken', crs);
       h += sec('Gemeenschappen', com, { limit: 3, open: P.showComm, act: 'comm' });
       h += sec('Niet beschikbaar', off, { limit: 2, open: P.showOff, act: 'offall' });
-      if (!h) h = empty('search', 'Geen resultaten', `Geen vak gevonden voor "${P.search.trim()}".`);
+      // look inside the courses too (files, folders, assignments): that search runs on the course site
+      const qq = P.search.trim();
+      const zoek = qq.length >= 2 ? ultraListHref('zoek', { q: qq }) : '';
+      const zrow = zoek ? `<div class="group">${row({ href: zoek, icon: 'search', soft: true, title: `Zoek "${qq}" in al je vakken`, sub: 'In bestanden, mappen en opdrachten' })}</div>` : '';
+      if (!h) h = zrow ? `<div class="gh">Geen vak met die naam</div>${zrow}` : empty('search', 'Geen resultaten', `Geen vak gevonden voor "${qq}".`);
+      else if (zrow) h += `<div class="gh">In je vakken</div>${zrow}`;
       put(list, h);
     };
 
@@ -683,6 +729,9 @@
       comm: () => { P.showComm = true; FILL.vakken(V.vakken.el); },
       offall: () => { P.showOff = true; FILL.vakken(V.vakken.el); },
       off: () => toast('Dit vak is nog niet beschikbaar in Toledo.'),
+      favedit: () => { P.favEdit = true; setNav(NAVS.vakken()); FILL.vakken(V.vakken.el); W.scrollTo(0, 0); },
+      favdone: () => { P.favEdit = false; setNav(NAVS.vakken()); FILL.vakken(V.vakken.el); },
+      fav: (b) => toggleFav(b.dataset.id),
       alldl: () => { P.allDl = true; FILL.vandaag(V.vandaag.el); },
       rseg: (b) => { P.seg = b.dataset.id; history.replaceState(null, '', location.pathname + '#rooster' + (P.seg === 'examens' ? '/examens' : '')); FILL.rooster(V.rooster.el); },
       wk: (b) => shiftWeek(Number(b.dataset.d)),

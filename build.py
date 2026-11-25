@@ -3,10 +3,14 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.21.1"
+VERSION = "4.22.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.22.0": [
+        "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
+        "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester.",
+    ],
     "4.21.1": [
         "Toledo-agenda in Meer opent nu altijd het juiste scherm, en niet meer een vak of de lijst met vakken."
     ],
