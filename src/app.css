@@ -1120,7 +1120,7 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .at-note{margin:8px 0 0;text-align:center;font-size:13px;color:var(--sub)}
 .tm4 .at-err{margin:14px 0 -6px;text-align:center;font-size:14px;line-height:19px;color:var(--red)}
 .tm4 .at-ok{text-align:center;padding:6px 4px 0}
-.tm4 .at-ok>.i{width:46px;height:46px;padding:10px;border-radius:50%;background:var(--green);color:#fff;stroke-width:2.6}
+.tm4 .at-ok>.i{display:block;margin:0 auto;width:46px;height:46px;padding:10px;border-radius:50%;background:var(--green);color:#fff;stroke-width:2.6}
 .tm4 .at-ok b{display:block;margin-top:10px;font-size:19px;font-weight:700}
 .tm4 .at-ok p{margin:6px 0 0;font-size:15px;line-height:20px;color:var(--sub)}
 .tm4 .at-seg button{text-align:center}
