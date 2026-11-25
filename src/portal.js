@@ -6,7 +6,7 @@
     { const ub = Number(params.get('ub')) || 0; if (ub > 0 && ub * 1e3 <= Date.now() + 60e3) store.set('p:ultraok', ub * 1e3); }
     const cv = (k) => { const c = store.get(k); return c ? c.v : null; };
     const P = {
-      tab: '', seg: 'lessen', filter: 'alles', search: '', showComm: false, showOff: false, feedN: 50,
+      tab: '', seg: 'lessen', filter: 'alles', search: '', favEdit: false, favBusy: {}, showComm: false, showOff: false, feedN: 50,
       weekOff: 0, sel: ymd(Date.now()),
       user: cv('p:user'), enr: cv('p:enr') || [], events: cv('p:events') || [], upcoming: cv('p:upcoming') || [],
       links: cv('p:links') || [], mail: cv('p:mail'), agenda: store.get('p:agenda'),
@@ -386,10 +386,49 @@
 
     // ---- Vakken
     BUILD.vakken = () => `<div class="lt"><h1>Vakken</h1></div><label class="search">${ico('search')}<input type="search" placeholder="Zoek een vak of bestand" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Zoek een vak"><button type="button" class="clr" data-act="clr" hidden aria-label="Wis">✕</button></label><div data-k="list"></div>`;
-    NAVS.vakken = () => ({ title: 'Vakken' });
+    NAVS.vakken = () => ({ title: 'Vakken', right: P.enr.length ? (P.favEdit ? '<button type="button" class="nb" data-act="favdone"><b>Klaar</b></button>' : `<button type="button" class="nb" data-act="favedit" aria-label="Kies favorieten">${ico('star')}</button>`) : '' });
+    // Kies favorieten: the same star as in Toledo itself (PATCH /portal/api/enrollments/<id>), so it shows up everywhere
+    function favEditList() {
+      const byT = (a, b) => cleanTitle(a.title).localeCompare(cleanTitle(b.title), 'nl');
+      const q = fold(P.search.trim());
+      const all = P.enr.filter((e) => !q || fold(e.title).includes(q) || fold(e.learningUnitId).includes(q));
+      const star = (e) => `<span class="fav-star${e.favorite ? ' on' : ''}">${P.favBusy[e.id] ? '<span class="spin" style="width:18px;height:18px;border-width:2px"></span>' : ico('star')}</span>`;
+      const r = (e) => row({ act: 'fav', attrs: ` data-id="${esc(e.id)}" aria-pressed="${e.favorite ? 'true' : 'false'}"`, iconHtml: `<span class="ic txt" style="${colorVars(e.color)}">${esc(initials(e.title))}</span>`,
+        title: cleanTitle(e.title) || e.title, sub: [codeOf(e.title), e.type === 'community' ? 'Gemeenschap' : ''].filter(Boolean).join(' · '), end: star(e), chevron: false });
+      const crs = all.filter((e) => e.type !== 'community').sort(byT), com = all.filter((e) => e.type === 'community').sort(byT);
+      let h = '<p class="fresh" style="margin-top:0">Tik op een vak om het een ster te geven. Favorieten staan bovenaan bij Vakken en op Vandaag, en ook in Toledo zelf.</p>';
+      if (crs.length) h += `<div class="gh">Vakken</div><div class="group">${crs.map(r).join('')}</div>`;
+      if (com.length) h += `<div class="gh">Gemeenschappen</div><div class="group">${com.map(r).join('')}</div>`;
+      return h || empty('search', 'Geen resultaten', `Geen vak gevonden voor "${P.search.trim()}".`);
+    }
+    async function toggleFav(id) {
+      const e = P.enr.find((x) => x.id === id);
+      if (!e || P.favBusy[id]) return;
+      const want = !e.favorite;
+      const setFav = (v) => {
+        // a new list, never a changed one (see memo in portal: lists are cached by identity)
+        P.enr = P.enr.map((x) => (x.id === id ? Object.assign({}, x, { favorite: v }) : x));
+        const c = store.get('p:enr');
+        if (c && Array.isArray(c.v)) store.set('p:enr', { ts: c.ts, v: c.v.map((x) => (x.id === id ? Object.assign({}, x, { favorite: v }) : x)) });
+      };
+      P.favBusy[id] = 1;
+      setFav(want);
+      FILL.vakken(V.vakken.el);
+      try {
+        const r = await fetch(PORTAL_ORIGIN + '/portal/api/enrollments/' + encodeURIComponent(id), { method: 'PATCH', credentials: 'include', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'Toledo-Language': 'nl' }, body: JSON.stringify({ favorite: want }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      } catch (_) {
+        setFav(!want);
+        toast('Dat lukte niet. Probeer het zo opnieuw.');
+      }
+      delete P.favBusy[id];
+      dirty('vandaag', 'rooster');
+      FILL.vakken(V.vakken.el);
+    }
     FILL.vakken = (el) => {
       const list = $('[data-k="list"]', el);
       if (!P.enr.length) { put(list, P.loadedAt ? empty('book', 'Geen vakken', 'Je bent nog voor geen enkel vak ingeschreven.') : skGroup(7)); return; }
+      if (P.favEdit) { put(list, favEditList()); return; }
       const q = fold(P.search.trim());
       const match = (e) => !q || fold(e.title).includes(q) || fold(e.learningUnitId).includes(q);
       const all = P.enr.filter(match);
@@ -690,6 +729,9 @@
       comm: () => { P.showComm = true; FILL.vakken(V.vakken.el); },
       offall: () => { P.showOff = true; FILL.vakken(V.vakken.el); },
       off: () => toast('Dit vak is nog niet beschikbaar in Toledo.'),
+      favedit: () => { P.favEdit = true; setNav(NAVS.vakken()); FILL.vakken(V.vakken.el); W.scrollTo(0, 0); },
+      favdone: () => { P.favEdit = false; setNav(NAVS.vakken()); FILL.vakken(V.vakken.el); },
+      fav: (b) => toggleFav(b.dataset.id),
       alldl: () => { P.allDl = true; FILL.vandaag(V.vandaag.el); },
       rseg: (b) => { P.seg = b.dataset.id; history.replaceState(null, '', location.pathname + '#rooster' + (P.seg === 'examens' ? '/examens' : '')); FILL.rooster(V.rooster.el); },
       wk: (b) => shiftWeek(Number(b.dataset.d)),

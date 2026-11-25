@@ -684,16 +684,16 @@
         put(state, st.running && ready < total ? `<p class="fresh"><span class="spin" style="width:12px;height:12px;border-width:2px;vertical-align:-1px;margin-right:6px"></span>${ready} van ${total} vakken doorzocht…</p>` : '');
         if (!list.length) { put(res, empty('book', 'Geen vakken', 'Open Zoeken via Vakken in de app.')); return; }
         if (!words.length) { put(res, empty('search', 'Zoek in al je vakken', 'Typ een woord uit de naam van een bestand, map of opdracht. Je zoekt in alle vakken van dit semester tegelijk.')); return; }
-        const has = (s) => { const f = fold(s); return words.every((w) => f.includes(w)); };
+        // every word must be somewhere (also in the folders above), at least one in the item itself
+        const has = (own, path) => { const o = fold(own), pa = fold(path || ''); return words.some((w) => o.includes(w)) && words.every((w) => o.includes(w) || pa.includes(w)); };
         let h = '', n = 0;
         list.forEach((c) => {
           if (!c.pk) return;
           const hits = [];
           indexOf(c.pk).forEach((x) => {
-            const hay = x.it.t + ' ' + (x.it.d || '');
-            if (has(hay) || has(hay + ' ' + x.path.join(' '))) hits.push({ x });
-            else if (x.it.files) x.it.files.forEach((f) => { if (has(f.n + ' ' + x.it.t)) hits.push({ x, f }); });
-            else if (x.it.f && has(x.it.f.n)) hits.push({ x });
+            const path = x.path.join(' ');
+            if (has(x.it.t + ' ' + (x.it.d || '') + ' ' + (x.it.f ? x.it.f.n : ''), path)) hits.push({ x });
+            else if (x.it.files) x.it.files.forEach((f) => { if (has(f.n, path + ' ' + x.it.t)) hits.push({ x, f }); });
           });
           if (!hits.length) return;
           n += hits.length;
