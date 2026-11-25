@@ -10,6 +10,7 @@
     if (params.get('tm') === 'orig') ss.set('tm4-classic-print', String(Date.now()));
     if (!TOP || !PHONE) mode = 'none';
     else if (/^\/topup(\/|$)/.test(PATH)) mode = 'topup';
+    else if (Date.now() - (Number(ss.get('tm4-print-pass')) || 0) < 30e3) { ss.del('tm4-print-pass'); mode = 'none'; } // signing in again: let the server's login page through once
     else if (!classicOn('print') && /^\/app(;|$)/.test(PATH) && (!svc || /^page\/User/.test(svc))) mode = 'print';
     else mode = 'none';
   } else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
@@ -70,7 +71,12 @@
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'room') { whenRoot(roomPage); return; }
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
-  if (mode === 'print') { whenRoot(printApp); return; }
+  if (mode === 'print') {
+    // signed out, the server sends a small page that forwards to the KU Leuven login: let it (or send it on ourselves)
+    if (document.querySelector('form[action*="idp.kuleuven.be"]') || /Shibboleth Authentication/i.test(document.title || '')) return;
+    whenRoot(printApp);
+    return;
+  }
   if (mode === 'topup') { topupPage(); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }

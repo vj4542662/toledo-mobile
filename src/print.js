@@ -23,6 +23,7 @@
     keepAlive('print', [[PG('UserReleaseJobs'), 'no-cors']]);
 
     /* ---------- reading PaperCut's pages */
+    let DEAD = false;
     const parse = (t) => new DOMParser().parseFromString(t, 'text/html');
     async function page(url, opt) {
       let r;
@@ -30,6 +31,7 @@
       catch (_) { throw new AuthError('net'); } // a redirect to the KU Leuven login can't be read from here
       if (new URL(r.url).host !== location.host) throw new AuthError('login');
       const d = parse(await r.text());
+      // signed out, the server answers with its own "Shibboleth Authentication Request" page instead
       if (!d.querySelector('a[href*="logoutLink"]')) throw new AuthError('login');
       d.querySelectorAll('script, .responsive-label').forEach((n) => n.remove());
       return d;
@@ -112,14 +114,29 @@
     }
     const jobStatus = (uid) => fetch(O + '/rpc/web-print/job-status/' + encodeURIComponent(uid) + '.json', { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } }).then((r) => r.json());
 
+    // sign in again the way a browser does: load the page once without the app, so the server's own page can
+    // send you through the KU Leuven login (main.js lets that one load through); it brings you back here
+    let GOING = false;
+    const login = () => {
+      if (GOING) return;
+      GOING = true;
+      ss.set('tm4-print-login', String(Date.now()));
+      ss.set('tm4-print-pass', String(Date.now()));
+      location.replace(PG('UserSummary'));
+    };
     const signIn = () => {
+      if (GOING) return true;
       const last = Number(ss.get('tm4-print-login')) || 0;
-      if (Date.now() - last > 60e3) { ss.set('tm4-print-login', String(Date.now())); location.reload(); return true; }
+      if (Date.now() - last > 45e3) { login(); return true; }
       return false;
     };
     const failed = (e, my) => {
       if (my !== token) return;
-      if (e && e.auth) { if (!signIn()) put(sec, empty('lock', 'Niet aangemeld bij KU Leuven Print', 'Meld je aan met je KU Leuven-account.', `<p style="margin-top:14px"><a class="btn" href="${esc(PG('UserSummary'))}">Aanmelden</a></p>`)); }
+      DEAD = true; // the other loaders must not draw over this message
+      if (e && e.auth) {
+        if (signIn()) put(sec, `<div class="empty"><div class="spin"></div><b style="margin-top:14px">Aanmelden bij KU Leuven Print…</b></div>`);
+        else put(sec, empty('lock', 'Niet aangemeld bij KU Leuven Print', 'Meld je even opnieuw aan met je KU Leuven-account.', `<p style="margin-top:14px"><button type="button" class="btn" data-act="plogin">Aanmelden</button></p>`));
+      }
       else put(sec, empty('warn', 'KU Leuven Print reageert niet', 'Probeer het straks opnieuw.', `<p style="margin-top:14px"><a class="btn" href="${esc(ORIG)}">Open de website</a></p>`));
     };
 
@@ -139,6 +156,7 @@
     const backBtn = { label: 'Printen', href: '#/', act: 'pback' };
     const show = (anim) => {
       const my = ++token;
+      DEAD = false;
       const r = route();
       sec.classList.remove('push', 'pop');
       if (anim) { void sec.offsetWidth; sec.classList.add(anim); }
@@ -163,7 +181,7 @@
       setNav({ title: 'Printen', back: { label: 'Meer', href: PORTAL + '?tm=meer', act: 'meer' } });
       const d = { sum: (store.get('print:sum') || {}).v, held: (store.get('print:held') || {}).v, logs: (store.get('print:logs') || {}).v, fresh: [] };
       const draw = () => {
-        if (my !== token) return;
+        if (my !== token || DEAD) return;
         let h = `<div class="lt"><h1>Printen</h1><p class="lt-sub">KU Leuven Print</p></div>`;
         h += balCard(d.sum, `<a class="pr-bal-go" href="#/opladen">${ico('plus')}Opladen</a>`);
         h += `<a class="pr-go" href="#/nieuw"><span class="pr-go-ic">${PRINTER}</span><span class="pr-go-t"><b>Document printen</b><span>PDF of Word van je iPhone naar elke KU Leuven-printer</span></span>${CHEV}</a>`;
@@ -175,6 +193,7 @@
         const held = d.held || [];
         h += `<div class="sh"><h2>Klaar om af te drukken</h2>${held.length ? `<span class="sh-note">${held.length}</span>` : ''}</div>`;
         if (d.held === undefined) h += skGroup(1);
+        else if (d.held === null) h += `<div class="card ko-empty">${ico("warn")}<span>De wachtrij kon niet geladen worden. Trek omlaag om opnieuw te proberen.</span></div>`;
         else if (!held.length) h += `<div class="card ko-empty">${PRINTER}<span>Niets in de wachtrij. Verstuur een document, dan wacht het hier tot je het afdrukt.</span></div>`;
         else {
           h += held.map(jobCard).join('');
@@ -185,6 +204,7 @@
         const logs = (d.logs || []).slice(0, 4);
         h += `<div class="sh"><h2>Recent</h2>${d.logs && d.logs.length ? '<a href="#/historiek">Alles</a>' : ''}</div>`;
         if (d.logs === undefined) h += skGroup(3);
+        else if (d.logs === null) h += `<div class="card ko-empty">${ico("warn")}<span>Je afdrukken konden niet geladen worden. Trek omlaag om opnieuw te proberen.</span></div>`;
         else if (!logs.length) h += `<div class="card ko-empty">${ico('clock')}<span>Je hebt nog niets afgedrukt.</span></div>`;
         else h += `<div class="group">${logs.map(logRow).join('')}</div>`;
         h += `<div class="gh">Meer</div><div class="group">`
@@ -199,9 +219,9 @@
       };
       draw();
       const keep = (k, v) => store.set('print:' + k, { ts: Date.now(), v });
-      loadSummary().then((v) => { d.sum = v; keep('sum', v); draw(); }, (e) => { if (!d.sum) failed(e, my); });
-      loadHeld().then((v) => { d.held = v; keep('held', v); draw(); }, () => { if (d.held === undefined) { d.held = []; draw(); } });
-      loadLogs().then((v) => { d.logs = v.slice(0, 30); keep('logs', d.logs); draw(); }, () => { if (d.logs === undefined) { d.logs = []; draw(); } });
+      loadSummary().then((v) => { d.sum = v; keep('sum', v); draw(); }, (e) => { if ((e && e.auth) || !d.sum) failed(e, my); });
+      loadHeld().then((v) => { d.held = v; keep('held', v); draw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.held === undefined) { d.held = null; draw(); } });
+      loadLogs().then((v) => { d.logs = v.slice(0, 30); keep('logs', d.logs); draw(); }, (e) => { if (e && e.auth) failed(e, my); else if (d.logs === undefined) { d.logs = null; draw(); } });
       // jobs that are still being prepared: follow them until they wait at the printer
       const poll = (n) => loadFresh().then((f) => {
         if (my !== token) return;
@@ -434,8 +454,8 @@
         watchTitle(sec);
       };
       draw();
-      if (tab === 'print') loadLogs().then((v) => { d.logs = v; store.set('print:logs', { ts: Date.now(), v: v.slice(0, 30) }); draw(); }, (e) => { if (!d.logs) failed(e, my); });
-      else loadTrans().then((v) => { d.trans = v; store.set('print:trans', { ts: Date.now(), v: v.slice(0, 30) }); draw(); }, (e) => { if (!d.trans) failed(e, my); });
+      if (tab === 'print') loadLogs().then((v) => { d.logs = v; store.set('print:logs', { ts: Date.now(), v: v.slice(0, 30) }); draw(); }, (e) => { if ((e && e.auth) || !d.logs) failed(e, my); });
+      else loadTrans().then((v) => { d.trans = v; store.set('print:trans', { ts: Date.now(), v: v.slice(0, 30) }); draw(); }, (e) => { if ((e && e.auth) || !d.trans) failed(e, my); });
     }
     function groupByDay(items, fn) {
       let h = '', cur = '', buf = '';
@@ -465,12 +485,12 @@
         if (my !== token) return;
         put(sec, `<div class="lt"><h1>Opladen</h1></div>${balCard(sum)}
           <div class="gh">Bedrag</div><div class="pr-amts">${AMOUNTS.map((a) => `<button type="button" class="pr-amt-b${a === amt ? ' on' : ''}" data-act="pamt" data-v="${a}"><b>€ ${a}</b><span>${a * 20} pagina's</span></button>`).join('')}</div>
-          <div class="pr-send"><button type="button" class="btn pr-go-btn" data-act="ppay">Betaal € ${amt}</button>
-          <p class="kb-legal">Je betaalt op de betaalpagina van KU Leuven met Bancontact, Visa, Mastercard of Maestro. Zwart-wit kost 5 cent per pagina, kleur 15 cent. Het saldo werkt op alle KU Leuven-campussen.</p></div>`);
+          <div class="pr-send"><button type="button" class="btn pr-go-btn" data-act="ppay">Verder naar betalen</button>
+          <p class="kb-legal">Op de betaalpagina van KU Leuven staat je bedrag al klaar: tik daar op Betaal. Je betaalt met Bancontact, Visa, Mastercard of Maestro. Zwart-wit kost 5 cent per pagina, kleur 15 cent. Het saldo werkt op alle KU Leuven-campussen.</p></div>`);
         watchTitle(sec);
       };
       TOP_UP.set = (v) => { amt = v; ss.set('tm4-print-amt', String(v)); draw(); };
-      TOP_UP.go = () => { goTo(O + '/topup/nl?tm=pay&amount=' + amt); };
+      TOP_UP.go = () => { goTo(O + '/topup/nl?amount=' + amt); };
       draw();
     }
     const TOP_UP = { set() {}, go() {} };
@@ -548,6 +568,7 @@
       if (!b || b.closest('.kb')) return;
       const act = b.dataset.act;
       if (act === 'pback') { e.preventDefault(); back(); }
+      else if (act === 'plogin') { e.preventDefault(); login(); }
       else if (act === 'meer') { e.preventDefault(); goTo(PORTAL + '?tm=meer', { dir: 'back' }); }
       else if (act === 'pcol' || act === 'psize' || act === 'psides') { e.preventDefault(); OPT[{ pcol: 'col', psize: 'size', psides: 'sides' }[act]] = b.dataset.id; saveOpt(); NEW.draw(); }
       else if (act === 'pcopy') { e.preventDefault(); OPT.copies = Math.max(1, Math.min(99, OPT.copies + Number(b.dataset.d))); NEW.draw(); }
@@ -570,36 +591,34 @@
     show();
   }
 
-  // print.kuleuven.be/topup: KU Leuven's payment page. From the app (?tm=pay&amount=5) it picks the amount and goes
-  // straight on to paying; anywhere else on a phone it gets a button back to the app.
+  // print.kuleuven.be/topup: KU Leuven's payment page. From the app (?tm=pay&amount=5) the amount is already picked
+  // and the button is highlighted, but you tap it yourself: sending the form from a script right after the page
+  // (and the KU Leuven login) loaded gave a "systeemfout" on the iPhone. A button at the top leads back to the app.
   function topupPage() {
-    const amt = params.get('amount');
+    const amt = params.get('amount') || ss.get('tm4-topup-amt');
+    if (params.get('amount')) ss.set('tm4-topup-amt', params.get('amount'));
     const ready = (fn) => (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn());
-    if (params.get('tm') === 'pay' && /^(2|5|10|25)$/.test(amt || '')) {
-      const last = Number(ss.get('tm4-topup')) || 0;
-      if (Date.now() - last > 90e3) {
-        ready(() => setTimeout(() => {
-          const r = document.querySelector('input[name="amount"][value="' + amt + '"]');
-          const f = r && r.form;
-          if (!f) return;
-          ss.set('tm4-topup', String(Date.now()));
-          r.checked = true;
-          const st = document.createElement('style');
-          st.textContent = 'body>*{visibility:hidden}body::after{content:"Naar betalen…";position:fixed;inset:0;display:grid;place-items:center;font:600 17px -apple-system,system-ui,sans-serif;color:#66777e;background:#eef3f5}';
-          document.head.appendChild(st);
-          const btn = f.querySelector('button[type="submit"], input[type="submit"]');
-          if (btn) btn.click(); else f.submit();
-        }, 250));
-        return;
-      }
-    }
     ready(() => {
-      if (!document.body) return;
+      if (!document.body || document.querySelector('form[action*="idp.kuleuven.be"]')) return; // on its way to the login
+      const st = document.createElement('style');
+      st.textContent = '#tm-topback{position:fixed;z-index:99999;left:12px;top:calc(10px + env(safe-area-inset-top));padding:9px 15px;border-radius:19px;background:#1f6f8b;color:#fff!important;font:600 15px -apple-system,system-ui,sans-serif;text-decoration:none!important;box-shadow:0 4px 14px rgba(0,0,0,.2)}'
+        + 'body{padding-top:52px!important}'
+        + '.tm-pay{display:block!important;width:100%!important;font-size:19px!important;padding:14px!important;border-radius:14px!important;background:#1f6f8b!important;border-color:#1f6f8b!important;box-shadow:0 0 0 4px rgba(31,111,139,.25)!important}';
+      document.head.appendChild(st);
       const a = document.createElement('a');
+      a.id = 'tm-topback';
       a.href = location.origin + '/app?service=page/UserSummary#/';
       a.textContent = '‹ Terug naar Printen';
-      a.setAttribute('style', 'position:fixed;z-index:99999;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));padding:10px 16px;border-radius:20px;background:#1f6f8b;color:#fff;font:600 15px -apple-system,system-ui,sans-serif;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.2)');
       document.body.appendChild(a);
+      const r = /^(2|5|10|25)$/.test(amt || '') && document.querySelector('input[name="amount"][value="' + amt + '"]');
+      if (!r || !r.form) return;
+      r.checked = true;
+      const btn = r.form.querySelector('button[type="submit"], input[type="submit"]');
+      if (btn) {
+        btn.classList.add('tm-pay');
+        btn.textContent = 'Betaal € ' + amt;
+        r.form.addEventListener('change', () => { const c = r.form.querySelector('input[name="amount"]:checked'); if (c) btn.textContent = 'Betaal € ' + c.value; });
+        setTimeout(() => btn.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+      }
     });
   }
-

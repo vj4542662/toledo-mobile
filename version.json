@@ -1,6 +1,10 @@
 {
- "version": "4.23.0",
+ "version": "4.23.1",
  "news": {
+  "4.23.1": [
+   "Printen: je saldo en je afdrukken laden weer als je een tijd niet aangemeld was. De app stuurt je dan even langs de KU Leuven-login.",
+   "Printen: bij Opladen staat je bedrag klaar op de betaalpagina; daar tik je zelf op Betaal."
+  ],
   "4.23.0": [
    "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
   ],
@@ -36,9 +40,6 @@
   "4.17.3": [
    "Groepswerkruimtes rustiger: één lijst met per lokaal de vrije blokken (bv. 17:00–20:00). Tik op een lokaal en kies daar van wanneer tot wanneer.",
    "Studieplek begint weer met je reservaties en favorieten. Groepswerkruimtes vind je bij de bib zelf."
-  ],
-  "4.17.2": [
-   "De uitlegpagina bij het updaten toont het logo weer, en de voorbeelden kleuren mee met licht of donker."
   ]
  }
 }
