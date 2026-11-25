@@ -573,12 +573,11 @@
         return o.href ? `<a class="app" href="${esc(o.href)}">${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
       };
       const APPS = [
-        { n: 'Studieplek', i: 'seat', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
+        { n: 'Studieplek (KURT)', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
         { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
         { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
         { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
-        { n: 'Agenda', i: 'calendar', c: '#ff9500', href: agendaHref() },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
         { n: 'Alma', i: 'food', c: '#d9534f', act: 'soon' },
         { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
@@ -679,6 +678,7 @@
         if (!k) id = 'studie';
       }
       const first = !P.tab;
+      const fromMeer = P.tab === 'meer' && (SUBVIEW[id] || UNDER[id]);
       P.tab = id;
       const v = view(id);
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
@@ -694,7 +694,10 @@
       if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
+      if (fromMeer) { v.y = 0; const de = document.documentElement; de.style.overflow = 'hidden'; requestAnimationFrame(() => { de.style.overflow = ''; }); } // stops a running momentum scroll
       W.scrollTo(0, v.y || 0);
+      // iPhone: a tap during Meer's momentum scroll can keep scrolling the new screen, so put it back on top a few times
+      if (fromMeer) { let touched = false; const stop = () => { touched = true; }; W.addEventListener('touchstart', stop, { once: true, passive: true }); [16, 90, 250, 500].forEach((ms) => setTimeout(() => { if (!touched && P.tab === id) W.scrollTo(0, 0); }, ms)); setTimeout(() => W.removeEventListener('touchstart', stop), 600); }
       watchTitle(v.el);
       let hash = '#' + id + (id === 'rooster' && P.seg === 'examens' ? '/examens' : '');
       if (id === 'resultaat') hash = '#resultaat/' + encodeURIComponent(P.resKey);
@@ -835,7 +838,7 @@
         if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
-    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp|resultaat\/[^/]+)$/;
+    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|instellingen|studie|isp|resultaat\/[^/]+)$/;
     W.addEventListener('hashchange', () => {
       if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : P.tab === 'resultaat' ? '/' + encodeURIComponent(P.resKey || '') : '')); return; }
       const r = routeFromUrl(true);

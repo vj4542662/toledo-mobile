@@ -1,7 +1,11 @@
 {
- "version": "4.26.0",
- "built": 1795616997812,
+ "version": "4.26.1",
+ "built": 1795627749299,
  "news": {
+  "4.26.1": [
+   "Studieplek heet nu Studieplek (KURT) en heeft een nieuw icoon.",
+   "Studievoortgang en Mijn ISP openen altijd bovenaan."
+  ],
   "4.26.0": [
    "Meer ziet eruit als een beginscherm: elke dienst heeft zijn eigen app-icoon.",
    "Weergave, mail en updates staan nu in de nieuwe app Instellingen."
@@ -37,9 +41,6 @@
   "4.22.0": [
    "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
    "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester."
-  ],
-  "4.21.1": [
-   "Toledo-agenda in Meer opent nu altijd het juiste scherm, en niet meer een vak of de lijst met vakken."
   ]
  }
 }
