@@ -1,6 +1,6 @@
 {
- "version": "4.28.1",
- "built": 1795629110175,
+ "version": "4.28.2",
+ "built": 1795629238921,
  "builds": [
   {
    "v": "4.26.1",
@@ -21,9 +21,16 @@
   {
    "v": "4.28.1",
    "built": 1795629110175
+  },
+  {
+   "v": "4.28.2",
+   "built": 1795629238921
   }
  ],
  "news": {
+  "4.28.2": [
+   "Alma: de eerste keer zet je meteen een ster bij al je Alma's en tik je op Klaar."
+  ],
   "4.28.1": [
    "De melding voor een nieuwe versie verschijnt weer, ook als er kort na elkaar meerdere versies komen."
   ],
@@ -60,9 +67,6 @@
   ],
   "4.24.1": [
    "Printen: laadt soepeler, zonder verspringende lijsten, en toont je nieuwe saldo meteen als je terugkomt na het opladen."
-  ],
-  "4.24.0": [
-   "Printen: opladen ziet eruit zoals de app. Kies je bedrag, zie meteen je nieuwe saldo en tik op Betaal."
   ]
  }
 }
