@@ -340,6 +340,13 @@
       return `${ULTRA}/ultra/courses/${pk}/outline#/${route}?${q}`;
     }
     const gradesHref = () => ultraListHref('cijfers');
+    // Meer > Groepswerken: like Cijfers, but on Blackboard's calendar address with everything in the query (?tm=groepen):
+    // via a course + hash it sometimes landed on that course, because the hash got lost while signing in
+    const groupsHref = () => {
+      const u = ultraListHref('groepen', { ma: store.get('mailApp') === 'web' ? 'web' : 'app' });
+      const q = u.includes('#/groepen?') ? u.slice(u.indexOf('#/groepen?') + 10) : `th=${THEME}`;
+      return `${ULTRA}/ultra/calendar?tm=groepen&${q}`;
+    };
     // Meer > Toledo-agenda: Blackboard's calendar page with ?tm=agenda becomes the subscribe screen (#/agenda in ultra.js).
     // Not via a course + hash: the hash got lost on the way (sign-in, Toledo's link service), landing on a course.
     const agendaHref = () => `${ULTRA}/ultra/calendar?tm=agenda&th=${THEME}`;
@@ -576,7 +583,7 @@
         { n: 'Studieplek (KURT)', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
         { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
         { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
-        { n: 'Groepswerken', i: 'people', c: '#c2477a', href: ultraListHref('groepen', { ma: store.get('mailApp') === 'web' ? 'web' : 'app' }) || ULTRA + '/ultra/course' },
+        { n: 'Groepswerken', i: 'people', c: '#c2477a', href: groupsHref() },
         { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },

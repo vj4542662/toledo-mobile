@@ -27,7 +27,12 @@
       history.replaceState(history.state && history.state.tm ? history.state : { tm: 1, d: 0 }, '', location.pathname + h);
     }
     // Meer > Toledo-agenda opens /ultra/calendar?tm=agenda: the query survives Blackboard's sign-in (the hash does not)
+    // Meer > Groepswerken opens /ultra/calendar?tm=groepen&cs=...: the query survives signing in and Toledo's link service, a hash doesn't
+    if (W.__TM_ROUTE__ === 'groepen' && /^#%2Fgroepen/i.test(location.hash)) history.replaceState({ tm: 1, d: 0 }, '', location.origin + location.pathname + location.search + location.hash.replace(/%2F/gi, '/').replace(/%3F/i, '?'));
+    if (W.__TM_ROUTE__ === 'groepen' && !/^#(\/|%2F)groepen/i.test(location.hash)) { const q = new URLSearchParams(location.search); q.delete('tm'); history.replaceState({ tm: 1, d: 0 }, '', location.origin + location.pathname + '?tm=groepen#/groepen?' + q); }
     if (W.__TM_ROUTE__ === 'agenda' && !/^#(\/|%2F)agenda/i.test(location.hash)) history.replaceState({ tm: 1, d: 0 }, '', location.origin + location.pathname + location.search + '#/agenda');
+    // the screen this page was opened for (Groepswerken, Toledo-agenda): if Blackboard's own app wipes the address later, go back to it
+    const ROUTE_HASH = W.__TM_ROUTE__ && /^#\/(groepen|agenda)/.test(location.hash) ? location.hash : '';
     guardPath();
     const U = { depth: (history.state && history.state.tm && history.state.d) || 0, views: new Map(), titles: {}, items: {}, cur: null, curKey: '', animBack: false, scroll: {} };
     try { U.scroll = JSON.parse(ss.get('tm4-uscroll') || '{}') || {}; } catch (_) {}
@@ -38,7 +43,9 @@
 
     /* ---------------- routes + context ---------------- */
     function parse() {
-      const h = location.hash.replace(/^#/, '');
+      // Blackboard's own app can rewrite the address at any moment (#/groepen?x -> #%2Fgroepen%3Fx): read both
+      let h = location.hash.replace(/^#/, '');
+      if (/^%2F/i.test(h)) h = h.replace(/%2F/gi, '/').replace(/%3F/i, '?');
       const i = h.indexOf('?');
       const path = i >= 0 ? h.slice(0, i) : h;
       const q = new URLSearchParams(i >= 0 ? h.slice(i + 1) : '');
@@ -896,9 +903,6 @@
       function compose(to, subject) {
         const q = `to=${encodeURIComponent(to.join(','))}&subject=${encodeURIComponent(subject)}`;
         if (store.get('mailApp') === 'web') { goTo(`https://outlook.office.com/mail/deeplink/compose?${q}`); return; }
-        const t0 = Date.now();
-        const fb = setTimeout(() => { if (document.visibilityState === 'visible' && Date.now() - t0 < 4000) location.href = `mailto:${to.map(encodeURIComponent).join(',')}?subject=${encodeURIComponent(subject)}`; }, 2600);
-        document.addEventListener('visibilitychange', () => clearTimeout(fb), { once: true });
         location.href = `ms-outlook://compose?${q}`;
       }
       const view = {
@@ -1046,6 +1050,7 @@
       const r = parse();
       if (r.type === 'resolve') { resolveLu(r); return; }
       if (r.type === 'none') {
+        if (ROUTE_HASH) { history.replaceState(history.state, '', location.origin + location.pathname + location.search + ROUTE_HASH); render(anim); return; }
         if (PATH_PK) { history.replaceState(history.state, '', location.pathname + '#/c/' + PATH_PK); render(anim); return; }
         goTo(PORTAL + '?tm=vakken', { replace: true, dir: 'back' });
         return;
@@ -1144,8 +1149,8 @@
       const pk = r.pk || PATH_PK;
       ss.set('tm4-resume', r.type === 'grades' || r.type === 'agenda' || r.type === 'search' || r.type === 'groups' ? location.hash : location.hash.split('?')[0]);
       const last = Number(ss.get('tm4-relogin')) || 0;
-      const target = r.type === 'agenda' ? `${ULTRA}/ultra/calendar?tm=agenda` : `${ULTRA}/ultra/courses/${pk}/outline`;
-      if (!TEST && (pk || r.type === 'agenda') && Date.now() - last > 60e3) {
+      const target = r.type === 'agenda' ? `${ULTRA}/ultra/calendar?tm=agenda` : r.type === 'groups' ? `${ULTRA}/ultra/calendar?tm=groepen` : `${ULTRA}/ultra/courses/${pk}/outline`;
+      if (!TEST && (pk || r.type === 'agenda' || r.type === 'groups') && Date.now() - last > 60e3) {
         ss.set('tm4-relogin', String(Date.now()));
         ss.set('tm4-noapp', String(Date.now()));
         location.replace(target);

@@ -1,7 +1,10 @@
 {
- "version": "4.27.0",
- "built": 1795628284930,
+ "version": "4.27.1",
+ "built": 1795628823259,
  "news": {
+  "4.27.1": [
+   "Groepswerken opent nu altijd je groepen, niet meer soms een vak."
+  ],
   "4.27.0": [
    "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
    "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar."
@@ -38,9 +41,6 @@
   "4.23.1": [
    "Printen: je saldo en je afdrukken laden weer als je een tijd niet aangemeld was. De app stuurt je dan even langs de KU Leuven-login.",
    "Printen: bij Opladen staat je bedrag klaar op de betaalpagina; daar tik je zelf op Betaal."
-  ],
-  "4.23.0": [
-   "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
   ]
  }
 }
