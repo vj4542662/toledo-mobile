@@ -1,11 +1,7 @@
 {
- "version": "4.28.6",
- "built": 1795629882046,
+ "version": "4.29.0",
+ "built": 1795629893742,
  "builds": [
-  {
-   "v": "4.27.1",
-   "built": 1795628823259
-  },
   {
    "v": "4.28.0",
    "built": 1795628990809
@@ -33,9 +29,16 @@
   {
    "v": "4.28.6",
    "built": 1795629882046
+  },
+  {
+   "v": "4.29.0",
+   "built": 1795629893742
   }
  ],
  "news": {
+  "4.29.0": [
+   "Nieuw in Meer: Attesten. Vraag je inschrijvingsbewijs, transcript of een ander attest aan met één tik; KU Loket mailt het meteen naar je studentenmail."
+  ],
   "4.28.6": [
    "Studieplek heeft een nieuw, duidelijker icoon."
   ],
@@ -72,9 +75,6 @@
   "4.26.0": [
    "Meer ziet eruit als een beginscherm: elke dienst heeft zijn eigen app-icoon.",
    "Weergave, mail en updates staan nu in de nieuwe app Instellingen."
-  ],
-  "4.25.3": [
-   "Nieuwe versies worden voortaan eerst getest voordat ze bij iedereen komen."
   ]
  }
 }

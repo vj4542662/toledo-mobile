@@ -21,6 +21,8 @@
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
     else if (params.get('tm') === 'sync') mode = 'sync';
+    else if (PHONE && params.get('tm') !== 'orig' && (() => { try { const p = JSON.parse(ss.get('tm4-att-pass') || 'null'); return p && !p.done && Date.now() - p.ts < 5 * 60e3; } catch (_) { return false; } })()) mode = 'attpass'; // Attesten: signing in to KU Loket again
+    else if (PHONE && params.get('tm') === 'attest') mode = 'attest'; // Meer > Attesten
     else if (PHONE && params.get('tm') !== 'orig' && (params.get('tm') === 'room' || /zr_1011-display.*\/room\/\d+/.test(decodeURIComponent(location.hash)))) mode = 'room'; // lokaalfiche
     else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 10 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in (approving in the Authenticator can take a while)
     else if (PHONE && params.get('tm') === 'agenda') { mode = 'redirect'; target = PORTAL + '?tm=rooster'; } // link from v3
@@ -74,6 +76,8 @@
   if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'room') { whenRoot(roomPage); return; }
+  if (mode === 'attest') { whenRoot(attestPage); return; }
+  if (mode === 'attpass') { attestPass(); return; }
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
   if (mode === 'alma') { whenRoot(almaApp); return; }
   if (mode === 'print') {

@@ -1093,3 +1093,33 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .al-done .btn{display:flex;justify-content:center;width:100%;box-shadow:0 6px 20px rgba(0,0,0,.16)}
 .tm4 .al-done .btn:disabled{opacity:.55;box-shadow:none}
 .tm4 #tm-main section.al-busy .al-g,.tm4 #tm-main section.al-busy .al-st,.tm4 #tm-main section.al-busy .al-sh{opacity:.45;transition:opacity .15s}
+/* Attesten (KU Loket): the sheet to mail one attest */
+.tm4 .sheet .at-sh{padding:18px 16px 16px;max-height:calc(100vh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tm4 .at-hd{text-align:center}
+.tm4 .at-hd .ic{width:44px;height:44px;border-radius:12px;margin:0 auto 10px}
+.tm4 .at-hd .ic .i{width:26px;height:26px}
+.tm4 .at-hd b{display:block;font-size:19px;line-height:24px;font-weight:700}
+.tm4 .at-hd p{margin:6px 4px 0;font-size:14px;line-height:19px;color:var(--sub)}
+.tm4 .at-l{margin:18px 4px 7px;font-size:13px;line-height:18px;color:var(--sub);text-transform:uppercase;letter-spacing:.3px}
+.tm4 .at-opts{border-radius:12px;background:var(--card);overflow:hidden}
+.tm4 .at-o{display:flex;align-items:center;gap:10px;width:100%;min-height:50px;padding:9px 14px;text-align:left;position:relative}
+.tm4 .at-o + .at-o::before{content:"";position:absolute;top:0;left:14px;right:0;height:.5px;background:var(--sep)}
+.tm4 .at-o span{flex:1;min-width:0}
+.tm4 .at-o b{display:block;font-size:16px;line-height:21px;font-weight:500}
+.tm4 .at-o small{display:block;font-size:13px;line-height:17px;color:var(--sub)}
+.tm4 .at-o .i{flex:none;width:20px;height:20px;color:var(--accent);stroke-width:2.4}
+.tm4 .at-o.on b{font-weight:600}
+.tm4 .at-one{margin:14px 0 0;text-align:center;font-size:15px;color:var(--sub)}
+.tm4 .at-seg{display:flex;gap:4px;padding:3px;border-radius:10px;background:var(--fill)}
+.tm4 .at-seg button{flex:1;height:34px;border-radius:8px;font-size:15px;font-weight:500}
+.tm4 .at-seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+.tm4 .at-sh .btn{display:flex;width:100%;margin-top:20px}
+.tm4 .at-sh .btn .i{width:20px;height:20px}
+.tm4 .at-sh .btn .spin{width:18px;height:18px;margin:0;border-width:2px;border-color:rgba(255,255,255,.35);border-top-color:#fff}
+.tm4 .at-sh .btn:disabled{opacity:.75}
+.tm4 .at-note{margin:8px 0 0;text-align:center;font-size:13px;color:var(--sub)}
+.tm4 .at-err{margin:14px 0 -6px;text-align:center;font-size:14px;line-height:19px;color:var(--red)}
+.tm4 .at-ok{text-align:center;padding:6px 4px 0}
+.tm4 .at-ok>.i{width:46px;height:46px;padding:10px;border-radius:50%;background:var(--green);color:#fff;stroke-width:2.6}
+.tm4 .at-ok b{display:block;margin-top:10px;font-size:19px;font-weight:700}
+.tm4 .at-ok p{margin:6px 0 0;font-size:15px;line-height:20px;color:var(--sub)}
