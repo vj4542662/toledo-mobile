@@ -3,6 +3,7 @@
   let mode = 'classic', target = '';
   if (SITE === 'install') mode = 'none'; // GitHub: only the update page below
   else if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
+  else if (SITE === 'kurt' && !TOP && params.get('tm') === 'krb') mode = 'krbridge'; // hidden frame of the Agenda: reads your bookings
   else if (SITE === 'kurt') mode = TOP && PHONE && params.get('tm') !== 'orig' && !/^\/(check-in|login|logout|signin|saml|api)\b/i.test(PATH) ? 'kurt' : 'none'; // study places
   else if (SITE === 'print') {
     // KU Leuven Print (PaperCut): its own pages become the Print app; /topup is the payment page
@@ -13,11 +14,19 @@
     else if (Date.now() - (Number(ss.get('tm4-print-pass')) || 0) < 30e3) { ss.del('tm4-print-pass'); mode = 'none'; } // signing in again: let the server's login page through once
     else if (!classicOn('print') && /^\/app(;|$)/.test(PATH) && (!svc || /^page\/User/.test(svc))) mode = 'print';
     else mode = 'none';
+  } else if (SITE === 'alma') {
+    // Alma's restaurant pages become the Alma app; the rest of alma.be (news, catering…) stays as it is
+    // ?tm=frame: opened inside the Toledo app (Meer > Alma), which shows it only once it is ready, so the original site never flashes
+    const inFrame = !TOP && params.get('tm') === 'frame';
+    mode = (TOP || inFrame) && PHONE && params.get('tm') !== 'orig' && /^\/(nl|en)\/restaurants(\/[a-z0-9-]+)?\/?$/.test(PATH) ? 'alma' : 'none';
+    W.__TM_FRAME__ = inFrame && mode === 'alma';
   } else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
     else if (params.get('tm') === 'sync') mode = 'sync';
+    else if (PHONE && params.get('tm') !== 'orig' && (() => { try { const p = JSON.parse(ss.get('tm4-att-pass') || 'null'); return p && !p.done && Date.now() - p.ts < 5 * 60e3; } catch (_) { return false; } })()) mode = 'attpass'; // Attesten: signing in to KU Loket again
+    else if (PHONE && params.get('tm') === 'attest') mode = 'attest'; // Meer > Attesten
     else if (PHONE && params.get('tm') !== 'orig' && (params.get('tm') === 'room' || /zr_1011-display.*\/room\/\d+/.test(decodeURIComponent(location.hash)))) mode = 'room'; // lokaalfiche
     else if ((() => { try { return Date.now() - (JSON.parse(ss.get('tm4-sync') || '{}').ts || 0) < 10 * 60e3; } catch (_) { return false; } })()) mode = 'sync'; // back from signing in (approving in the Authenticator can take a while)
     else if (PHONE && params.get('tm') === 'agenda') { mode = 'redirect'; target = PORTAL + '?tm=rooster'; } // link from v3
@@ -34,6 +43,7 @@
     if (!PATH.startsWith('/ultra/')) mode = 'none';
     else if (/^\/ultra\/app\/?$/.test(PATH)) mode = 'app';
     else if (/^\/ultra\/calendar\/?$/.test(PATH) && tmq === 'agenda') { mode = 'app'; W.__TM_ROUTE__ = 'agenda'; } // Meer > Toledo-agenda
+    else if (/^\/ultra\/calendar\/?$/.test(PATH) && tmq === 'groepen') { mode = 'app'; W.__TM_ROUTE__ = 'groepen'; } // Meer > Groepswerken (no course address: its hash got lost on the way)
     else if (outline && tmq === 'classic') { ss.set('tm4-classic-ultra', String(Date.now())); mode = 'classic'; }
     else if (outline && tmq !== 'app' && !location.search && Date.now() - (Number(ss.get('tm4-noapp')) || 0) < 5 * 60e3) mode = 'classic';
     else if (outline && (!location.search || tmq === 'app')) { mode = 'app'; W.__TM_PK__ = outline[1]; ss.del('tm4-noapp'); }
@@ -70,7 +80,11 @@
   if (mode === 'classic' && PHONE && TOP && (SITE === 'ultra' || SITE === 'loket')) classicDark();
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'room') { whenRoot(roomPage); return; }
+  if (mode === 'attest') { whenRoot(attestPage); return; }
+  if (mode === 'attpass') { attestPass(); return; }
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
+  if (mode === 'krbridge') { kurtBridge(); return; }
+  if (mode === 'alma') { whenRoot(almaApp); return; }
   if (mode === 'print') {
     // signed out, the server sends a small page that forwards to the KU Leuven login: let it (or send it on ourselves)
     if (document.querySelector('form[action*="idp.kuleuven.be"]') || /Shibboleth Authentication/i.test(document.title || '')) return;

@@ -15,4 +15,11 @@ Open in Safari het Userscripts-menu: staat er een nieuwe versie klaar, dan tik j
 
 ## Broncode
 
+Er zijn twee kanalen:
+
+- **`beta`** (testkanaal): elke kleine wijziging komt eerst hier. Alleen wie de testversie installeerde krijgt deze updates: <https://raw.githubusercontent.com/vj4542662/toledo-mobile/beta/toledo-mobile.user.js>
+- **`main`** (iedereen): af en toe wordt de testversie in één keer uitgebracht met `sh release.sh`.
+
+`python3 build.py` bouwt voor het kanaal van de branch waarop je staat (alleen op `main` voor iedereen, anders voor het testkanaal).
+
 De onderdelen staan in `src/`; `python3 build.py` bouwt er `toledo-mobile.user.js` van. Verhoog bij elke nieuwe versie `VERSION` in `build.py`, anders ziet Userscripts de update niet.

@@ -25,10 +25,21 @@
         store.set('p:done', P.done);
       }
     }
+    // your groups (Groepswerken on the course site hands them over: name~course~e-mails!...), passed on to Studieplek
+    if (params.get('gx') != null) store.set('p:grps', String(params.get('gx')).slice(0, 4000));
     // your student number, handed over by the course pages (?rn=r0123456); Toledo itself only gives the login id
     {
       const rn = String(params.get('rn') || '').toLowerCase();
       if (/^r\d{7}$/.test(rn)) store.set('p:rn', rn);
+    }
+    // your study place bookings, handed over by Studieplek (?kr=id~startDate~startTime~endDate~endTime~name!...)
+    const KURT = 'https://kurt3.ghum.kuleuven.be';
+    P.kurt = store.get('p:kurt');
+    if (params.get('kr') != null) {
+      const v = String(params.get('kr')).split('!').filter(Boolean).map((x) => { const [id, sd, st, ed, et, ...n] = x.split('~'); return { id, sd, st, ed, et, n: n.join('~') }; })
+        .filter((r) => r.id && /^\d{4}-\d\d-\d\d$/.test(r.sd) && /^\d{4}-\d\d-\d\d$/.test(r.ed) && /^\d\d:\d\d$/.test(r.st) && /^\d\d:\d\d$/.test(r.et));
+      P.kurt = { ts: Date.now(), v };
+      store.set('p:kurt', P.kurt);
     }
     const pkOf = (u) => (/(?:\/courses\/|courseId=)(_\d+_\d+)/.exec(u || '') || [])[1];
     const curSem = () => { const m = new Date().getMonth(); return m >= 7 || m === 0 ? 'SEMESTER1' : 'SEMESTER2'; };
@@ -63,7 +74,7 @@
     const TABS = [
       { id: 'vandaag', label: 'Vandaag', icon: 'house', href: '#vandaag' },
       { id: 'vakken', label: 'Vakken', icon: 'book', href: '#vakken' },
-      { id: 'rooster', label: 'Rooster', icon: 'calendar', href: '#rooster' },
+      { id: 'rooster', label: 'Agenda', icon: 'calendar', href: '#rooster' },
       { id: 'updates', label: 'Updates', icon: 'bell', href: '#updates' },
       { id: 'meer', label: 'Meer', icon: 'grid', href: '#meer' },
     ];
@@ -261,7 +272,7 @@
         end: n ? `<span class="cap blue">${n} nieuw</span>` : '', cls: off ? 'off' : '', chevron: !off });
     }
     function agendaBanner() {
-      if (!P.agenda && P.ag !== 'loading' && P.ag) return `<div class="banner">${ico('calendar')}<span class="main">Je volledige rooster komt uit KU Loket en is nog niet geladen.</span><button type="button" data-act="agsync">Laden</button></div>`;
+      if (!P.agenda && P.ag !== 'loading' && P.ag) return `<div class="banner">${ico('calendar')}<span class="main">Je lessen komen uit KU Loket en zijn nog niet geladen.</span><button type="button" data-act="agsync">Laden</button></div>`;
       const stale = !P.agenda || Date.now() - P.agenda.ts > 3 * 864e5;
       if (P.ag === 'failed' && stale) return `<div class="banner">${ico('warn')}<span class="main">${P.agLogin ? 'KU Loket wil dat je even opnieuw aanmeldt om je rooster bij te werken.' : 'Het lessenrooster kon niet bijgewerkt worden.'}</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
       return '';
@@ -305,7 +316,7 @@
       if (!l) {
         const known = (P.agenda && P.agenda.v) || P.upcoming.length;
         if (!known && (P.ag === 'loading' || !P.loadedAt)) return '<div class="hero calm"><div class="sk" style="height:14px;width:40%"></div><div class="sk" style="height:24px;width:75%;margin-top:12px"></div><div class="sk" style="height:14px;width:55%;margin-top:10px"></div></div>';
-        return `<div class="hero calm" data-href="#rooster" role="link"><div class="hero-top"><span class="hero-lbl"><i></i>Lessen</span></div><div class="hero-title">Geen lessen gepland</div><div class="hero-meta"><span>Bekijk je rooster voor de komende weken.</span></div></div>`;
+        return `<div class="hero calm" data-href="#rooster" role="link"><div class="hero-top"><span class="hero-lbl"><i></i>Lessen</span></div><div class="hero-title">Geen lessen gepland</div><div class="hero-meta"><span>Bekijk je agenda voor de komende weken.</span></div></div>`;
       }
       const isLive = l === live;
       const dd = dayDiff(l.start, now);
@@ -320,7 +331,7 @@
         <div class="hero-title">${esc(l.title)}</div>
         <div class="hero-meta"><span>${ico('clock')}${hhmm(l.start)} – ${hhmm(l.end)}</span>${l.room ? `<span>${ico('pin')}${esc(l.room)}</span>` : ''}${l.form ? `<span>${esc(l.form)}</span>` : ''}</div>
         ${isLive ? `<div class="hero-prog"><i style="width:${pct.toFixed(1)}%"></i></div>` : ''}
-        <div class="hero-acts">${l.lu ? `<a class="pri" href="${esc(href)}">${ico('book')}Open vak</a>` : ''}${l.url ? `<a href="${esc(l.url)}">${ico('pin')}Lokaal</a>` : ''}<a href="#rooster">${ico('calendar')}Rooster</a></div>
+        <div class="hero-acts">${l.lu ? `<a class="pri" href="${esc(href)}">${ico('book')}Open vak</a>` : ''}${l.url ? `<a href="${esc(l.url)}">${ico('pin')}Lokaal</a>` : ''}<a href="#rooster">${ico('calendar')}Agenda</a></div>
       </div>`;
     }
     // Meer > Cijfers: only this semester's courses (Blackboard's own page lists every course you ever had)
@@ -340,6 +351,13 @@
       return `${ULTRA}/ultra/courses/${pk}/outline#/${route}?${q}`;
     }
     const gradesHref = () => ultraListHref('cijfers');
+    // Meer > Groepswerken: like Cijfers, but on Blackboard's calendar address with everything in the query (?tm=groepen):
+    // via a course + hash it sometimes landed on that course, because the hash got lost while signing in
+    const groupsHref = () => {
+      const u = ultraListHref('groepen', { ma: store.get('mailApp') === 'web' ? 'web' : 'app' });
+      const q = u.includes('#/groepen?') ? u.slice(u.indexOf('#/groepen?') + 10) : `th=${THEME}`;
+      return `${ULTRA}/ultra/calendar?tm=groepen&${q}`;
+    };
     // Meer > Toledo-agenda: Blackboard's calendar page with ?tm=agenda becomes the subscribe screen (#/agenda in ultra.js).
     // Not via a course + hash: the hash got lost on the way (sign-in, Toledo's link service), landing on a course.
     const agendaHref = () => `${ULTRA}/ultra/calendar?tm=agenda&th=${THEME}`;
@@ -460,48 +478,98 @@
       put(list, h);
     };
 
-    // ---- Rooster
-    BUILD.rooster = () => `<div class="lt"><h1>Rooster</h1></div><div data-k="seg">${segHtml([{ id: 'lessen', label: 'Lessen' }, { id: 'examens', label: 'Examens' }], P.seg, 'rseg')}</div><div data-k="body"></div>`;
-    NAVS.rooster = () => ({ title: 'Rooster', right: `<button type="button" class="nb" data-act="agrefresh" aria-label="Vernieuwen">${P.ag === 'loading' ? '<span class="spin" style="width:20px;height:20px;border-width:2px"></span>' : ico('refresh')}</button>` });
+    // ---- Agenda (was Rooster): lessons, study places, deadlines and exams on one timeline
+    const AGF = [['alles', 'Alles'], ['les', 'Lessen'], ['plek', 'Studieplek'], ['dl', 'Deadlines']]; // exams have their own page
+    BUILD.rooster = () => `<div class="lt"><h1>Agenda</h1></div><div data-k="seg">${segHtml([{ id: 'lessen', label: 'Agenda' }, { id: 'examens', label: 'Examens' }], P.seg, 'rseg')}</div><div data-k="body"></div>`;
+    NAVS.rooster = () => ({ title: 'Agenda', right: `<button type="button" class="nb" data-act="agrefresh" aria-label="Vernieuwen">${P.ag === 'loading' ? '<span class="spin" style="width:20px;height:20px;border-width:2px"></span>' : ico('refresh')}</button>` });
     function freshLine(noLink) {
       const a = P.agenda;
-      if (P.ag === 'loading') return '<p class="fresh">Rooster bijwerken…</p>';
+      if (P.ag === 'loading') return '<p class="fresh">Lessen bijwerken…</p>';
       if (!a) return '';
       const t = a.ts;
       const when = dayDiff(t, Date.now()) === 0 ? 'vandaag ' + hhmm(t) : dShort(t) + ' ' + hhmm(t);
-      return `<p class="fresh">Bijgewerkt ${when} · <button type="button" data-act="agrefresh">Bijwerken</button>${noLink ? '' : '<br><a href="https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL">Open in KU Loket</a>'}</p>`;
+      return `<p class="fresh">Lessen bijgewerkt ${when} · <button type="button" data-act="agrefresh">Bijwerken</button>${noLink ? '' : '<br><a href="https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL">Open in KU Loket</a>'}</p>`;
+    }
+    // study place bookings, handed over by Studieplek (KURT is another site): only the ones that haven't ended
+    const plekken = memo(() => ((P.kurt && P.kurt.v) || []).map((r) => ({ ...r, start: fromYmd(r.sd, r.st), end: r.et === '00:00' ? fromYmd(r.ed, '24:00') : fromYmd(r.ed, r.et) })).sort((a, b) => a.start - b.start), () => [P.kurt]);
+    // everything on the agenda, as {kind, start, ...}; exams already in the lesson timetable are not repeated
+    const agItems = memo(() => {
+      const L = lessons().map((l) => ({ ...l, kind: l.exam ? 'ex' : 'les' }));
+      const exDays = new Set(L.filter((l) => l.exam).map((l) => ymd(l.start)));
+      const X = exams().filter((x) => !exDays.has(ymd(x.start))).map((x) => {
+        const en = x.end ? fromYmd(ymd(x.start), x.end) : x.start + 3 * 3600e3;
+        return { kind: 'ex', start: x.start, end: en, notime: !x.time, title: x.title, lu: x.lu, color: x.color, room: x.room, url: x.url, form: 'Examen', exam: true };
+      });
+      const D = P.events.filter((e) => e.subType === 'due' && !e.dismissed).map((e) => ({ kind: 'dl', start: e.date, ev: e }));
+      const K = plekken().map((r) => ({ kind: 'plek', ...r }));
+      return L.concat(X, D, K).sort((a, b) => a.start - b.start);
+    }, () => [lessons(), exams(), P.events, plekken()]);
+    const AG_DOT = { les: 'var(--sub)', plek: '#3d8fa8', dl: 'var(--orange)', ex: 'var(--red)' };
+    function dueAgRow(e, now) {
+      const done = isDone(e);
+      const hrs = (e.date - now) / 3600e3;
+      const tone = done ? 'green' : e.date < now ? '' : hrs < 48 ? 'red' : hrs < 120 ? 'orange' : '';
+      const href = eventHref(e);
+      return `<div class="lesson ag-dl${e.date < now && !done ? ' past' : ''}"${href ? ` data-href="${esc(href)}" role="link"` : ''} data-ev="${esc(e.id)}"><div class="tm"><b>${hhmm(e.date)}</b><span>deadline</span></div><div class="bar"></div><div class="main"><div class="t"><span class="ag-tag dl">DEADLINE</span>${esc(e.title || 'Deadline')}</div><div class="meta"><span>${esc(cleanTitle(e.source || ''))}</span></div></div><span class="end"><span class="cap ${tone}">${esc(done ? 'Ingeleverd' : e.date < now ? 'verlopen' : dueLabel(e.date, now))}</span></span></div>`;
+    }
+    function plekRow(r, now) {
+      const live = r.start <= now + 30 * 60e3 && r.end > now, past = r.end <= now;
+      const parts = String(r.n || '').split(' - ');
+      const lib = parts[0] || 'Studieplek', what = parts.slice(1).join(' - ') || r.n;
+      const room = !/\d\s*$/.test(String(r.n || ''));
+      const href = KURT + '/#/s/' + encodeURIComponent(r.id);
+      return `<div class="lesson ag-plek${live ? ' now' : ''}${past ? ' past' : ''}" data-href="${esc(href)}" role="link" style="--c:#3d8fa8"><div class="tm"><b>${esc(r.st)}</b><span>${esc(r.et === '00:00' ? '24:00' : r.et)}</span></div><div class="bar"></div><div class="main"><div class="t"><span class="ag-tag plek">STUDIEPLEK</span>${esc(room ? 'Groepsruimte ' + what : what)}${live && r.start <= now ? '<span class="now-tag">NU</span>' : ''}</div><div class="meta"><span>${esc(lib)}</span><a href="${esc(live ? KURT + '/' : href)}">${ico('pin')}${live ? 'Inchecken' : room ? 'Vind het lokaal' : 'Vind mijn stoel'}</a></div></div><span class="end">${CHEV}</span></div>`;
+    }
+    function agRow(it, now) {
+      if (it.kind === 'dl') return dueAgRow(it.ev, now);
+      if (it.kind === 'plek') return plekRow(it, now);
+      if (it.kind === 'ex' && it.notime) return lessonRow({ ...it, start: it.start, end: it.start }, now, 'rooster').replace(/<div class="tm"><b>[^<]*<\/b><span>[^<]*<\/span><\/div>/, '<div class="tm"><b>–</b><span>examen</span></div>');
+      return lessonRow(it, now, 'rooster');
     }
     function roosterLessen(now) {
-      const L = lessons();
+      const all = agItems();
+      const f = P.agf || 'alles';
       const ws = addDays(mondayOf(now), P.weekOff * 7);
       const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
-      const has = new Set(L.map((l) => ymd(l.start)));
+      const byDay = {};
+      all.forEach((it) => { if (f !== 'alles' && it.kind !== f) return; const k = ymd(it.start); (byDay[k] = byDay[k] || []).push(it); });
+      const dotsOf = (k) => { const ks = new Set((byDay[k] || []).map((x) => x.kind)); return ['les', 'plek', 'dl', 'ex'].filter((x) => ks.has(x)).map((x) => `<i style="background:${AG_DOT[x]}"></i>`).join(''); };
       const todayK = ymd(now);
       const mid = days[3];
       const month = `${cap(MONTHS[new Date(mid).getMonth()])} ${new Date(mid).getFullYear()}`;
       const wkLabel = P.weekOff === 0 ? 'Deze week' : P.weekOff === 1 ? 'Volgende week' : P.weekOff === -1 ? 'Vorige week' : month;
-      let h = `<div class="wk-sticky"><div class="wk-head"><b>${esc(wkLabel)}</b><span class="btns">${P.weekOff !== 0 ? '<button type="button" class="today-btn" data-act="wktoday">Vandaag</button>' : ''}<button type="button" data-act="wk" data-d="-1" aria-label="Vorige week"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5 8 12l6.5 7"/></svg></button><button type="button" data-act="wk" data-d="1" aria-label="Volgende week"><svg class="i" viewBox="0 0 24 24"><path d="M9.5 5 16 12l-6.5 7"/></svg></button></span></div>`;
-      h += `<div class="week">${days.map((t) => { const k = ymd(t); const dw = new Date(t).getDay(); return `<button type="button" class="wd${k === todayK ? ' today' : ''}${has.has(k) ? ' has' : ''}${dw === 0 || dw === 6 ? ' we' : ''}" data-act="day" data-d="${k}"><small>${DAYS_S[dw]}</small><b>${new Date(t).getDate()}</b><i></i></button>`; }).join('')}</div></div>`;
+      let h = `<div class="chips ag-chips">${AGF.map(([id, label]) => `<button type="button" class="chip${f === id ? ' on' : ''}" data-act="agf" data-id="${id}">${id !== 'alles' ? `<i style="background:${AG_DOT[id]}"></i>` : ''}${label}</button>`).join('')}</div>`;
+      h += `<div class="wk-sticky"><div class="wk-head"><b>${esc(wkLabel)}</b><span class="btns">${P.weekOff !== 0 ? '<button type="button" class="today-btn" data-act="wktoday">Vandaag</button>' : ''}<button type="button" data-act="wk" data-d="-1" aria-label="Vorige week"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5 8 12l6.5 7"/></svg></button><button type="button" data-act="wk" data-d="1" aria-label="Volgende week"><svg class="i" viewBox="0 0 24 24"><path d="M9.5 5 16 12l-6.5 7"/></svg></button></span></div>`;
+      h += `<div class="week">${days.map((t) => { const k = ymd(t); const dw = new Date(t).getDay(); return `<button type="button" class="wd${k === todayK ? ' today' : ''}${byDay[k] ? ' has' : ''}${dw === 0 || dw === 6 ? ' we' : ''}" data-act="day" data-d="${k}"><small>${DAYS_S[dw]}</small><b>${new Date(t).getDate()}</b><span class="ag-dots">${dotsOf(k)}</span></button>`; }).join('')}</div></div>`;
       const range = P.agenda && P.agenda.v && P.agenda.v.range;
       let body = '';
+      const any = days.some((t) => byDay[ymd(t)]);
       days.forEach((t) => {
         const k = ymd(t);
-        const list = L.filter((l) => ymd(l.start) === k);
-        if (!list.length && k !== todayK) return;
+        const list = byDay[k] || [];
+        if (!list.length && (k !== todayK || !any)) return;
         const dd = dayDiff(t, now);
         const title = dd === 0 ? `Vandaag · ${dLong(t)}` : dd === 1 ? `Morgen · ${dLong(t)}` : cap(dLong(t));
         body += `<div class="day-title" id="tm-d-${k}">${esc(title)}</div>`;
-        if (list.length) body += `<div class="group">${list.map((l) => lessonRow(l, now, 'rooster')).join('')}</div>`;
-        else body += '<div class="group plain"><div class="empty small" style="padding:14px 16px">Vandaag geen lessen</div></div>';
+        if (list.length) body += `<div class="group">${list.map((it) => agRow(it, now)).join('')}</div>`;
+        else body += '<div class="group plain"><div class="empty small" style="padding:14px 16px">Vandaag niets gepland</div></div>';
       });
-      if (!L.length && !P.agenda && P.ag !== 'failed') body = skGroup(4);
-      else if (!body || !days.some((t) => has.has(ymd(t)))) {
-        const out = range && (ymd(days[6]) < range[0] || ymd(days[0]) > range[1]);
-        const nx = L.find((l) => l.start > days[6] + 864e5);
+      if (!all.length && !P.agenda && P.ag !== 'failed') body = skGroup(4);
+      else if (!any) {
+        const out = (f === 'alles' || f === 'les') && range && (ymd(days[6]) < range[0] || ymd(days[0]) > range[1]);
+        const nx = all.find((x) => (f === 'alles' || x.kind === f) && x.start > days[6] + 864e5);
+        const what = { alles: 'Niets gepland deze week', les: 'Geen lessen deze week', plek: 'Geen studieplek gereserveerd', dl: 'Geen deadlines deze week', ex: 'Geen examens deze week' }[f];
         body += out ? empty('calendar', 'Buiten het geladen bereik', 'Open KU Loket voor lessen zo ver vooruit.', '<p style="margin-top:14px"><a class="btn ghost" href="https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL">Open in KU Loket</a></p>')
-          : empty('calendar', 'Geen lessen deze week', '', nx ? `<p style="margin-top:12px"><button type="button" class="btn ghost" data-act="jump" data-d="${ymd(nx.start)}">Volgende les: ${esc(dShort(nx.start))}</button></p>` : '');
+          : empty('calendar', what, '', nx ? `<p style="margin-top:12px"><button type="button" class="btn ghost" data-act="jump" data-d="${ymd(nx.start)}">Volgende: ${esc(dShort(nx.start))}</button></p>` : '');
       }
+      if (f === 'plek' && !P.kurt) body += `<p class="fresh">Open <a href="${esc(KURT + '/')}">Studieplek</a> één keer, dan verschijnen je reservaties hier.</p>`;
       return h + `<div class="day-wrap" data-k="day">${body}</div>`;
+    }
+    function examGap(a, b) {
+      const n = dayDiff(b.start, a.start) - 1;
+      if (n < 0) return '<div class="ex-gap"><i style="--g:var(--red)"></i><span class="cap red">Zelfde dag</span></div>';
+      const tone = n <= 2 ? 'red' : n <= 3 ? 'orange' : 'green';
+      return `<div class="ex-gap"><i style="--g:var(--${tone === 'orange' ? 'orange' : tone})"></i><span class="cap ${tone}">${n === 0 ? 'Geen dag ertussen' : n === 1 ? '1 dag studietijd' : n + ' dagen studietijd'}</span></div>`;
     }
     function roosterExamens(now) {
       const X = exams();
@@ -516,7 +584,20 @@
       const past = X.filter((x) => dayDiff(x.start, now) < 0);
       let h = '';
       if (examsNeedRooms() && P.ag !== 'loading') h += `<div class="banner">${ico('pin')}<span class="main">Werk je examenrooster één keer bij om de lokalen aanklikbaar te maken.</span><button type="button" data-act="agsync">Bijwerken</button></div>`;
-      if (up.length) { const first = up[0]; h += `<div class="gh">Volgend examen ${esc(until(first.start, now))}</div><div class="group">${up.map((x) => examRow(x, now)).join('')}</div>`; }
+      if (up.length) {
+        // exam periods (January, June, August): more than 3 weeks apart means a new period, with its own block
+        const per = [];
+        up.forEach((x, i) => { if (!i || dayDiff(x.start, up[i - 1].start) > 21) per.push([]); per[per.length - 1].push(x); });
+        const span = (t) => `${new Date(t).getDate()} ${MONTHS_S[new Date(t).getMonth()]}`;
+        const perName = (t) => { const m = new Date(t).getMonth(); return (m <= 2 ? 'Januari' : m <= 6 ? 'Juni' : m <= 8 ? 'Augustus' : cap(MONTHS[m])) + ' ' + new Date(t).getFullYear(); };
+        const first = per[0][0], last = per[0][per[0].length - 1], n = per[0].length;
+        const d0 = dayDiff(first.start, now);
+        h += `<div class="card ex-sum"><small>${n === 1 ? 'Volgend examen' : 'Examenperiode ' + esc(perName(first.start).toLowerCase())}</small><b>${d0 === 0 ? 'Vandaag examen' : d0 === 1 ? 'Morgen je eerste examen' : `Eerste examen over ${d0} dagen`}</b><span>${n} ${n === 1 ? 'examen' : 'examens'} · ${esc(n > 1 ? span(first.start) + ' – ' + span(last.start) : dLong(first.start))}</span></div>`;
+        per.forEach((g) => {
+          if (per.length > 1) h += `<div class="gh">Examens ${esc(perName(g[0].start).toLowerCase())}</div>`;
+          h += `<div class="group">${g.map((x, i) => (i ? examGap(g[i - 1], x) : '') + examRow(x, now)).join('')}</div>`;
+        });
+      }
       if (past.length) h += `<div class="gh">Voorbij</div><div class="group">${past.map((x) => examRow(x, now)).join('')}</div>`;
       return h + '<p class="fresh"><a href="https://www.kuleuven.be/kuloket/zr_0363">Open je examenrooster in KU Loket</a></p>';
     }
@@ -526,6 +607,11 @@
       // the empty Examens page has its own button, so no banner above it
       const banner = P.seg === 'examens' && !P.agenda && !exams().length ? '' : agendaBanner();
       put($('[data-k="body"]', el), banner + (P.seg === 'examens' ? roosterExamens(now) : roosterLessen(now)) + freshLine(P.seg === 'examens'));
+      // straight to today, so a week full of lessons doesn't need scrolling first (once per visit of the tab)
+      if (P.tab === 'rooster' && P.seg === 'lessen' && P.weekOff === 0 && !P.agScrolled && document.getElementById('tm-d-' + ymd(now))) {
+        P.agScrolled = true;
+        if (W.scrollY < 40) requestAnimationFrame(() => scrollToDay(ymd(now), true));
+      }
     };
 
     // ---- Updates
@@ -566,23 +652,43 @@
       const u = P.user || {};
       const name = [u.givenName, u.familyName].filter(Boolean).join(' ');
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
-      const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
       let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
+      // every service is an "app" in one grid, like the iPhone home screen
+      const app = (o) => {
+        const inner = `<span class="ai" style="--c:${o.c}">${ico(o.i)}${o.badge ? `<b class="ai-bd">${o.badge > 99 ? '99+' : o.badge}</b>` : ''}</span><span class="al">${esc(o.n)}</span>`;
+        return o.href ? `<a class="app" href="${esc(o.href)}"${o.act ? ` data-act="${o.act}"` : ''}>${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
+      };
+      const APPS = [
+        { n: 'Studieplek', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' + (store.get('p:grps') ? '?tmgs=' + encodeURIComponent(store.get('p:grps')) : '') },
+        { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
+        { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
+        { n: 'Groepswerken', i: 'people', c: '#c2477a', href: groupsHref() },
+        { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
+        { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
+        { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
+        { n: 'Alma', i: 'food', c: '#d9534f', href: 'https://www.alma.be/nl/restaurants#/?th=' + THEME, act: 'alma' },
+        { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
+        { n: 'Attesten', i: 'cert', c: '#8e5bd6', href: `${LOKET}?tm=attest&ma=${store.get('mailApp') === 'web' ? 'web' : 'app'}&th=${THEME}` },
+        { n: 'Hulp', i: 'help', c: '#8a96a3', href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student' },
+        { n: 'Instellingen', i: 'sliders', c: '#5d6b73', href: '#instellingen', badge: P.upd ? 1 : 0 },
+      ];
+      h += `<div class="apps">${APPS.map(app).join('')}</div>`;
+      put($('[data-k="body"]', el), h);
+    };
+
+    // ---- Instellingen (an "app" in Meer): look, mail, updates, about
+    BUILD.instellingen = () => '<div class="lt"><h1>Instellingen</h1></div><div data-k="body"></div>';
+    NAVS.instellingen = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Instellingen' });
+    FILL.instellingen = (el) => {
+      const L = linkMap();
       const mailApp = store.get('mailApp') !== 'web';
-      // KURT (studyplace booking) matters most here: a big card on top
-      h += `<a class="kurt" href="${'https://kurt3.ghum.kuleuven.be/'}"><span class="kurt-ic">${ico('seat')}</span><span class="kurt-t"><b>Studieplek reserveren</b><span>KURT · bibliotheken en leercentra</span></span><span class="kurt-go">Reserveer</span></a>`;
-      h += `<a class="kurt prt" href="https://print.kuleuven.be/"><span class="kurt-ic">${ico('printer')}</span><span class="kurt-t"><b>Printen</b><span>KU Leuven Print · saldo en wachtrij</span></span><span class="kurt-go">Print</span></a>`;
-      h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#6e7f95', 'LIMO', 'Bibliotheek zoeken')}</div>`;
-      const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
-      const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
-      const I0 = P.study && P.study.v && P.study.v.isp;
-      const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ href: gradesHref() || L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', iconHtml: `<span class="ic" style="--c:#5856d6">${ico('chart')}</span>`, title: 'Cijfers', sub: 'Je vakken van dit semester' })}${row({ href: agendaHref(), iconHtml: `<span class="ic" style="--c:#ff9500">${ico('calendar')}</span>`, title: 'Toledo-agenda op je iPhone', sub: 'Deadlines vanzelf in je Agenda-app' })}</div>`;
+      const ic = (icon, color) => `<span class="ic" style="--c:${color}">${ico(icon)}</span>`;
+      let h = `<div class="group plain set-about"><span class="ai" style="--c:#1f6f8b">${ico('book')}</span><span class="main"><span class="t">Toledo Mobile</span><span class="s">Versie ${esc(VERSION)}${CHANNEL === 'beta' ? ' (testversie)' : ''}</span></span></div>`;
+      if (P.upd) h += `<div class="group" style="margin-top:12px">${row({ act: 'update', iconHtml: ic('refresh', '#34c759'), title: 'Update naar versie ' + P.upd.v, sub: 'Tik om te installeren' })}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
-      h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
-      if (P.upd) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar versie ' + P.upd.v, sub: 'Nieuwe versie van Toledo Mobile, tik om te installeren' })}</div>`;
-      h += `<p class="foot">Toledo Mobile ${VERSION}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschuren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
+      h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: ic('refresh', '#8e8e93'), title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: ic('swap', '#8e8e93'), title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${row({ href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', iconHtml: ic('help', '#8e8e93'), title: 'Hulp bij Toledo' })}</div>`;
+      h += `<p class="foot">Toledo Mobile ${VERSION}${CHANNEL === 'beta' ? ' (testversie)' : ''}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschueren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
       put($('[data-k="body"]', el), h);
     };
 
@@ -618,6 +724,7 @@
       put($('[data-k="body"]', el), h || (S && S.length ? empty('trend', 'Resultaat niet gevonden', 'Dit vak staat niet meer in je studievoortgang.') : stEmpty('studie')));
     };
     const SUBVIEW = { studie: 'meer', isp: 'meer', resultaat: 'meer' };
+    const UNDER = { instellingen: 'meer' }; // opened from Meer, but no study data needed
 
     /* ---------------- view switching ---------------- */
     function view(id) {
@@ -636,6 +743,7 @@
     function render(id) { const v = view(id); FILL[id](v.el); v.dirty = false; }
     let rq = 0;
     function dirty(...ids) {
+      if (ids.includes('meer')) ids.push('instellingen');
       ids.forEach((i) => { if (V[i]) V[i].dirty = true; });
       if (rq) return;
       rq = requestAnimationFrame(() => {
@@ -650,6 +758,7 @@
       if (id === P.tab && prev && !sub) { W.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       if (prev) prev.y = W.scrollY;
       if (id === 'rooster' && sub) P.seg = sub === 'examens' ? 'examens' : 'lessen';
+      if (id === 'rooster') { P.agScrolled = !!(V.rooster && V.rooster.y); refreshKurt(); }
       if (id === 'resultaat') {
         const k = sub ? decodeURIComponent(sub) : P.resKey;
         if (k !== P.resKey && V.resultaat) V.resultaat.y = 0;
@@ -657,11 +766,12 @@
         if (!k) id = 'studie';
       }
       const first = !P.tab;
+      const fromMeer = P.tab === 'meer' && (SUBVIEW[id] || UNDER[id]);
       P.tab = id;
       const v = view(id);
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
-      setTabOn(SUBVIEW[id] || id);
+      setTabOn(SUBVIEW[id] || UNDER[id] || id);
       if (SUBVIEW[id]) {
         // nothing to show yet: get it, and if the hidden frame can't, open KU Loket for a moment (at most once per 5 minutes, never right after a sync)
         const auto = !P.study && !syncM && Date.now() - (Number(ss.get('tm4-stauto')) || 0) > 5 * 60e3;
@@ -672,7 +782,10 @@
       if (id === 'studie') { const S = P.study && P.study.v && P.study.v.study; const a = S && S.find((x) => x.active); if (a && a.last) store.set('p:resSeen', a.last); }
       badges();
       setNav(NAVS[id]());
+      if (fromMeer) { v.y = 0; const de = document.documentElement; de.style.overflow = 'hidden'; requestAnimationFrame(() => { de.style.overflow = ''; }); } // stops a running momentum scroll
       W.scrollTo(0, v.y || 0);
+      // iPhone: a tap during Meer's momentum scroll can keep scrolling the new screen, so put it back on top a few times
+      if (fromMeer) { let touched = false; const stop = () => { touched = true; }; W.addEventListener('touchstart', stop, { once: true, passive: true }); [16, 90, 250, 500].forEach((ms) => setTimeout(() => { if (!touched && P.tab === id) W.scrollTo(0, 0); }, ms)); setTimeout(() => W.removeEventListener('touchstart', stop), 600); }
       watchTitle(v.el);
       let hash = '#' + id + (id === 'rooster' && P.seg === 'examens' ? '/examens' : '');
       if (id === 'resultaat') hash = '#resultaat/' + encodeURIComponent(P.resKey);
@@ -686,7 +799,7 @@
       const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer', studie: 'studie', isp: 'isp' };
       if (qmap[q] && h.split('/')[0] !== qmap[q].split('/')[0]) h = qmap[q];
       const [a, b] = h.split('/');
-      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp', resultaat: 'resultaat' };
+      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp', resultaat: 'resultaat', instellingen: 'instellingen', settings: 'instellingen' };
       return { tab: map[a] || 'vandaag', sub: b || '' };
     }
     function badges() {
@@ -717,12 +830,12 @@
       d.classList.remove('slide-l', 'slide-r'); void d.offsetWidth; d.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
     }
     function shiftWeek(dir) { P.weekOff += dir; FILL.rooster(V.rooster.el); animWeek(dir); const st = $('.wk-sticky', V.rooster.el); if (st && W.scrollY > st.offsetTop) W.scrollTo(0, Math.max(0, st.offsetTop - 60)); }
-    function scrollToDay(k) {
+    function scrollToDay(k, instant) {
       const sec = document.getElementById('tm-d-' + k);
       const st = $('.wk-sticky', V.rooster.el);
-      if (!sec) { toast('Geen lessen op ' + dLong(fromYmd(k))); return; }
+      if (!sec) { if (!instant) toast('Niets gepland op ' + dLong(fromYmd(k))); return; }
       const off = ($('#tm-nav').offsetHeight || 44) + (st ? st.offsetHeight : 0) + 4;
-      W.scrollTo({ top: sec.getBoundingClientRect().top + W.scrollY - off, behavior: 'smooth' });
+      W.scrollTo({ top: sec.getBoundingClientRect().top + W.scrollY - off, behavior: instant ? 'auto' : 'smooth' });
     }
     const ACTS = {
       update: () => { hideNotice(); updateSheet(P.upd); },
@@ -738,6 +851,7 @@
       wk: (b) => shiftWeek(Number(b.dataset.d)),
       wktoday: () => { const dir = P.weekOff > 0 ? -1 : 1; P.weekOff = 0; FILL.rooster(V.rooster.el); animWeek(dir); scrollToDay(ymd(Date.now())); },
       day: (b) => scrollToDay(b.dataset.d),
+      agf: (b) => { P.agf = b.dataset.id; FILL.rooster(V.rooster.el); },
       jump: (b) => { const k = b.dataset.d; const dir = 1; P.weekOff = Math.round((mondayOf(fromYmd(k)) - mondayOf(Date.now())) / (7 * 864e5)); FILL.rooster(V.rooster.el); animWeek(dir); setTimeout(() => scrollToDay(k), 60); },
       filter: (b) => { P.filter = b.dataset.id; P.feedN = 50; FILL.updates(V.updates.el); W.scrollTo(0, 0); },
       feedmore: () => { P.feedN += 50; FILL.updates(V.updates.el); },
@@ -772,7 +886,7 @@
           ] });
         }, 2600);
       },
-      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
+      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.instellingen(V.instellingen.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
       loket: () => sheet({ title: 'KU Loket', actions: [
         { label: 'Studietracker', href: 'https://kuleuven.be/kuloket/zr_0184?sap-language=NL' },
         { label: 'Uurrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL' },
@@ -781,16 +895,80 @@
         { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
       ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
+      soon: () => {}, // Sport: only an icon for now, the app itself comes later
+      alma: (el) => openAlma(el.getAttribute('href'), el),
       theme: (b) => {
         const t = b.dataset.id;
         saveTheme(t);
         applyTheme(t);
-        segSet(V.meer.el, t);
+        if (V.instellingen) segSet(V.instellingen.el, t);
         toast(t === 'light' ? 'Lichte modus' : t === 'dark' ? 'Donkere modus' : 'Volgt je iPhone');
       },
       reload: () => { ['p:events', 'p:enr', 'p:upcoming', 'p:mail'].forEach((k) => store.del(k)); toast('Bezig met vernieuwen…'); loadAll(true); refreshAgenda(true); },
       classic: () => sheet({ title: 'Klassieke Toledo openen?', msg: 'Je kan altijd terug naar de app via de knop onderaan.', actions: [{ label: 'Open klassieke Toledo', run: () => { ss.set('tm4-classic', '1'); history.replaceState(null, '', location.pathname + '#/home'); location.reload(); } }] }),
     };
+
+    /* ---------------- Alma inside the app ----------------
+       Alma's site loads in a hidden frame on top of the app and only slides in once its app screen stands,
+       so the original alma.be never flashes. The frame is removed again as soon as you leave Alma. */
+    let almaOpen = null;
+    function openAlma(href, tile) {
+      if (almaOpen) return;
+      // the notch and home bar: a frame doesn't know them, so pass them along
+      const probe = document.createElement('div');
+      probe.setAttribute('data-tm4', '');
+      probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+      document.body.appendChild(probe);
+      const cs = getComputedStyle(probe);
+      const st = Math.round(parseFloat(cs.paddingTop) || 0), sb = Math.round(parseFloat(cs.paddingBottom) || 0);
+      probe.remove();
+      const seed = store.get('alma:sync') || {};
+      const url = 'https://www.alma.be/nl/restaurants?tm=frame&st=' + st + '&sb=' + sb + '&s=' + encodeURIComponent(JSON.stringify(seed)) + '#/?th=' + THEME;
+      const layer = document.createElement('div');
+      layer.id = 'tm-alma';
+      layer.setAttribute('data-tm4', '');
+      const f = document.createElement('iframe');
+      f.title = 'Alma';
+      f.setAttribute('data-tm4', '');
+      f.src = url;
+      layer.appendChild(f);
+      const busy = document.createElement('span');
+      busy.className = 'spin app-spin';
+      if (tile) (tile.querySelector('.ai') || tile).appendChild(busy);
+      let ready = false;
+      const st0 = { y: W.scrollY };
+      const done = () => { busy.remove(); };
+      const close = (tab) => {
+        if (!almaOpen) return;
+        W.removeEventListener('message', onMsg);
+        W.removeEventListener('popstate', onPop);
+        almaOpen = null;
+        done();
+        layer.classList.remove('on');
+        setTimeout(() => layer.remove(), 330);
+        if (tab && tab !== P.tab && (V[tab] || BUILD[tab])) show(tab);
+        else W.scrollTo(0, st0.y);
+      };
+      const onMsg = (e) => {
+        if (e.source !== f.contentWindow || !/^https:\/\/(www\.)?alma\.be$/.test(e.origin) || !e.data || e.data.tm4 !== 'alma') return;
+        if (e.data.save) store.set('alma:sync', e.data.save);
+        if (e.data.ready && !ready) {
+          ready = true;
+          done();
+          try { history.pushState({ tmAlma: 1 }, '', location.href); } catch (_) {}
+          layer.classList.add('on');
+        }
+        if (e.data.close) close(e.data.tab);
+      };
+      // the back swipe from Alma's first screen: back in the app
+      const onPop = () => { if (ready) close(); };
+      W.addEventListener('message', onMsg);
+      W.addEventListener('popstate', onPop);
+      almaOpen = { close };
+      document.body.appendChild(layer);
+      // Alma doesn't answer (offline, its site changed): open it the old way
+      setTimeout(() => { if (!ready && almaOpen) { close(); goTo(href); } }, 9000);
+    }
 
     W.addEventListener('click', (e) => {
       if (!e.target || !e.target.closest) return;
@@ -812,7 +990,7 @@
         if (href.startsWith('#')) { const [x, y] = href.slice(1).split('/'); show(x, y); } else goTo(href);
       }
     }, true);
-    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|studie|isp|resultaat\/[^/]+)$/;
+    const OWN = /^#(vandaag|vakken|rooster|rooster\/examens|updates|meer|instellingen|studie|isp|resultaat\/[^/]+)$/;
     W.addEventListener('hashchange', () => {
       if (!OWN.test(location.hash)) { history.replaceState(null, '', location.pathname + '#' + P.tab + (P.tab === 'rooster' && P.seg === 'examens' ? '/examens' : P.tab === 'resultaat' ? '/' + encodeURIComponent(P.resKey || '') : '')); return; }
       const r = routeFromUrl(true);
@@ -869,7 +1047,11 @@
       if (upg) store.set('p:agUpg', Date.now());
       if (!force && !upg && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
       // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
-      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
+      const stIdle = () => {
+        // the timetable won't load now either: show the "Examenrooster laden" button instead of grey bars forever
+        if (!P.ag) { P.ag = 'failed'; dirty('vandaag', 'rooster'); }
+        if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); }
+      };
       if (bridgeBusy) {
         if (force && !quiet) ACTS.agsync();
         else if (wantStudy && !bridgeSt) bridgeDone.then(() => refreshAgenda(false, true, quiet));
@@ -913,7 +1095,7 @@
         dirty('vandaag', 'rooster', 'studie', 'isp', 'resultaat', 'meer');
         if (P.tab === 'rooster' || SUBVIEW[P.tab]) setNav(NAVS[P.tab]());
         if ((!ok || (withSt && noSt && SUBVIEW[P.tab])) && force && !quiet) ACTS.agsync();
-        else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Rooster bijgewerkt');
+        else if (ok && force && !quiet) toast(SUBVIEW[P.tab] ? 'Bijgewerkt' : 'Agenda bijgewerkt');
       };
       const onMsg = (e) => {
         if (e.origin !== LOKET_ORIGIN || !e.data || e.data.tm4 !== 'agenda') return;
@@ -940,6 +1122,31 @@
       return settled;
     }
 
+    /* Studieplek (KURT) is another site too: a hidden frame reads your bookings there (kurtBridge), so the Agenda
+       has them without opening Studieplek first. At most every 2 minutes. */
+    let krAt = 0;
+    function refreshKurt(force) {
+      if (!force && Date.now() - krAt < 120e3) return;
+      krAt = Date.now();
+      const f = document.createElement('iframe');
+      f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+      f.style.cssText = 'position:fixed;left:-10px;top:-10px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+      let timer = 0;
+      const done = () => { clearTimeout(timer); W.removeEventListener('message', onMsg); f.remove(); };
+      const onMsg = (e) => {
+        if (e.origin !== KURT || !e.data || e.data.tm4 !== 'kr') return;
+        done();
+        if (!e.data.ok || !Array.isArray(e.data.list)) return;
+        P.kurt = { ts: Date.now(), v: e.data.list.filter((r) => r && r.id && /^\d{4}-\d\d-\d\d$/.test(r.sd) && /^\d{4}-\d\d-\d\d$/.test(r.ed) && /^\d\d:\d\d$/.test(r.st) && /^\d\d:\d\d$/.test(r.et)) };
+        store.set('p:kurt', P.kurt);
+        dirty('rooster');
+      };
+      W.addEventListener('message', onMsg);
+      timer = setTimeout(done, 15000);
+      f.src = KURT + '/?tm=krb';
+      document.body.appendChild(f);
+    }
+
     /* ---------------- start ---------------- */
     guardPath();
     learnPk();
@@ -948,6 +1155,7 @@
     badges();
     loadAll(false);
     setTimeout(() => refreshAgenda(false), 350);
+    if (!params.get('kr')) setTimeout(() => refreshKurt(), r0.tab === 'rooster' ? 500 : 2500);
     updateWatch((info) => { P.upd = info; dirty('vandaag', 'meer'); });
     justUpdated();
     setTimeout(countUser, 4000);
@@ -955,6 +1163,7 @@
     // Toledo itself, and KU Loket (same site, so its cookies go along) for the timetable
     pullRefresh(() => {
       if (SUBVIEW[P.tab]) return refreshAgenda(true, true, true);
+      refreshKurt(true);
       return Promise.all([loadAll(true), refreshAgenda(true, false, true)]);
     });
     keepAlive('portal', [[PORTAL_ORIGIN + '/portal/api/user'], [LOKET_ORIGIN + '/sap/bc/ui2/start_up', 'no-cors']]);

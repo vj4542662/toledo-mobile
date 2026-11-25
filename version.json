@@ -1,44 +1,57 @@
 {
- "version": "4.25.2",
- "built": 1795613559815,
+ "version": "4.33.1",
+ "built": 1795647952256,
+ "builds": [
+  {
+   "v": "4.25.2",
+   "built": 1795613559815
+  },
+  {
+   "v": "4.33.1",
+   "built": 1795647952256
+  }
+ ],
  "news": {
-  "4.25.2": [
-   "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd."
+  "4.33.1": [
+   "Je studieplek-reservaties staan meteen in de Agenda, ook als je Studieplek nog niet geopend hebt. Examens van januari, juni en augustus staan elk in een eigen blok."
   ],
-  "4.25.1": [
-   "De app start nu altijd in lichte modus. Liever donker of automatisch? Kies het bij Meer, Weergave."
+  "4.33.0": [
+   "Rooster heet nu Agenda: je lessen, studieplek-reservaties, deadlines en examens staan samen per dag, en de lijst springt meteen naar vandaag. Onder Examens zie je hoeveel dagen studietijd je tussen twee examens hebt."
   ],
-  "4.25.0": [
-   "Updaten gaat nu via Userscripts zelf: tik op het wolkje, dan op Check Updates en dan op Update. De app toont je de stappen met plaatjes."
+  "4.32.0": [
+   "Alma opent nu binnen de app en schuift pas in beeld als het menu klaarstaat: je ziet de oude website niet meer even flitsen. Kies je Alma's één keer opnieuw."
   ],
-  "4.24.1": [
-   "Printen: laadt soepeler, zonder verspringende lijsten, en toont je nieuwe saldo meteen als je terugkomt na het opladen."
+  "4.31.0": [
+   "Studieplek toont of een bibliotheek nu open is: \"Sluit om 20:00\" vlak voor sluiten en \"Nu gesloten\" daarna.",
+   "Kom je na een tijdje terug in Studieplek, dan zijn de vrije plaatsen meteen opnieuw geladen.",
+   "Examens blijft niet meer eindeloos laden: lukt KU Loket niet, dan zie je meteen de knop om je examenrooster te laden."
   ],
-  "4.24.0": [
-   "Printen: opladen ziet eruit zoals de app. Kies je bedrag, zie meteen je nieuwe saldo en tik op Betaal."
+  "4.30.0": [
+   "Studieplek: nieuwe knop Vind mijn stoel bij je reservatie. Je krijgt de route naar de bibliotheek, de juiste zaal en je plaats op de plattegrond."
   ],
-  "4.23.2": [
-   "Printen: aanmelden werkt weer; je wordt niet meer meteen afgemeld na het inloggen."
+  "4.29.3": [
+   "Attesten: de app zegt nu dat het tot een 5-tal minuten kan duren voor je attest in je mailbox staat."
   ],
-  "4.23.1": [
-   "Printen: je saldo en je afdrukken laden weer als je een tijd niet aangemeld was. De app stuurt je dan even langs de KU Leuven-login.",
-   "Printen: bij Opladen staat je bedrag klaar op de betaalpagina; daar tik je zelf op Betaal."
+  "4.29.2": [
+   "Groepsruimte reserveren: het uur dat je al koos staat er gewoon, je hoeft het niet opnieuw te kiezen.",
+   "Al je groepen uit Groepswerken staan in het reserveerblad: één tik op Voeg toe en je hele groep staat erin."
   ],
-  "4.23.0": [
-   "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
+  "4.29.1": [
+   "Groepsruimte boeken vanuit Groepswerken: kies eerst een bibliotheek, daarna gaat het zoals altijd in Studieplek, met je groep al ingevuld.",
+   "Reserveer je via Studieplek zelf een groepsruimte, dan kies je je groep in één tik.",
+   "Groepswerken heeft rustigere kleuren."
   ],
-  "4.22.0": [
-   "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
-   "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester."
+  "4.29.0": [
+   "Nieuw in Meer: Attesten. Vraag je inschrijvingsbewijs, transcript of een ander attest aan met één tik; KU Loket mailt het meteen naar je studentenmail."
   ],
-  "4.21.1": [
-   "Toledo-agenda in Meer opent nu altijd het juiste scherm, en niet meer een vak of de lijst met vakken."
+  "4.28.6": [
+   "Studieplek heeft een nieuw, duidelijker icoon."
   ],
-  "4.21.0": [
-   "Nieuw in Meer: Toledo-agenda op je iPhone. Met één tik komen je deadlines in de Agenda-app, en ze blijven daar vanzelf bijgewerkt."
+  "4.28.5": [
+   "Groepswerken is eenvoudiger: per groep zie je de naam, het vak en de kleur van het vak, met Mail de groep en Groepsruimte boeken."
   ],
-  "4.20.2": [
-   "Twee kleine verbeteringen: op de donkere kaarten van Studievoortgang is het label bovenaan weer goed leesbaar, en lijsten met een lange titel (zoals Mijn ISP) gebruiken weer de volle breedte."
+  "4.28.4": [
+   "Alma: een andere dag of Alma kiezen gaat meteen, en het menu van vorige keer staat er al terwijl het nieuwe laadt."
   ]
  }
 }

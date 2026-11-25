@@ -1,12 +1,92 @@
 #!/usr/bin/env python3
 """Builds toledo-mobile.user.js (v4): app layer + the v3.1 classic layer for the remaining Blackboard / KU Loket pages."""
-import re, json, pathlib
+import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.25.2"
+VERSION = "4.33.1"
+# Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
+# The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
+# build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
+def _branch():
+    try: return subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=pathlib.Path(__file__).parent, capture_output=True, text=True).stdout.strip()
+    except Exception: return ''  # noqa: BLE001
+CHANNEL = os.environ.get('TM_CHANNEL') or ('main' if _branch() == 'main' else 'beta')
+assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.33.1": [
+        "Je studieplek-reservaties staan meteen in de Agenda, ook als je Studieplek nog niet geopend hebt. Examens van januari, juni en augustus staan elk in een eigen blok.",
+    ],
+    "4.33.0": [
+        "Rooster heet nu Agenda: je lessen, studieplek-reservaties, deadlines en examens staan samen per dag, en de lijst springt meteen naar vandaag. Onder Examens zie je hoeveel dagen studietijd je tussen twee examens hebt.",
+    ],
+    "4.32.0": [
+        "Alma opent nu binnen de app en schuift pas in beeld als het menu klaarstaat: je ziet de oude website niet meer even flitsen. Kies je Alma's één keer opnieuw.",
+    ],
+    "4.31.0": [
+        "Studieplek toont of een bibliotheek nu open is: \"Sluit om 20:00\" vlak voor sluiten en \"Nu gesloten\" daarna.",
+        "Kom je na een tijdje terug in Studieplek, dan zijn de vrije plaatsen meteen opnieuw geladen.",
+        "Examens blijft niet meer eindeloos laden: lukt KU Loket niet, dan zie je meteen de knop om je examenrooster te laden.",
+    ],
+    "4.30.0": [
+        "Studieplek: nieuwe knop Vind mijn stoel bij je reservatie. Je krijgt de route naar de bibliotheek, de juiste zaal en je plaats op de plattegrond.",
+    ],
+    "4.29.3": [
+        "Attesten: de app zegt nu dat het tot een 5-tal minuten kan duren voor je attest in je mailbox staat.",
+    ],
+    "4.29.2": [
+        "Groepsruimte reserveren: het uur dat je al koos staat er gewoon, je hoeft het niet opnieuw te kiezen.",
+        "Al je groepen uit Groepswerken staan in het reserveerblad: één tik op Voeg toe en je hele groep staat erin.",
+    ],
+    "4.29.1": [
+        "Groepsruimte boeken vanuit Groepswerken: kies eerst een bibliotheek, daarna gaat het zoals altijd in Studieplek, met je groep al ingevuld.",
+        "Reserveer je via Studieplek zelf een groepsruimte, dan kies je je groep in één tik.",
+        "Groepswerken heeft rustigere kleuren.",
+    ],
+    "4.29.0": [
+        "Nieuw in Meer: Attesten. Vraag je inschrijvingsbewijs, transcript of een ander attest aan met één tik; KU Loket mailt het meteen naar je studentenmail.",
+    ],
+    "4.28.6": [
+        "Studieplek heeft een nieuw, duidelijker icoon.",
+    ],
+    "4.28.5": [
+        "Groepswerken is eenvoudiger: per groep zie je de naam, het vak en de kleur van het vak, met Mail de groep en Groepsruimte boeken.",
+    ],
+    "4.28.4": [
+        "Alma: een andere dag of Alma kiezen gaat meteen, en het menu van vorige keer staat er al terwijl het nieuwe laadt.",
+    ],
+    "4.28.3": [
+        "Alma: uitklappen of een filter aanzetten laat je op je plek staan, en broodjes staan nu meteen onder de soep.",
+    ],
+    "4.28.2": [
+        "Alma: de eerste keer zet je meteen een ster bij al je Alma's en tik je op Klaar.",
+    ],
+    "4.28.1": [
+        "De melding voor een nieuwe versie verschijnt weer, ook als er kort na elkaar meerdere versies komen.",
+    ],
+    "4.28.0": [
+        "Nieuw in Meer: Alma. Zie wat er vandaag op het menu staat in jouw Alma, met prijzen en openingsuren.",
+        "Geef je vaste Alma een ster, dan opent die meteen. Filter op veggie, vegan of allergenen, of zet de goedkoopste gerechten eerst.",
+    ],
+    "4.27.1": [
+        "Groepswerken opent nu altijd je groepen, niet meer soms een vak.",
+    ],
+    "4.27.0": [
+        "Nieuw in Meer: Groepswerken. Zie in welke groepen je zit, met je groepsleden, en mail je hele groep in één tik.",
+        "Vanuit je groep boek je meteen een groepswerkruimte in KURT: je groepsleden staan al klaar.",
+    ],
+    "4.26.1": [
+        "Studieplek heet nu Studieplek (KURT) en heeft een nieuw icoon.",
+        "Studievoortgang en Mijn ISP openen altijd bovenaan.",
+    ],
+    "4.26.0": [
+        "Meer ziet eruit als een beginscherm: elke dienst heeft zijn eigen app-icoon.",
+        "Weergave, mail en updates staan nu in de nieuwe app Instellingen.",
+    ],
+    "4.25.3": [
+        "Nieuwe versies worden voortaan eerst getest voordat ze bij iedereen komen.",
+    ],
     "4.25.2": [
         "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd.",
     ],
@@ -123,76 +203,15 @@ css = re.sub(r'\n\s*', '\n', css).strip()
 # Manrope (SIL Open Font License, src/fonts/OFL.txt) goes inside the script: the Toledo pages may not load Google Fonts
 import base64
 css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
-app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'print.js', 'main.js'])
-app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False))
+# the "Wat is er nieuw" after an update only needs the last versions (older ones stay here for reference)
+APP_NEWS = dict(sorted(NEWS.items(), key=lambda kv: tuple(int(x) for x in kv[0].split('.')), reverse=True)[:15])
+app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'attest.js', 'kurt.js', 'print.js', 'alma.js', 'main.js'])
+app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(APP_NEWS, ensure_ascii=False)).replace('__BRANCH__', CHANNEL)
 
 classic = (src / 'classic-v3.js').read_text()
 classic = classic.split('// ==/UserScript==', 1)[1]
 classic = re.sub(r'^\s*/\*.*?\*/\s*', '\n', classic, count=1, flags=re.S)  # drop the v3 comment block
-
-def sub(old, new, count=1):
-    global classic
-    assert old in classic, old[:70]
-    classic = classic.replace(old, new, count)
-
-sub("  if (window.top !== window && !window.__TM_TEST__) return; // top frame only",
-    "  if (window.__TM_MODE__ !== 'classic') return; // the app layer (above) decided this page keeps its own layout\n"
-    "  if (window.top !== window && !window.__TM_TEST__) return; // top frame only")
-sub("    menu: '<path d=\"M4 7h16M4 12h16M4 17h16\"/>',",
-    "    menu: '<path d=\"M4 7h16M4 12h16M4 17h16\"/>',\n"
-    "    vandaag: '<path d=\"M3.8 10.4 12 3.8l8.2 6.6V19a1.6 1.6 0 0 1-1.6 1.6h-4v-5.8H9.4v5.8h-4A1.6 1.6 0 0 1 3.8 19z\"/>',\n"
-    "    vakken: '<path d=\"M5 5.6A2.1 2.1 0 0 1 7.1 3.5H19v13.8H7.1A2.1 2.1 0 0 0 5 19.4z\"/><path d=\"M5 19.4a2.1 2.1 0 0 0 2.1 2.1H19v-4.2\"/><path d=\"M9 7.8h6\"/>',\n"
-    "    rooster: '<rect x=\"3.6\" y=\"4.8\" width=\"16.8\" height=\"15.8\" rx=\"3\"/><path d=\"M3.6 9.6h16.8M8 3v3.4M16 3v3.4\"/>',\n"
-    "    meer: '<rect x=\"4\" y=\"4\" width=\"6.6\" height=\"6.6\" rx=\"1.8\"/><rect x=\"13.4\" y=\"4\" width=\"6.6\" height=\"6.6\" rx=\"1.8\"/><rect x=\"4\" y=\"13.4\" width=\"6.6\" height=\"6.6\" rx=\"1.8\"/><rect x=\"13.4\" y=\"13.4\" width=\"6.6\" height=\"6.6\" rx=\"1.8\"/>',")
-# outside the portal the tab bar leads to the app's five tabs
-sub("    (document.head || document.documentElement).appendChild(s);",
-    "    const put = () => (document.head || document.documentElement).appendChild(s);\n"
-    "    if (document.head || document.documentElement) put();\n"
-    "    else { const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); put(); } }); mo.observe(document, { childList: true }); }")
-sub("  const TABS = [", "  const TABS = SITE !== 'portal' ? [\n"
-    "    { id: 'vandaag', label: 'Vandaag', url: PORTAL + '?tm=vandaag' },\n"
-    "    { id: 'vakken', label: 'Vakken', url: PORTAL + '?tm=vakken' },\n"
-    "    { id: 'rooster', label: 'Rooster', url: PORTAL + '?tm=rooster' },\n"
-    "    { id: 'updates', label: 'Updates', url: PORTAL + '?tm=updates' },\n"
-    "    { id: 'meer', label: 'Meer', url: PORTAL + '?tm=meer' },\n"
-    "  ] : [")
-sub("setActiveTab(/^\\/ultra\\/(courses|course)\\b/.test(location.pathname) ? 'courses' : '');",
-    "setActiveTab(/^\\/ultra\\/(courses|course)\\b/.test(location.pathname) ? 'vakken' : '');")
-sub("        setInterval(() => { if (location.href !== last) { last = location.href; schedule(); } }, 400);",
-    "        // closing an item in Blackboard lands on the course outline: go back to the app's course page\n"
-    "        const toApp = () => {\n"
-    "          const m = /^\\/ultra\\/courses\\/(_\\d+_\\d+)\\/outline\\/?$/.exec(location.pathname);\n"
-    "          let c = 0; try { c = Number(sessionStorage.getItem('tm4-classic-ultra')) || 0; } catch (_) {}\n"
-    "          const classic = c && Date.now() - c < 30 * 60e3;\n"
-    "          if (classic || Math.min(screen.width, screen.height) >= 600) return;\n"
-    "          if (m && !location.search) {\n"
-    "            const toAppUrl = 'https://ultra.edu.kuleuven.cloud/ultra/courses/' + m[1] + '/outline?tm=app#/c/' + m[1];\n"
-    "            const noapp = Number(sessionStorage.getItem('tm4-noapp')) || 0;\n"
-    "            if (noapp && Date.now() - noapp < 5 * 60e3) {\n"
-    "              // the app stepped aside so Blackboard could sign you in: go back once that is done\n"
-    "              if (window.__tm4wait) return;\n"
-    "              window.__tm4wait = true;\n"
-    "              const check = () => fetch('/learn/api/public/v1/users/me', { credentials: 'include', headers: { Accept: 'application/json' } })\n"
-    "                .then((r) => { if (r.ok && /json/.test(r.headers.get('content-type') || '')) { sessionStorage.removeItem('tm4-noapp'); location.replace(toAppUrl); } else setTimeout(check, 2500); }, () => setTimeout(check, 4000));\n"
-    "              setTimeout(check, 1500);\n"
-    "              return;\n"
-    "            }\n"
-    "            location.replace(toAppUrl);\n"
-    "            return;\n"
-    "          }\n"
-    "          // Blackboard's own start pages (e.g. after signing in): back to the app\n"
-    "          const home = /^\\/ultra\\/?$|^\\/ultra\\/(course|stream|institution-page)\\/?$/.exec(location.pathname);\n"
-    "          if (home) location.replace('https://toledo.kuleuven.be/portal/' + (/stream/.test(location.pathname) ? '?tm=updates' : /\\/course\\/?$/.test(location.pathname) ? '?tm=vakken' : '?tm=vandaag'));\n"
-    "        };\n"
-    "        // the app's tab bar: handle the tap before Blackboard's own click handling can swallow it\n"
-    "        window.addEventListener('click', (e) => {\n"
-    "          const a = e.target && e.target.closest && e.target.closest('#tm-tabbar a[href]');\n"
-    "          if (!a) return;\n"
-    "          e.preventDefault(); e.stopImmediatePropagation();\n"
-    "          location.href = a.href;\n"
-    "        }, true);\n"
-    "        toApp();\n"
-    "        setInterval(() => { if (location.href !== last) { last = location.href; toApp(); schedule(); } }, 400);")
+# (the app-specific changes to the v3 layer now live in src/classic-v3.js itself)
 
 header = f"""// ==UserScript==
 // @name         Toledo Mobile
@@ -206,9 +225,11 @@ header = f"""// ==UserScript==
 // @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
 // @match        https://kurt3.ghum.kuleuven.be/*
 // @match        https://print.kuleuven.be/*
+// @match        https://www.alma.be/*
+// @match        https://alma.be/*
 // @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
-// @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
-// @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
+// @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
+// @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
 // @run-at       document-start
 // @inject-into  content
 // @grant        none
@@ -221,6 +242,7 @@ header = f"""// ==UserScript==
   - The timetable and exams come from KU Loket (same KU Leuven sign-in), read in a hidden frame.
   - Pages the app doesn't cover (submitting an assignment, tests, KU Loket apps) keep the phone layout of version 3.
   - KURT (study places, kurt3.ghum.kuleuven.be) becomes an app screen: libraries with live occupancy, rooms with free seats, and the floor plan to tap a seat and book it.
+  - Alma (www.alma.be, the student restaurants) becomes an app screen: the menu of your own Alma with prices, hours and filters.
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - The update page on GitHub (this file) shows simple steps instead of code, and the app checks GitHub's small
@@ -259,5 +281,15 @@ def vkey(v): return tuple(int(x) for x in v.split('.'))
 recent = dict(sorted(NEWS.items(), key=lambda kv: vkey(kv[0]), reverse=True)[:12])
 import time
 # built: when this version was published; the app waits until Userscripts' Check Updates can see it (GitHub caches 5 min)
-(here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': int(time.time() * 1000), 'news': recent}, ensure_ascii=False, indent=1) + '\n')
-print(len(out), 'bytes')
+# builds: the last few published versions with their time. When versions follow each other quickly, the app can
+# still announce the update as soon as an earlier newer version is old enough (Check Updates then sees at least that one).
+now = int(time.time() * 1000)
+try: builds = json.loads((here / 'version.json').read_text()).get('builds') or []
+except Exception: builds = []  # noqa: BLE001
+try: prev = json.loads((here / 'version.json').read_text())
+except Exception: prev = {}  # noqa: BLE001
+if prev.get('version') and prev.get('built') and not any(x.get('v') == prev['version'] for x in builds):
+    builds.append({'v': prev['version'], 'built': prev['built']})
+builds = [x for x in builds if x.get('v') != VERSION][-7:] + [{'v': VERSION, 'built': now}]
+(here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': now, 'builds': builds, 'news': recent}, ensure_ascii=False, indent=1) + '\n')
+print(len(out), 'bytes,', 'kanaal:', CHANNEL, '(iedereen)' if CHANNEL == 'main' else '(alleen testers)')
