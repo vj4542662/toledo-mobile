@@ -1,11 +1,7 @@
 {
- "version": "4.29.3",
- "built": 1795631672169,
+ "version": "4.30.0",
+ "built": 1795631905669,
  "builds": [
-  {
-   "v": "4.28.3",
-   "built": 1795629317413
-  },
   {
    "v": "4.28.4",
    "built": 1795629415257
@@ -33,9 +29,16 @@
   {
    "v": "4.29.3",
    "built": 1795631672169
+  },
+  {
+   "v": "4.30.0",
+   "built": 1795631905669
   }
  ],
  "news": {
+  "4.30.0": [
+   "Studieplek: nieuwe knop Vind mijn stoel bij je reservatie. Je krijgt de route naar de bibliotheek, de juiste zaal en je plaats op de plattegrond."
+  ],
   "4.29.3": [
    "Attesten: de app zegt nu dat het tot een 5-tal minuten kan duren voor je attest in je mailbox staat."
   ],
@@ -72,9 +75,6 @@
   "4.28.0": [
    "Nieuw in Meer: Alma. Zie wat er vandaag op het menu staat in jouw Alma, met prijzen en openingsuren.",
    "Geef je vaste Alma een ster, dan opent die meteen. Filter op veggie, vegan of allergenen, of zet de goedkoopste gerechten eerst."
-  ],
-  "4.27.1": [
-   "Groepswerken opent nu altijd je groepen, niet meer soms een vak."
   ]
  }
 }

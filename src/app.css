@@ -1133,3 +1133,19 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .kg-gi{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}.tm4 .kg-gi .i{width:20px;height:20px}
 .tm4 .kg-gadd{flex:none;height:34px;padding:0 13px;border-radius:9px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;font-size:14px}.tm4 .kg-gadd[disabled]{opacity:.45}
 .tm4 .kg-gok{flex:none;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--green)}.tm4 .kg-gok .i{width:18px;height:18px}
+/* ---------- Vind mijn stoel (v4.30.0): a booking -> library (route), room, seat on the floor plan */
+.tm4 .kf-card{margin:8px 16px 10px;padding:14px}
+.tm4 .kf-steps{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.tm4 .kf-steps li{display:flex;align-items:center;gap:11px;padding:9px 0 2px;border-top:1px solid var(--sep)}
+.tm4 .kf-steps li>i{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:700;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.tm4 .kf-steps .kr-main{flex:1}.tm4 .kf-steps .kr-main b{font-size:15.5px}.tm4 .kf-steps .kr-main span{font-size:13px;line-height:17px}
+.tm4 .kf-go{flex:none;display:flex;align-items:center;gap:4px;height:34px;padding:0 13px 0 10px;border-radius:17px;background:var(--accent);color:#fff;font-size:14.5px;font-weight:600}
+.tm4 .kf-go .i{width:16px;height:16px}
+.tm4 .kf-map .ks:not(.me){opacity:.55}
+.tm4 .ks.me{width:calc(max(36px,18px * var(--k)));height:calc(max(36px,18px * var(--k)));margin:calc(max(36px,18px * var(--k)) / -2) 0 0 calc(max(36px,18px * var(--k)) / -2);background:var(--accent);color:#fff;font-size:calc(max(13px,6.5px * var(--k)));font-weight:700;z-index:3;box-shadow:0 0 0 calc(3px * var(--k)) #fff;animation:kf-pulse 1.8s ease-out infinite}
+.tm4 .ks.me.room{border-radius:30%}
+@keyframes kf-pulse{0%{box-shadow:0 0 0 calc(3px * var(--k)) #fff,0 0 0 calc(3px * var(--k)) color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 calc(3px * var(--k)) #fff,0 0 0 calc(22px * var(--k)) color-mix(in srgb,var(--accent) 0%,transparent)}}
+.tm4 .kf-tag b{color:var(--accent);font-size:15px}
+.tm4 .kmap-tools button .i{width:19px;height:19px;vertical-align:-3px}
+.tm4 .kf-cib.pri{background:var(--green)}.tm4 .kf-cib.red{background:var(--red)}
+.tm4 .kf-ci{margin:4px 16px}

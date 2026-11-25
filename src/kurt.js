@@ -101,7 +101,8 @@
       set(w) { if (w) ss.set('tm4-kurt-when', JSON.stringify(w)); else ss.del('tm4-kurt-when'); },
     };
 
-    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>], #/g/<location>[?d=<day>] group rooms */
+    /* ---------- router: #/ home, #/l/<location>, #/z/<zone>[?seat=<resource>], #/g/<location>[?d=<day>] group rooms,
+       #/s/<reservation> find my seat */
     // KURT's own addresses (/locations/10, /zone/1) become the app's
     // Groepswerken (on Toledo) hands over a group: ?tmg=<name>&tmm=<email,email>. It opens #/gk (pick a library), then
     // KURT's normal group-room steps; the booking sheet adds the whole group at once. The group is only "active" during
@@ -149,12 +150,13 @@
       const r = route();
       if (r.name !== 'g' && r.name !== 'gk') ss.del('tm4-kurt-g'); // the group from Groepswerken doesn't stay behind in Studieplek
       closeBook();
-      document.body.classList.toggle('kfull', r.name === 'z');
+      document.body.classList.toggle('kfull', r.name === 'z' || r.name === 's');
       sec.classList.remove('push', 'pop');
       if (anim) { void sec.offsetWidth; sec.classList.add(anim); }
       W.scrollTo(0, keepY); keepY = 0;
       if (r.name === 'l') viewLoc(r.id, my);
       else if (r.name === 'z') viewZone(r.id, r.q, my);
+      else if (r.name === 's') viewFind(r.id, my);
       else if (r.name === 'g') viewGroup(r.id, r.q, my);
       else if (r.name === 'gk' && activeGrp()) viewGk(my);
       else viewHome(my);
@@ -246,6 +248,13 @@
       const lid = m[1] === 'l' ? m[2] : ZONES[m[2]] && ZONES[m[2]].l;
       if (lid) warm(lid);
     }, { passive: true });
+    // a booking only names its seat ("Agora - Silent Study Seat 111"): find its library by that prefix
+    function libOf(r, locs) {
+      if (r.locationId) return locs.find((l) => l.id === r.locationId) || { id: r.locationId, unit: '' };
+      const pre = fold(String(r.resourceName || '').split(' - ')[0]);
+      const w1 = pre.split(' ')[0];
+      return (pre && (locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre)) || (w1.length > 3 && locs.find((l) => fold(l.unit).startsWith(w1))))) || null;
+    }
     function viewHome(my) {
       document.title = 'Studieplek';
       setNav({ title: 'Studieplek', back: { label: 'Meer', href: PORTAL + '?tm=meer', act: 'meer' } });
@@ -263,19 +272,14 @@
           h += res.map((r) => {
             const now = Date.now(), s = fromYmd(r.startDate, r.startTime), e = r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime);
             const live = now >= s - 15 * 60e3 && now < e;
-            // a booking only names its seat ("Agora - Silent Study Seat 111"): find its library by that prefix
-            const pre = fold(String(r.resourceName || '').split(' - ')[0]);
-            const locs = d.loc ? d.loc.tiles.flatMap((t) => t.locations) : [];
-            const w1 = pre.split(' ')[0];
-            const hit = r.locationId ? locs.find((l) => l.id === r.locationId) : pre && (locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre)) || (w1.length > 3 && locs.find((l) => fold(l.unit).startsWith(w1))));
+            const hit = libOf(r, d.loc ? d.loc.tiles.flatMap((t) => t.locations) : []);
             const isRoom = !/\d\s*$/.test(String(r.resourceName || ''));
-            const lid = hit ? hit.id : r.locationId;
             const unit = hit ? hit.unit : '';
             const cin = live && isIn(r);
             const dn = esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime + '–' + (r.endTime === '00:00' ? '24:00' : r.endTime));
             return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top">${isRoom ? `<span class="kr-seat kr-room">${GROUP}</span>` : `<span class="kr-seat">${esc(seatNo(r.resourceName))}</span>`}<span class="kr-main"><b>${esc(isRoom ? 'Groepsruimte ' + nm(r.resourceName) : nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span><button type="button" class="kr-del" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime)}" aria-label="Reservatie verwijderen">${TRASH}</button></div>
               <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · <em>ingecheckt</em>' : live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
-              <div class="kr-acts">${live ? `<button type="button" class="${cin ? 'red' : 'pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>` : ''}${lid ? `<a href="#/l/${esc(lid)}">Naar de locatie</a>` : ''}</div></div>`;
+              <div class="kr-acts">${live ? `<button type="button" class="${cin ? 'red' : 'pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>` : ''}<a href="#/s/${esc(r.id)}">${isRoom ? 'Vind het lokaal' : 'Vind mijn stoel'}</a></div></div>`;
           }).join('');
           h += `<p class="ko-hint">${ico('info')}Check in met de knop Inchecken of met de QR-code op je plek, binnen het eerste halfuur. 3 keer niet komen opdagen in 14 dagen = een week geen reservaties.</p>`;
         }
@@ -775,6 +779,83 @@
       }
     }
 
+    /* ---------- find my seat: from a booking to the library, the room and the seat on its floor plan */
+    // KURT knows where each library is (address + coordinates) and where each seat sits on its room's floor plan, but a
+    // booking doesn't say which room: all rooms of the library are asked once (at the booked hour, in parallel) and the
+    // answer is remembered per seat (kurt:sz).
+    async function viewFind(id, my) {
+      setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: '', always: true });
+      put(sec, `<div class="card kf-card"><div class="sk" style="height:46px"></div><div class="sk" style="height:38px;margin-top:10px"></div></div><div class="kmap-wrap"><div class="kmap sk"></div></div>`);
+      const fail = (t, sub) => { if (my === token) put(sec, empty('warn', t, sub || '', `<p style="margin-top:14px"><a class="btn" href="#/">Naar Studieplek</a></p>`)); };
+      let list = store.get('kurt:res') ? store.get('kurt:res').v : null;
+      let r = list && list.find((x) => String(x.id) === id);
+      if (!r) {
+        try { list = await get('/reservations'); store.set('kurt:res', { ts: Date.now(), v: list }); } catch (e) { fail('KURT reageert niet', 'Probeer het straks opnieuw.'); return; }
+        r = (list || []).find((x) => String(x.id) === id);
+      }
+      if (my !== token) return;
+      if (!r) { fail('Deze reservatie bestaat niet meer'); return; }
+      const isRoom = !/\d\s*$/.test(String(r.resourceName || ''));
+      const what = isRoom ? 'Groepsruimte ' + nm(r.resourceName) : nm(r.resourceName);
+      document.title = what;
+      setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: what, always: true });
+      let tiles = (store.get('kurt:locinfo') || {}).tiles;
+      if (!tiles) { try { tiles = await memo('tiles', 10 * 60e3, () => get('/tiles')); } catch (_) { tiles = []; } }
+      const hit = libOf(r, tiles.flatMap((t) => t.locations));
+      if (!hit) { fail('Bibliotheek niet gevonden', nm(r.resourceName)); return; }
+      const lid = hit.id;
+      let L;
+      try { L = await memo('loc:' + lid, 10 * 60e3, () => get('/locations/' + lid)); } catch (e) { fail('KURT reageert niet', 'Probeer het straks opnieuw.'); return; }
+      if (my !== token) return;
+      keepZones(lid, L.zones);
+      // which room? the one we found before, else ask all rooms of the library at once
+      const SZ = store.get('kurt:sz') || {};
+      const zones = L.zones || [];
+      const look = (z) => zoneAvail(lid, z.id, r.startDate, r.startTime).then((a) => ({ z, a, st: (a.availabilities || []).find((x) => x.resourceId === r.resourceId) }), () => null);
+      let f = null;
+      const known = zones.find((z) => z.id === SZ[r.resourceId]);
+      if (known) { f = await look(known); if (f && !f.st) f = null; }
+      if (!f) f = (await Promise.all(zones.map(look))).find((x) => x && x.st) || null;
+      if (my !== token) return;
+      if (f) { SZ[r.resourceId] = f.z.id; store.set('kurt:sz', SZ); zoneLoc[f.z.id] = lid; store.set('kurt:zl', zoneLoc); }
+      const ll = L.navigationUrl && /query=([-\d.]+)%2C([-\d.]+)/.exec(L.navigationUrl);
+      const route = ll ? `https://maps.apple.com/?daddr=${ll[1]},${ll[2]}&dirflg=w&q=${encodeURIComponent(L.unit)}` : L.address ? `https://maps.apple.com/?daddr=${encodeURIComponent(L.address)}&dirflg=w` : '';
+      const now = Date.now(), s0 = fromYmd(r.startDate, r.startTime), e0 = r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime);
+      const live = now >= s0 - 15 * 60e3 && now < e0;
+      const cin = live && isIn(r);
+      const dn = esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime + '–' + (r.endTime === '00:00' ? '24:00' : r.endTime));
+      const ciBtn = (cls) => `<button type="button" class="${cls}${cin ? ' red' : ' pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>`;
+      const zname = f ? (f.z.name || '').trim() : '';
+      const street = String(L.address || '').replace(/\s*,\s*\d{4}\s.*$/, '').replace(/\s+/g, ' ').trim();
+      const seat = seatNo(r.resourceName);
+      let h = `<div class="card kf-card">
+        <div class="kr-top">${isRoom ? `<span class="kr-seat kr-room">${GROUP}</span>` : `<span class="kr-seat">${esc(seat)}</span>`}<span class="kr-main"><b>${esc(what)}</b><span>${esc(dayLbl(r.startDate))} ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · ingecheckt' : live ? ' · nu' : ' · ' + esc(until(s0))}</span></span></div>
+        <ol class="kf-steps">
+          <li><i>1</i><span class="kr-main"><b>${esc(L.unit)}</b><span>${esc([street, openTxt(L)].filter(Boolean).join(' · '))}</span></span>${route ? `<a class="kf-go" href="${esc(route)}">${ico('pin')}Route</a>` : ''}</li>
+          ${f ? `<li><i>2</i><span class="kr-main"><b>${esc(zname)}</b><span>${isRoom ? 'Het lokaal' : `Plaats ${esc(seat)}`} staat hieronder op de plattegrond</span></span></li>` : ''}
+        </ol></div>`;
+      if (!f || !f.a.floorPlan || !f.a.floorPlan.floorPlanUrl) {
+        h += `<p class="ko-hint">${ico('info')}KURT heeft geen plattegrond voor deze plaats. Vraag de weg aan de balie van de bibliotheek.</p>`;
+        if (live) h += `<div class="kr-acts kf-ci">${ciBtn('')}</div>`;
+        put(sec, h);
+        return;
+      }
+      const fp = f.a.floorPlan, W0 = fp.floorPlanWidth || 1000, H0 = fp.floorPlanHeight || 1000;
+      const seats = f.a.availabilities || [];
+      h += `<div class="kmap-wrap"><div class="kmap kf-map" id="kmap"><div class="kp" style="width:${W0}px;height:${H0}px"><img src="${esc(fp.floorPlanUrl)}" alt="Plattegrond ${esc(zname)}" draggable="false">
+        ${seats.map((x) => (x.resourceId === r.resourceId ? '' : `<i class="ks" style="left:${x.positionX}px;top:${x.positionY}px"></i>`)).join('')}
+        <i class="ks me${isRoom ? ' room' : ''}" data-r="${f.st.resourceId}" style="left:${f.st.positionX}px;top:${f.st.positionY}px">${isRoom ? '' : esc(seat)}</i></div>
+        <div class="kmap-tools"><button type="button" data-act="zin" aria-label="Inzoomen">+</button><button type="button" data-act="zout" aria-label="Uitzoomen">−</button><button type="button" data-act="zfit" aria-label="Hele plattegrond">⤢</button><button type="button" data-act="zme" aria-label="Naar mijn plaats">${ico('pin')}</button></div>
+        <div class="kmap-cnt kf-tag">${isRoom ? 'Hier is je lokaal' : `Hier is <b>plaats ${esc(seat)}</b>`}</div>
+        ${live ? ciBtn('kmap-list kf-cib') : ''}</div></div>`;
+      put(sec, h);
+      Z = { id: f.z.id, zone: f.z, seats: [f.st], free: [], unit: L.unit, W0, H0, find: r.resourceId };
+      initMap();
+      // zoom in on the seat, and again once the map has its final size
+      const go = () => { if (Z && Z.find === r.resourceId && Z.focus && $('#kmap')) Z.focus(r.resourceId); };
+      setTimeout(go, 60); setTimeout(go, 480);
+    }
+
     function listSheet() {
       if (!Z) return;
       const { free, sel } = Z;
@@ -838,6 +919,7 @@
         if (!st) return;
         const ns = Math.max(s, Math.min(MAX(), fit * 2.6));
         s = ns; x = bw() / 2 - st.positionX * s; y = bh() * 0.3 - st.positionY * s; apply(true);
+        if (Z.find) return;
         $$('.ks.sel', kp).forEach((n) => n.classList.remove('sel'));
         const n = kp.querySelector(`.ks[data-r="${rid}"]`);
         if (n) n.classList.add('sel');
@@ -881,7 +963,7 @@
           const px = (p.x - x) / s, py = (p.y - y) / s;
           let best = null, bd = Infinity;
           Z.seats.forEach((q) => { const d = Math.hypot(q.positionX - px, q.positionY - py) * s; if (d < bd) { bd = d; best = q; } });
-          if (best && bd < 26) { lastTap = 0; pickSeat(best.resourceId); }
+          if (!Z.find && best && bd < 26) { lastTap = 0; pickSeat(best.resourceId); }
           else if (now - lastTap < 320) { lastTap = 0; zoomAt(s * 2, p.x, p.y, true); }
           else lastTap = now;
         }
@@ -1029,6 +1111,7 @@
       else if (act === 'seat') { e.preventDefault(); pickSeat(Number(b.dataset.r)); }
       else if (act === 'zin' || act === 'zout') { e.preventDefault(); if (Z && Z.zoom) Z.zoom(act === 'zin' ? 1.6 : 1 / 1.6); }
       else if (act === 'zfit') { e.preventDefault(); if (Z && Z.reset) Z.reset(true); }
+      else if (act === 'zme') { e.preventDefault(); if (Z && Z.focus && Z.find) Z.focus(Z.find); }
       else if (act === 'fav') {
         e.preventDefault();
         const id = Number(b.dataset.id); const f = favs();
