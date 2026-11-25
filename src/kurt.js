@@ -51,7 +51,23 @@
     const NL_TAGS = { 'power socket nearby': 'Stopcontact', silence: 'Stilte', 'adjustable desk': 'Verstelbaar bureau', 'desk lamp': 'Bureaulamp', window: 'Aan het raam', screen: 'Scherm' };
     const NL_CITY = { Leuven: 'Leuven', Antwerp: 'Antwerpen', Bruges: 'Brugge', Brussels: 'Brussel', Kortrijk: 'Kortrijk', 'Learning Lab': 'Learning Lab' };
     const hours = (s) => { const m = /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? `${m[1]}:${m[2]}–${m[3]}:${m[4]}` : ''; };
-    const openTxt = (l) => (l.closedToday || /closed/i.test(l.openingHoursToday || '') ? 'Vandaag gesloten' : hours(l.openingHoursToday) ? 'Open ' + hours(l.openingHoursToday) : '');
+    // where today's opening hours stand right now: before opening, open, closing within the hour, or closed again
+    const openNow = (l, now = new Date()) => {
+      if (l.closedToday || /closed/i.test(l.openingHoursToday || '')) return { closed: true, txt: 'Vandaag gesloten' };
+      const m = /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/.exec(String(l.openingHoursToday || ''));
+      if (!m) return { closed: false, txt: '' };
+      const from = +m[1] * 60 + +m[2];
+      let to = +m[3] * 60 + +m[4];
+      if (to <= from) to += 24 * 60; // open past midnight
+      const t = now.getHours() * 60 + now.getMinutes();
+      const end = `${m[3]}:${m[4]}`;
+      if (t < from) return { closed: false, txt: `Opent om ${m[1]}:${m[2]} (tot ${end})` };
+      if (t >= to) return { closed: true, txt: 'Nu gesloten' };
+      if (to - t <= 60) return { closed: false, txt: `Open · sluit om ${end}` };
+      return { closed: false, txt: 'Open ' + hours(l.openingHoursToday) };
+    };
+    const openTxt = (l) => openNow(l).txt;
+    const isClosed = (l) => openNow(l).closed;
     const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
     const hm = (min) => pad(Math.floor(min / 60)) + ':' + pad(min % 60);
     const dur = (min) => (min % 60 ? `${Math.floor(min / 60)} u ${min % 60}` : `${min / 60} u`);
@@ -163,6 +179,16 @@
     };
     let lastLen = history.length, quiet = false;
     W.addEventListener('hashchange', () => { show(quiet ? '' : history.length > lastLen ? 'push' : 'pop'); quiet = false; lastLen = history.length; });
+    // back in Safari after a while: occupancy and "open / gesloten" are stale, so draw the list again where you were
+    let hiddenAt = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      const r = route();
+      if (!hiddenAt || Date.now() - hiddenAt < 3 * 60e3 || !['home', 'l'].includes(r.name) || $('.kb.on')) return;
+      hiddenAt = 0;
+      keepY = W.scrollY;
+      show('');
+    });
 
     /* ---------- home */
     // the libraries and their opening hours change once a day: fetched once a day; occupancy every time
@@ -223,7 +249,7 @@
     function locRow(loc, x) {
       const l = (x && x.l) || {};
       const o = x && x.o;
-      const closed = l.closedToday || /closed/i.test(l.openingHoursToday || '');
+      const closed = isClosed(l);
       const sub = [openTxt(l), !closed && occTxt(o)].filter(Boolean).join(' · ');
       const th = loc.thumbnailUrl ? `<span class="ko-th" style="background-image:url('${esc(K + '/' + loc.thumbnailUrl)}')"></span>` : `<span class="ic soft">${ico('seat')}</span>`;
       return row({ href: '#/l/' + loc.id, iconHtml: th, title: loc.unit, subHtml: `${esc(sub || l.address || '')}${closed ? '' : occBar(o)}`, cls: 'ko-row' + (closed ? ' off' : '') });
@@ -287,7 +313,7 @@
             const cin = live && isIn(r);
             const dn = esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime + '–' + (r.endTime === '00:00' ? '24:00' : r.endTime));
             return `<div class="card kr${live ? ' live' : ''}"><div class="kr-top">${isRoom ? `<span class="kr-seat kr-room">${GROUP}</span>` : `<span class="kr-seat">${esc(seatNo(r.resourceName))}</span>`}<span class="kr-main"><b>${esc(isRoom ? 'Groepsruimte ' + nm(r.resourceName) : nm(r.resourceName))}</b><span>${esc(unit || (r.resourceName || '').split(' - ')[0])}</span></span><button type="button" class="kr-del" data-act="cancel" data-id="${esc(r.id)}" data-n="${esc(nm(r.resourceName) + ' · ' + dayLbl(r.startDate) + ' ' + r.startTime)}" aria-label="Reservatie verwijderen">${TRASH}</button></div>
-              <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · <em>ingecheckt</em>' : live ? ' · <em>nu</em>' : ` · ${esc(until(s))}`}</span></div>
+              <div class="kr-when">${ico('clock')}<span><b>${esc(dayLbl(r.startDate))}</b> ${esc(r.startTime)}–${esc(r.endTime === '00:00' ? '24:00' : r.endTime)}${cin ? ' · <em>ingecheckt</em>' : live ? ' · <em>nu</em>' : until(s).toLowerCase() === dayLbl(r.startDate).toLowerCase() ? '' : ` · ${esc(until(s))}`}</span></div>
               <div class="kr-acts">${live ? `<button type="button" class="${cin ? 'red' : 'pri'}" data-act="${cin ? 'checkout' : 'checkin'}" data-r="${esc(r.resourceId)}" data-id="${esc(r.id)}" data-n="${dn}">${cin ? 'Uitchecken' : 'Inchecken'}</button>` : ''}<a href="#/s/${esc(r.id)}">${isRoom ? 'Vind het lokaal' : 'Vind mijn stoel'}</a></div></div>`;
           }).join('');
           h += `<p class="ko-hint">${ico('info')}Check in met de knop Inchecken of met de QR-code op je plek, binnen het eerste halfuur. 3 keer niet komen opdagen in 14 dagen = een week geen reservaties.</p>`;
@@ -342,10 +368,7 @@
       if (!par || !par.startDates || !par.startDates.length) return;
       const sel = pickTime(par);
       let day = sel.d.value;
-      const layer = document.createElement('div');
-      layer.setAttribute('data-tm4', '');
-      layer.innerHTML = '<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in"><div class="kw-h"><b>Wanneer wil je komen?</b></div><div class="kw-body"></div></div></div>';
-      document.body.appendChild(layer);
+      const layer = kbLayer('<div class="kw-h"><b>Wanneer wil je komen?</b></div><div class="kw-body"></div>');
       const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb'), body = layer.querySelector('.kw-body');
       const close = () => { scrim.classList.remove('on'); kb.classList.remove('on'); setTimeout(() => layer.remove(), 320); };
       const draw = () => {
@@ -357,7 +380,6 @@
           <div class="kw-hours">${d.startTimes.map((x) => `<button type="button" class="kw-hr${!sel.now && d.value === sel.d.value && x.value === sel.t.value ? ' on' : ''}" data-t="${esc(x.value)}">${esc(x.display)}</button>`).join('')}</div>`);
       };
       draw();
-      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
       scrim.addEventListener('click', close);
       kb.addEventListener('click', (e) => {
         const b = e.target.closest('button');
@@ -488,7 +510,7 @@
         const fav = favs();
         const rowG = (l) => {
           const x = d.extra[l.id] || {}, li = x.l || {};
-          const closed = li.closedToday || /closed/i.test(li.openingHoursToday || '');
+          const closed = isClosed(li);
           const th = l.thumbnailUrl ? `<span class="ko-th" style="background-image:url('${esc(K + '/' + l.thumbnailUrl)}')"></span>` : `<span class="ic soft">${GROUP}</span>`;
           return row({ href: '#/g/' + l.id, iconHtml: th, title: (fav.includes(l.id) ? '★ ' : '') + l.unit, sub: openTxt(li) || li.address || '', cls: 'ko-row' + (closed ? ' off' : '') });
         };
@@ -614,16 +636,12 @@
       pickEnd();
       if (wantEnd && endsFrom(st.si).includes(wantEnd)) st.end = wantEnd;
       const dupName = GR.list.filter((x) => nm(x.a.name) === nm(a.name)).length > 1 && roomCode(a.name);
-      const layer = document.createElement('div');
-      layer.setAttribute('data-tm4', '');
-      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+      const layer = kbLayer(`
         <div class="kb-h"><span class="kr-seat kr-room">${GROUP}</span><span class="kr-main"><b>${esc(dupName ? roomCode(a.name) : nm(a.name))}</b><span>${esc([dupName ? nm(a.name) : roomCode(a.name), GR.unit].filter(Boolean).join(' · '))}</span></span></div>
         <div class="kb-when kb-when-s">${ico('clock')}<span><b>${esc(dayLbl(day))}</b> · vrij ${esc(it.b.map((x) => `${hm(x.s)}–${hm(x.e)}`).join(', '))}</span></div>
-        <div class="kb-body"></div></div></div>`;
-      document.body.appendChild(layer);
+        <div class="kb-body"></div>`);
       bookLayer = layer;
       const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb'), body = kb.querySelector('.kb-body');
-      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
       scrim.addEventListener('click', closeBook);
       let res = null;
       memo('res:' + a.id, 30 * 60e3, () => get(`/resources/${a.id}?withDetails=true`)).then((x) => { res = x; draw(); }, () => {});
@@ -870,17 +888,13 @@
     function listSheet() {
       if (!Z) return;
       const { free, sel } = Z;
-      const layer = document.createElement('div');
-      layer.setAttribute('data-tm4', '');
-      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+      const layer = kbLayer(`
         <div class="kw-h"><b>${free.length ? `${free.length} ${free.length === 1 ? 'plaats' : 'plaatsen'} vrij` : 'Niets vrij'}</b><span class="kl-sub">${esc(dayLbl(sel.d.value))} vanaf ${esc(sel.t.display)} · ${esc((Z.zone.name || '').trim())}</span></div>
         ${free.length ? `<div class="kfree">${free.map((x) => `<button type="button" class="kf${isSeatFav(x.resourceId) ? ' fav' : ''}" data-r="${x.resourceId}"><b>${esc(seatNo(x.resourceName))}</b><span>${x.availableHours} u</span></button>`).join('')}</div>` : `<p class="ko-hint">${ico('info')}Kies een ander uur of een andere ruimte.</p>`}
         <button type="button" class="btn ghost kl-when" data-w="1">${ico('clock')}Andere dag of uur</button>
-        <p class="fresh"><a href="${esc(ORIG('/zone/' + Z.id))}">Open in KURT</a></p></div></div>`;
-      document.body.appendChild(layer);
+        <p class="fresh"><a href="${esc(ORIG('/zone/' + Z.id))}">Open in KURT</a></p>`);
       const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb');
       const close = () => { scrim.classList.remove('on'); kb.classList.remove('on'); setTimeout(() => layer.remove(), 320); };
-      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
       scrim.addEventListener('click', close);
       kb.addEventListener('click', (e) => {
         const b = e.target.closest('button');
@@ -987,6 +1001,16 @@
       box.addEventListener('gesturestart', (e) => e.preventDefault());
     }
 
+    /* ---------- bottom sheets: one way to open them (closing differs per sheet) */
+    function kbLayer(inner) {
+      const layer = document.createElement('div');
+      layer.setAttribute('data-tm4', '');
+      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">${inner}</div></div>`;
+      document.body.appendChild(layer);
+      const sc = layer.querySelector('.scrim'), kb = layer.querySelector('.kb');
+      requestAnimationFrame(() => requestAnimationFrame(() => { sc.classList.add('on'); kb.classList.add('on'); }));
+      return layer;
+    }
     /* ---------- booking sheet */
     let bookLayer = null;
     function closeBook() {
@@ -1003,16 +1027,12 @@
       if (Z.focus) Z.focus(rid);
       closeBook();
       const { d, t } = Z.sel;
-      const layer = document.createElement('div');
-      layer.setAttribute('data-tm4', '');
-      layer.innerHTML = `<div class="scrim"></div><div class="kb" role="dialog" aria-modal="true"><div class="kb-grab"></div><div class="kb-in">
+      const layer = kbLayer(`
         <div class="kb-h"><span class="kr-seat">${esc(seatNo(st.resourceName))}</span><span class="kr-main"><b>${esc(nm(st.resourceName))}</b><span>${esc(Z.unit)} · ${esc((Z.zone.name || '').trim())}</span></span><button type="button" class="kb-fav" data-act="sfav" aria-label="Favoriete stoel">${STAR(isSeatFav(rid))}</button></div>
         <button type="button" class="kb-when" data-act="swhen">${ico('clock')}<span><b>${esc(dayLbl(d.value))}</b> vanaf ${esc(t.display)}</span><em>Wijzig</em></button>
-        <div class="kb-body">${skRows(2)}</div></div></div>`;
-      document.body.appendChild(layer);
+        <div class="kb-body">${skRows(2)}</div>`);
       bookLayer = layer;
       const scrim = layer.querySelector('.scrim'), kb = layer.querySelector('.kb'), body = kb.querySelector('.kb-body');
-      requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); kb.classList.add('on'); }));
       scrim.addEventListener('click', closeBook);
       let book = null; // filled in once KURT says the seat can be booked
       kb.addEventListener('click', async (e) => {
