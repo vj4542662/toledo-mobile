@@ -3,7 +3,7 @@
 import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.28.0"
+VERSION = "4.28.1"
 # Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
 # The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
 # build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
@@ -15,6 +15,9 @@ assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.28.1": [
+        "De melding voor een nieuwe versie verschijnt weer, ook als er kort na elkaar meerdere versies komen.",
+    ],
     "4.28.0": [
         "Nieuw in Meer: Alma. Zie wat er vandaag op het menu staat in jouw Alma, met prijzen en openingsuren.",
         "Geef je vaste Alma een ster, dan opent die meteen. Filter op veggie, vegan of allergenen, of zet de goedkoopste gerechten eerst.",
@@ -292,5 +295,15 @@ def vkey(v): return tuple(int(x) for x in v.split('.'))
 recent = dict(sorted(NEWS.items(), key=lambda kv: vkey(kv[0]), reverse=True)[:12])
 import time
 # built: when this version was published; the app waits until Userscripts' Check Updates can see it (GitHub caches 5 min)
-(here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': int(time.time() * 1000), 'news': recent}, ensure_ascii=False, indent=1) + '\n')
+# builds: the last few published versions with their time. When versions follow each other quickly, the app can
+# still announce the update as soon as an earlier newer version is old enough (Check Updates then sees at least that one).
+now = int(time.time() * 1000)
+try: builds = json.loads((here / 'version.json').read_text()).get('builds') or []
+except Exception: builds = []  # noqa: BLE001
+try: prev = json.loads((here / 'version.json').read_text())
+except Exception: prev = {}  # noqa: BLE001
+if prev.get('version') and prev.get('built') and not any(x.get('v') == prev['version'] for x in builds):
+    builds.append({'v': prev['version'], 'built': prev['built']})
+builds = [x for x in builds if x.get('v') != VERSION][-7:] + [{'v': VERSION, 'built': now}]
+(here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': now, 'builds': builds, 'news': recent}, ensure_ascii=False, indent=1) + '\n')
 print(len(out), 'bytes,', 'kanaal:', CHANNEL, '(iedereen)' if CHANNEL == 'main' else '(alleen testers)')

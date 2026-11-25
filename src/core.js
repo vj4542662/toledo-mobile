@@ -149,7 +149,10 @@
   // Userscripts' own "Check Updates" reads GitHub through a 5-minute cache (and the phone adds its own), so a version
   // only counts as available some minutes after it was published (version.json says when: built)
   const RIPE = 8 * 60e3;
-  const ripe = (info) => !info.built || Date.now() - info.built > RIPE;
+  // ripe: this version, or an earlier one that is still newer than ours, was published long enough ago. When versions
+  // follow each other quickly, waiting for the newest one alone would keep postponing the notification.
+  const ripe = (info) => !info.built || Date.now() - info.built > RIPE ||
+    (info.builds || []).some((b) => b && newerThan(b.v, VERSION) && Date.now() - Number(b.built) > RIPE);
   let ripeT = 0;
   function checkUpdate(cb, force) {
     if (TEST && !W.__TM_UPD_TEST__) return;
@@ -159,7 +162,7 @@
     const get = (u) => fetch(u + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
     ghApi('/contents/version.json?ref=' + CHANNEL, 'application/vnd.github.raw')
       .catch(() => get(VERSION_URL))
-      .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {}, built: Number(j.built) || 0 }; })
+      .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {}, built: Number(j.built) || 0, builds: Array.isArray(j.builds) ? j.builds : [] }; })
       .catch(() => get(UPDATE_URL).then((t) => { const m = /@version\s+([\d.]+)/.exec(t); return m ? { v: m[1], news: {} } : null; }))
       .then((info) => {
         if (!info) return;

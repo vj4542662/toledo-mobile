@@ -1,7 +1,32 @@
 {
- "version": "4.28.0",
- "built": 1795628990809,
+ "version": "4.28.1",
+ "built": 1795629110175,
+ "builds": [
+  {
+   "v": "4.26.1",
+   "built": 1795627749299
+  },
+  {
+   "v": "4.27.0",
+   "built": 1795628284930
+  },
+  {
+   "v": "4.27.1",
+   "built": 1795628823259
+  },
+  {
+   "v": "4.28.0",
+   "built": 1795628990809
+  },
+  {
+   "v": "4.28.1",
+   "built": 1795629110175
+  }
+ ],
  "news": {
+  "4.28.1": [
+   "De melding voor een nieuwe versie verschijnt weer, ook als er kort na elkaar meerdere versies komen."
+  ],
   "4.28.0": [
    "Nieuw in Meer: Alma. Zie wat er vandaag op het menu staat in jouw Alma, met prijzen en openingsuren.",
    "Geef je vaste Alma een ster, dan opent die meteen. Filter op veggie, vegan of allergenen, of zet de goedkoopste gerechten eerst."
@@ -38,9 +63,6 @@
   ],
   "4.24.0": [
    "Printen: opladen ziet eruit zoals de app. Kies je bedrag, zie meteen je nieuwe saldo en tik op Betaal."
-  ],
-  "4.23.2": [
-   "Printen: aanmelden werkt weer; je wordt niet meer meteen afgemeld na het inloggen."
   ]
  }
 }
