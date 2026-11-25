@@ -23,6 +23,7 @@
 */
 (() => {
   'use strict';
+  if (window.__TM_MODE__ !== 'classic') return; // the app layer (above) decided this page keeps its own layout
   if (window.top !== window && !window.__TM_TEST__) return; // top frame only
   if (window.__TM_LOADED__) return;
   window.__TM_LOADED__ = true;
@@ -323,7 +324,9 @@ html.tm-on #tm-ag-pill {
     const s = document.createElement('style');
     s.id = 'tm-style';
     s.textContent = `@media (max-width: 767px) {\n${SHARED_CSS}\n${css}\n}\n${GLOBAL_CSS}`;
-    (document.head || document.documentElement).appendChild(s);
+    const put = () => (document.head || document.documentElement).appendChild(s);
+    if (document.head || document.documentElement) put();
+    else { const mo = new MutationObserver(() => { if (document.documentElement) { mo.disconnect(); put(); } }); mo.observe(document, { childList: true }); }
   }
 
   /* ================================================================== shared: tab bar */
@@ -333,9 +336,19 @@ html.tm-on #tm-ag-pill {
     updates: '<path d="M6 16.5v-5.5a6 6 0 1 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
     messages: '<path d="M21 3 3 10.5l7.2 2.6L12.8 21z"/><path d="m21 3-10.8 10.1"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    vandaag: '<path d="M3.8 10.4 12 3.8l8.2 6.6V19a1.6 1.6 0 0 1-1.6 1.6h-4v-5.8H9.4v5.8h-4A1.6 1.6 0 0 1 3.8 19z"/>',
+    vakken: '<path d="M5 5.6A2.1 2.1 0 0 1 7.1 3.5H19v13.8H7.1A2.1 2.1 0 0 0 5 19.4z"/><path d="M5 19.4a2.1 2.1 0 0 0 2.1 2.1H19v-4.2"/><path d="M9 7.8h6"/>',
+    rooster: '<rect x="3.6" y="4.8" width="16.8" height="15.8" rx="3"/><path d="M3.6 9.6h16.8M8 3v3.4M16 3v3.4"/>',
+    meer: '<rect x="4" y="4" width="6.6" height="6.6" rx="1.8"/><rect x="13.4" y="4" width="6.6" height="6.6" rx="1.8"/><rect x="4" y="13.4" width="6.6" height="6.6" rx="1.8"/><rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.8"/>',
   };
   // Same five destinations everywhere; on the portal they are in-page, elsewhere they lead back to the portal.
-  const TABS = [
+  const TABS = SITE !== 'portal' ? [
+    { id: 'vandaag', label: 'Vandaag', url: PORTAL + '?tm=vandaag' },
+    { id: 'vakken', label: 'Vakken', url: PORTAL + '?tm=vakken' },
+    { id: 'rooster', label: 'Rooster', url: PORTAL + '?tm=rooster' },
+    { id: 'updates', label: 'Updates', url: PORTAL + '?tm=updates' },
+    { id: 'meer', label: 'Meer', url: PORTAL + '?tm=meer' },
+  ] : [
     { id: 'home', label: 'Home', hash: '#/home', url: PORTAL + '#/home' },
     { id: 'courses', label: 'Vakken', hash: '#/home', url: PORTAL + '?tm=courses#/home' },
     { id: 'updates', label: 'Updates', hash: '#/updates', url: PORTAL + '#/updates' },
@@ -374,7 +387,7 @@ html.tm-on #tm-ag-pill {
     function syncTabs() {
       const show = (BASE.test(location.pathname) || COURSE.test(location.pathname)) && !overlayOpen();
       root.classList.toggle('tm-tabs', show);
-      setActiveTab(/^\/ultra\/(courses|course)\b/.test(location.pathname) ? 'courses' : '');
+      setActiveTab(/^\/ultra\/(courses|course)\b/.test(location.pathname) ? 'vakken' : '');
     }
 
     function foldDescriptions() {
@@ -595,7 +608,40 @@ html.tm-on #tm-ag-pill {
         window.addEventListener('popstate', schedule);
         // Ultra navigates with pushState: watch for URL changes
         let last = location.href;
-        setInterval(() => { if (location.href !== last) { last = location.href; schedule(); } }, 400);
+        // closing an item in Blackboard lands on the course outline: go back to the app's course page
+        const toApp = () => {
+          const m = /^\/ultra\/courses\/(_\d+_\d+)\/outline\/?$/.exec(location.pathname);
+          let c = 0; try { c = Number(sessionStorage.getItem('tm4-classic-ultra')) || 0; } catch (_) {}
+          const classic = c && Date.now() - c < 30 * 60e3;
+          if (classic || Math.min(screen.width, screen.height) >= 600) return;
+          if (m && !location.search) {
+            const toAppUrl = 'https://ultra.edu.kuleuven.cloud/ultra/courses/' + m[1] + '/outline?tm=app#/c/' + m[1];
+            const noapp = Number(sessionStorage.getItem('tm4-noapp')) || 0;
+            if (noapp && Date.now() - noapp < 5 * 60e3) {
+              // the app stepped aside so Blackboard could sign you in: go back once that is done
+              if (window.__tm4wait) return;
+              window.__tm4wait = true;
+              const check = () => fetch('/learn/api/public/v1/users/me', { credentials: 'include', headers: { Accept: 'application/json' } })
+                .then((r) => { if (r.ok && /json/.test(r.headers.get('content-type') || '')) { sessionStorage.removeItem('tm4-noapp'); location.replace(toAppUrl); } else setTimeout(check, 2500); }, () => setTimeout(check, 4000));
+              setTimeout(check, 1500);
+              return;
+            }
+            location.replace(toAppUrl);
+            return;
+          }
+          // Blackboard's own start pages (e.g. after signing in): back to the app
+          const home = /^\/ultra\/?$|^\/ultra\/(course|stream|institution-page)\/?$/.exec(location.pathname);
+          if (home) location.replace('https://toledo.kuleuven.be/portal/' + (/stream/.test(location.pathname) ? '?tm=updates' : /\/course\/?$/.test(location.pathname) ? '?tm=vakken' : '?tm=vandaag'));
+        };
+        // the app's tab bar: handle the tap before Blackboard's own click handling can swallow it
+        window.addEventListener('click', (e) => {
+          const a = e.target && e.target.closest && e.target.closest('#tm-tabbar a[href]');
+          if (!a) return;
+          e.preventDefault(); e.stopImmediatePropagation();
+          location.href = a.href;
+        }, true);
+        toApp();
+        setInterval(() => { if (location.href !== last) { last = location.href; toApp(); schedule(); } }, 400);
       },
       ensure,
     };

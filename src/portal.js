@@ -611,7 +611,7 @@
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
       h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: ic('refresh', '#8e8e93'), title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: ic('swap', '#8e8e93'), title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${row({ href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', iconHtml: ic('help', '#8e8e93'), title: 'Hulp bij Toledo' })}</div>`;
-      h += `<p class="foot">Toledo Mobile ${VERSION}${CHANNEL === 'beta' ? ' (testversie)' : ''}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschuren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
+      h += `<p class="foot">Toledo Mobile ${VERSION}${CHANNEL === 'beta' ? ' (testversie)' : ''}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschueren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
       put($('[data-k="body"]', el), h);
     };
 
@@ -905,7 +905,11 @@
       if (upg) store.set('p:agUpg', Date.now());
       if (!force && !upg && !wantStudy && a && Date.now() - a.ts < 30 * 60e3 && !studyStale()) return Promise.resolve();
       // nothing will load study progress now: say so (with the "Laden uit KU Loket" button) instead of loading forever
-      const stIdle = () => { if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); } };
+      const stIdle = () => {
+        // the timetable won't load now either: show the "Examenrooster laden" button instead of grey bars forever
+        if (!P.ag) { P.ag = 'failed'; dirty('vandaag', 'rooster'); }
+        if (wantStudy && P.st !== 'loading') { P.st = 'failed'; dirty('studie', 'isp', 'resultaat'); if (SUBVIEW[P.tab]) setNav(NAVS[P.tab]()); }
+      };
       if (bridgeBusy) {
         if (force && !quiet) ACTS.agsync();
         else if (wantStudy && !bridgeSt) bridgeDone.then(() => refreshAgenda(false, true, quiet));
