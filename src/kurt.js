@@ -110,6 +110,13 @@
     const GRPS = () => store.get('kurt:groups') || [];
     {
       const sp = new URLSearchParams(location.search);
+      // all your groups (Toledo hands them over: name~course~e-mail,e-mail!...), so the booking sheet can offer every one
+      const all = sp.get('tmgs');
+      if (all != null) {
+        const list = String(all).split('!').map((x) => { const [n, c, m] = x.split('~'); const mm2 = String(m || '').split(',').map((y) => y.trim().toLowerCase()).filter((y) => /^[^@\s]+@[^@\s]+$/.test(y)).slice(0, 12); return n && mm2.length ? { n: n.slice(0, 60), c: String(c || '').slice(0, 80), m: mm2, id: (String(c || '') + '|' + n).toLowerCase() } : null; }).filter(Boolean).slice(0, 12);
+        store.set('kurt:groups', list);
+        if (!sp.get('tmm')) { try { history.replaceState(null, '', K + '/' + (location.hash || '#/')); } catch (_) {} }
+      }
       const mm = (sp.get('tmm') || '').split(',').map((x) => x.trim().toLowerCase()).filter((x) => /^[^@\s]+@[^@\s]+$/.test(x)).slice(0, 12);
       if (mm.length) {
         const g = { n: (sp.get('tmg') || 'Groep').slice(0, 60), m: mm, c: (sp.get('tmc') || '').slice(0, 80), ts: Date.now() };
@@ -608,7 +615,10 @@
       let res = null;
       memo('res:' + a.id, 30 * 60e3, () => get(`/resources/${a.id}?withDetails=true`)).then((x) => { res = x; draw(); }, () => {});
       // saved groups with someone who isn't in the list yet
-      const grpsLeft = () => GRPS().map((g, i) => ({ g, i })).filter(({ g }) => g.m.some((em) => !st.ppl.some((y) => String(y.email || '').toLowerCase() === em)));
+      const grpIn = (g) => g.m.every((em) => st.ppl.some((y) => String(y.email || '').toLowerCase() === em) || (me.email && String(me.email).toLowerCase() === em));
+      // came from Kies with a start hour and a length already chosen: show them, don't ask again (Wijzig opens the chips)
+      st.pick = !(wantEnd && st.end === wantEnd);
+      if (!st.pick) kb.querySelector('.kb-when').hidden = true;
       const mates = () => (store.get('kurt:mates') || []).filter((m) => !st.ppl.some((x) => x.uid.toUpperCase() === m.uid.toUpperCase()));
       const draw = () => {
         if (!layer.isConnected) return;
@@ -618,17 +628,19 @@
         const ok = !need && subjOk && st.ppl.length && !st.busy;
         const rules = ((res && (res.conditionsOfUseNlUrl || res.conditionsOfUseEnUrl)) || '').trim();
         const start = st.si * slot, ends = endsFrom(st.si);
-        body.innerHTML = `<div class="kb-l">Vanaf</div>
+        const G = GRPS();
+        body.innerHTML = (st.pick ? `<div class="kb-l">Vanaf</div>
           <div class="chips kb-ends kg-starts">${starts.map((i) => `<button type="button" class="chip${i === st.si ? ' on' : ''}${starts.includes(i - 1) ? '' : ' gap'}" data-act="start" data-i="${i}">${hm(i * slot)}</button>`).join('')}</div>
           <div class="kb-l">Tot</div>
-          <div class="chips kb-ends">${ends.map((m) => `<button type="button" class="chip${m === st.end ? ' on' : ''}" data-act="end" data-m="${m}">${hm(m)}<small>${dur(m - start)}</small></button>`).join('')}</div>
+          <div class="chips kb-ends">${ends.map((m) => `<button type="button" class="chip${m === st.end ? ' on' : ''}" data-act="end" data-m="${m}">${hm(m)}<small>${dur(m - start)}</small></button>`).join('')}</div>`
+          : `<div class="kb-when kg-chosen">${ico('clock')}<span><b>${esc(dayLbl(day))}</b> · ${hm(start)}–${hm(st.end)} <small>(${dur(st.end - start)})</small></span><button type="button" data-act="gtime">Wijzig</button></div>`) + `
           <label class="kb-l" for="kg-subj">Onderwerp</label>
           <input id="kg-subj" class="kg-in" type="text" maxlength="100" autocomplete="off" value="${esc(st.subj)}" placeholder="Waarvoor? Bv. Groepswerk statistiek">
           <div class="kb-l kg-pl">Groepsleden <b>${n}</b><span> · ${min === max ? min : `${min} tot ${max}`} personen, jij inbegrepen</span></div>
           <div class="kg-ppl">${st.ppl.map((x) => `<div class="kg-p"><span class="kg-av">${esc((x.me ? (me.firstName || 'Jij') : x.email || x.uid).slice(0, 1).toUpperCase())}</span><span class="kr-main"><b>${esc(x.me ? 'Jij' : String(x.email || '').split('@')[0].replace(/\./g, ' ') || x.uid)}</b><span>${esc(x.uid)}</span></span>${x.me ? '' : `<button type="button" class="kg-x" data-act="gdel" data-u="${esc(x.uid)}" aria-label="Verwijder">${ico('close')}</button>`}</div>`).join('')}</div>
-          ${n < max ? `<form class="kg-add"><input id="kg-q" class="kg-in" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="r-nummer of e-mail" value="${esc(st.q)}"><button type="submit" class="kg-addb"${st.busy ? ' disabled' : ''}>${st.busy ? '<span class="spin"></span>' : 'Voeg toe'}</button></form>` : ''}
+          ${G.length ? `<div class="kb-l kg-ml">Je groepen</div><div class="kg-glist">${G.map((g, i) => { const inn = grpIn(g); return `<div class="kg-g"><span class="kg-gi">${GROUP}</span><span class="kr-main"><b>${esc(g.n)}</b><span>${esc([g.c, (g.m.length + 1) + ' personen'].filter(Boolean).join(' · '))}</span></span>${inn ? `<span class="kg-gok">${ico('check')}Erin</span>` : `<button type="button" class="kg-gadd" data-act="ggrp" data-i="${i}"${st.busy || n >= max ? ' disabled' : ''}>Voeg toe</button>`}</div>`; }).join('')}</div>` : ''}
+          ${n < max ? `<div class="kb-l kg-ml">${G.length ? 'Of iemand anders' : 'Voeg iemand toe'}</div><form class="kg-add"><input id="kg-q" class="kg-in" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="r-nummer of e-mail" value="${esc(st.q)}"><button type="submit" class="kg-addb"${st.busy ? ' disabled' : ''}>${st.busy ? '<span class="spin"></span>' : 'Voeg toe'}</button></form>` : ''}
           ${st.err ? `<p class="ko-hint err">${ico('warn')}${esc(st.err)}</p>` : ''}
-          ${n < max && grpsLeft().length ? `<div class="kb-l kg-ml">Je groepen</div><div class="kg-mates kg-grps">${grpsLeft().map(({ g, i }) => `<button type="button" class="chip" data-act="ggrp" data-i="${i}">${GROUP}${esc(g.n)} <small>${g.m.length + 1}</small></button>`).join('')}</div>` : ''}
           ${n < max && mates().length ? `<div class="kb-l kg-ml">Eerder in je groep</div><div class="kg-mates">${mates().slice(0, 8).map((m) => `<button type="button" class="chip" data-act="gmate" data-u="${esc(m.uid)}">+ ${esc(String(m.email || '').split('@')[0].replace(/\./g, ' ') || m.uid)}</button>`).join('')}</div>` : ''}
           <button type="button" class="btn kb-go" data-act="gbook"${ok ? '' : ' disabled'}>${need ? `Nog ${need} ${need === 1 ? 'groepslid' : 'groepsleden'} nodig` : !subjOk ? 'Vul een onderwerp in (min. 4 tekens)' : `Reserveer · ${hm(start)}–${hm(st.end)}`}</button>
           <p class="kb-legal">Je gaat akkoord met het ${rules ? `<a href="${esc(rules)}">reglement</a>` : 'reglement'}. Check in met de QR-code in het lokaal, binnen het eerste halfuur.</p>`;
@@ -677,6 +689,7 @@
         if (act === 'start') { st.si = Number(b.dataset.i); pickEnd(); draw(); return; }
         if (act === 'gdel') { st.ppl = st.ppl.filter((x) => x.me || x.uid !== b.dataset.u); draw(); return; }
         if (act === 'gmate') { const m = (store.get('kurt:mates') || []).find((x) => x.uid === b.dataset.u); if (m && st.ppl.length < (a.maxParticipants || 99)) { st.ppl.push({ uid: m.uid, email: m.email }); draw(); } return; }
+        if (act === 'gtime') { st.pick = true; draw(); return; }
         if (act === 'ggrp') { addGroup(GRPS()[Number(b.dataset.i)]); return; }
         if (act === 'done') { closeBook(); ss.del('tm4-kurt-g'); nav('#/'); return; }
         if (act !== 'gbook' || b.disabled) return;

@@ -785,6 +785,9 @@
       if (c && Date.now() - c.ts < 14 * 864e5) return Promise.resolve(c.v);
       return once('usr:' + id, () => uget(`/learn/api/v1/users/${id}`).then((u) => { const v = { n: [u.givenName, u.familyName].filter(Boolean).join(' ') || u.userName || 'Onbekend', e: u.emailAddress || '' }; store.set('usr:' + id, { ts: Date.now(), v }); return v; }));
     };
+    // all your groups in one short text (name~course~e-mail,e-mail!...), handed to the portal (Meer > Studieplek) and KURT,
+    // so a group room booking can offer every group. Only members' KU Leuven addresses, never yours.
+    const grpParam = () => { const v = store.get('grpx'); return v && store.get('grpxSent') !== v ? '&gx=' + encodeURIComponent(v) : ''; };
     const shortCourse = (t) => String(t || '').replace(/\s*\[[^\]]*\]\s*$/, '').trim();
     function groupsView(r) {
       const el = section();
@@ -806,7 +809,7 @@
         }).join('');
         const sub = [g.set, g.self ? 'je schreef je zelf in' : 'ingedeeld door je docent'].filter(Boolean).join(' · ');
         const ready = ppl.every((p) => p.u);
-        const kurt = `https://kurt3.ghum.kuleuven.be/?tmg=${encodeURIComponent(g.t)}&tmc=${encodeURIComponent(shortCourse(name))}&tmm=${encodeURIComponent(mails(g).join(','))}`;
+        const kurt = `https://kurt3.ghum.kuleuven.be/?tmg=${encodeURIComponent(g.t)}&tmc=${encodeURIComponent(shortCourse(name))}&tmm=${encodeURIComponent(mails(g).join(','))}${store.get('grpx') ? '&tmgs=' + encodeURIComponent(store.get('grpx')) : ''}`;
         const href = `#/c/${c.pk}?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=meer`;
         return `<div class="card gw" style="${colorVars(c.k)}">
           <div class="gw-h"><span class="gw-ic">${ico('people')}</span><span class="main"><span class="gw-t"><b>${esc(g.t)}</b><i></i><a data-nav="1" href="${href}">${esc(shortCourse(name))}</a></span><span>${esc(sub)}</span></span><span class="gw-n">${g.m.length}</span></div>
@@ -892,6 +895,9 @@
           const uq = [...ids];
           const uwork = async () => { while (uq.length) { const id = uq.shift(); try { st.u[id] = await userOf(id); } catch (e) { if (e && e.auth) throw e; st.u[id] = { n: 'Onbekend', e: '' }; } draw(); } };
           await Promise.all([uwork(), uwork(), uwork()]);
+          const snap = [];
+          list.forEach((c) => { const x = st.g[c.pk]; if (x) x.mine.forEach((g) => { const m = mails(g); if (m.length) snap.push([g.t, shortCourse(c.t || meta(c.pk).name || ''), m.join(',')].map((y) => String(y).replace(/[~!]/g, ' ')).join('~')); }); });
+          store.set('grpx', snap.join('!'));
           draw();
         } catch (e) { if (e && e.auth) relogin(); else draw(); }
       }
@@ -1104,8 +1110,9 @@
       // the portal already knows this list: just go back (fast, the page is kept); otherwise load it with the news
       const done = doneParam();
       const rn = rnParam();
-      const known = !rn && (!done || store.get('doneSent') === done);
-      const url = PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn;
+      const gx = grpParam();
+      const known = !rn && !gx && (!done || store.get('doneSent') === done);
+      const url = PORTAL + '?tm=' + tab + (okAt ? '&ub=' + Math.floor(okAt / 1e3) : '') + done + rn + gx;
       if (fromPortal && f === tab && history.length > U.depth + 1 && known) {
         // Safari's history doesn't always lead back to the app (an entry it dropped, a page in between): when
         // nothing happened after a moment, load the app's tab instead of staying dimmed and loading forever
@@ -1119,6 +1126,7 @@
       }
       if (done) store.set('doneSent', done);
       if (rn) store.set('rnSent', rn.slice(-7));
+      if (gx) store.set('grpxSent', store.get('grpx'));
       goTo(url, { dir: 'back' });
     }
     W.addEventListener('popstate', (e) => {

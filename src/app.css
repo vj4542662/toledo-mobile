@@ -1124,3 +1124,12 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .at-seg button{text-align:center}
 .tm4 .at-o.at-more span{color:var(--accent);font-size:16px}
 .tm4 .at-o.at-more .i{color:var(--sub)}
+/* KURT booking sheet: chosen time + your groups as rows */
+.tm4 .kg-chosen{margin:0 0 4px;pointer-events:auto}.tm4 .kg-chosen small{color:var(--sub);font-size:13px}
+.tm4 .kg-chosen button{flex:none;border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--accent);padding:4px 2px}
+.tm4 .kg-glist{display:flex;flex-direction:column;gap:6px;margin:0 0 4px}
+.tm4 .kg-g{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;background:var(--card)}
+.tm4 .kg-g .kr-main{flex:1;min-width:0}.tm4 .kg-g .kr-main b{font-size:15px}.tm4 .kg-g .kr-main span{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm4 .kg-gi{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}.tm4 .kg-gi .i{width:20px;height:20px}
+.tm4 .kg-gadd{flex:none;height:34px;padding:0 13px;border-radius:9px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;font-size:14px}.tm4 .kg-gadd[disabled]{opacity:.45}
+.tm4 .kg-gok{flex:none;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--green)}.tm4 .kg-gok .i{width:18px;height:18px}
