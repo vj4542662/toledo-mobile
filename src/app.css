@@ -1123,3 +1123,6 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .at-ok>.i{width:46px;height:46px;padding:10px;border-radius:50%;background:var(--green);color:#fff;stroke-width:2.6}
 .tm4 .at-ok b{display:block;margin-top:10px;font-size:19px;font-weight:700}
 .tm4 .at-ok p{margin:6px 0 0;font-size:15px;line-height:20px;color:var(--sub)}
+.tm4 .at-seg button{text-align:center}
+.tm4 .at-o.at-more span{color:var(--accent);font-size:16px}
+.tm4 .at-o.at-more .i{color:var(--sub)}

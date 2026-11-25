@@ -58,7 +58,10 @@
       const out = Object.keys(kinds).map((kind) => {
         const opts = kinds[kind].sort((a, b) => b.yr.localeCompare(a.yr) || b.prog.localeCompare(a.prog));
         const known = ATT_KNOWN[kind];
-        return { kind, type: opts[0].type, title: known ? known[0] : opts[0].desc || kind, hint: known ? known[1] : '', info: plain((opts.find((o) => o.info) || {}).info), opts };
+        const title = known ? known[0] : opts[0].desc || kind;
+        // KU Loket's text often starts by repeating the name ("Inschrijvingsbewijs. Dit kan je ...")
+        const info = plain((opts.find((o) => o.info) || {}).info).replace(new RegExp('^(' + [opts[0].desc, title].filter(Boolean).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\.\\s*', 'i'), '');
+        return { kind, type: opts[0].type, title, hint: known ? known[1] : '', info: info ? info[0].toUpperCase() + info.slice(1) : '', opts };
       });
       const pos = (g) => { const i = ATT_ORDER.indexOf(g.kind); return i < 0 ? 99 : i; };
       out.sort((a, b) => pos(a) - pos(b) || a.title.localeCompare(b.title));
@@ -83,12 +86,12 @@
 
     // the sheet for one attest: pick the year/programme (newest first, already chosen) and the language, then send
     function open(g) {
-      let pick = 0, en = false;
+      let pick = 0, en = false, all = g.opts.length <= 3;
       const opt = () => g.opts[pick];
       const optLabel = (o) => [yrTxt(o.yr), o.progT].filter(Boolean).join(' · ') || 'Algemeen';
       const body = () => {
         let h = `<div class="at-hd"><span class="ic" style="--c:#8e5bd6">${ico('cert')}</span><b>${esc(g.title)}</b>${g.info ? `<p>${esc(g.info)}</p>` : ''}</div>`;
-        if (g.opts.length > 1) h += `<div class="at-l">${/\d/.test(g.opts.map((o) => yrTxt(o.yr)).join('')) ? 'Academiejaar' : 'Opleiding'}</div><div class="at-opts">${g.opts.map((o, i) => `<button type="button" class="at-o${i === pick ? ' on' : ''}" data-o="${i}"><span><b>${esc(yrTxt(o.yr) || o.progT || 'Algemeen')}</b>${yrTxt(o.yr) && o.progT ? `<small>${esc(o.progT)}</small>` : ''}</span>${i === pick ? ico('check') : ''}</button>`).join('')}</div>`;
+        if (g.opts.length > 1) h += `<div class="at-l">${/\d/.test(g.opts.map((o) => yrTxt(o.yr)).join('')) ? 'Academiejaar' : 'Opleiding'}</div><div class="at-opts">${g.opts.slice(0, all ? 99 : 2).map((o, i) => `<button type="button" class="at-o${i === pick ? ' on' : ''}" data-o="${i}"><span><b>${esc(yrTxt(o.yr) || o.progT || 'Algemeen')}</b>${yrTxt(o.yr) && o.progT ? `<small>${esc(o.progT)}</small>` : ''}</span>${i === pick ? ico('check') : ''}</button>`).join('')}${all ? '' : `<button type="button" class="at-o at-more" data-all="1"><span>Oudere jaren (${g.opts.length - 2})</span>${ico('more')}</button>`}</div>`;
         else h += `<p class="at-one">${esc(optLabel(opt()))}</p>`;
         if (opt().en) h += `<div class="at-l">Taal</div><div class="at-seg"><button type="button" data-en="0"${en ? '' : ' class="on"'}>Nederlands</button><button type="button" data-en="1"${en ? ' class="on"' : ''}>Engels</button></div>`;
         h += `<button type="button" class="btn at-go">${ico('mail')}Mail naar mij</button><p class="at-note">Je krijgt het als pdf in je studentenmail.</p>`;
@@ -102,6 +105,7 @@
         const t = e.target.closest('button');
         if (!t || busy) return;
         if (t.dataset.x) { close(); return; }
+        if (t.dataset.all) { all = true; put(box, body()); return; }
         if (t.dataset.o) { pick = Number(t.dataset.o) || 0; if (!opt().en) en = false; put(box, body()); return; }
         if (t.dataset.en) { en = t.dataset.en === '1'; put(box, body()); return; }
         if (t.dataset.mail) { close(); mailOpen(); return; }
