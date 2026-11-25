@@ -137,8 +137,7 @@
       const ids = algIds();
       const k = keyOf(slug, date, ids);
       if (MEM[k] && Date.now() - MEM[k].ts < 15 * 60e3) return MEM[k].p;
-      let kept = null;
-      try { kept = JSON.parse(ss.get('tm4-alma:' + k) || 'null'); } catch (_) {}
+      const kept = store.get('alma:m:' + k);
       if (kept && Date.now() - kept.ts < 15 * 60e3) { MEM[k] = { ts: kept.ts, p: Promise.resolve(kept.v) }; return MEM[k].p; }
       const q = new URLSearchParams({ date });
       ids.forEach((i) => q.append('allergie[]', String(i)));
@@ -146,7 +145,7 @@
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
         .then((t) => {
           const v = parse(t, date);
-          ss.set('tm4-alma:' + k, JSON.stringify({ ts: Date.now(), v }));
+          store.set('alma:m:' + k, { ts: Date.now(), v });
           if (Object.keys(v.hours).length) store.set('alma:h:' + slug, { ts: Date.now(), v: v.hours });
           if (v.route) store.set('alma:r:' + slug, { route: v.route, addr: v.addr });
           return v;
@@ -155,10 +154,17 @@
       p.catch(() => { delete MEM[k]; });
       return p;
     }
-    const peek = (slug, date) => {
-      const k = keyOf(slug, date, algIds());
-      try { const kept = JSON.parse(ss.get('tm4-alma:' + k) || 'null'); return kept ? kept.v : null; } catch (_) { return null; }
+    // what we saw before (also on an earlier visit): shown at once while the fresh menu loads
+    const peek = (slug, date) => { const kept = store.get('alma:m:' + keyOf(slug, date, algIds())); return kept ? kept.v : null; };
+    // menus of past days are of no use any more
+    const dropMenus = (all) => {
+      try {
+        Object.keys(localStorage).filter((x) => x.startsWith('tm4:alma:m:')).forEach((x) => {
+          if (all || (x.split('|')[1] || '') < ymd(Date.now())) localStorage.removeItem(x);
+        });
+      } catch (_) {}
     };
+    dropMenus(false);
 
     /* ---------- opening hours */
     const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
@@ -263,6 +269,7 @@
       if (!ds.includes(DAY)) setDay(ds[0]);
       const draw = (m, err) => {
         if (my !== token) return;
+        sec.classList.remove('al-busy');
         LAST = m;
         const loc = store.get('alma:r:' + CUR) || {};
         let h = `<div class="lt"><h1>${esc(a.n)}</h1><p class="lt-sub">${esc(loc.addr || a.c)}${loc.route ? ` · <a class="al-route" href="${esc(loc.route)}" target="_blank" rel="noopener">Route</a>` : ''}</p></div>`;
@@ -315,7 +322,13 @@
         if (on && on.scrollIntoView && on.offsetLeft > sec.clientWidth - 120) on.parentNode.scrollLeft = on.offsetLeft - 16;
       };
       const cached = peek(CUR, DAY);
-      if (cached || !keep) draw(cached); // a redraw keeps the old menu on screen until the new one is there
+      if (cached || !keep) draw(cached);
+      else {
+        // a redraw keeps the old menu on screen (dimmed) until the new one is there; the chips move at once
+        sec.classList.add('al-busy');
+        $$('.al-day', sec).forEach((x) => x.classList.toggle('on', x.dataset.d === DAY));
+        $$('.al-chips .chip[data-s]', sec).forEach((x) => x.classList.toggle('on', x.dataset.s === CUR));
+      }
       load(CUR, DAY).then((m) => {
         // the first answer brings the opening hours: maybe today isn't a day to show any more
         if (my !== token) return;
@@ -325,10 +338,10 @@
     }
     // the other starred Alma's today, and this Alma's next days: tapping a chip is instant
     function prefetch() {
-      setTimeout(() => {
-        favs().filter((s) => s !== CUR).forEach((s) => load(s, DAY).catch(() => {}));
-        days(CUR).slice(0, 4).forEach((d) => load(CUR, d).catch(() => {}));
-      }, 600);
+      // first every day of this Alma, then your other Alma's: tapping a day or a chip is instant
+      days(CUR).forEach((d) => load(CUR, d).catch(() => {}));
+      favs().filter((s) => s !== CUR).forEach((s) => load(s, DAY).catch(() => {}));
+      setTimeout(() => favs().filter((s) => s !== CUR).forEach((s) => days(s).forEach((d) => load(s, d).catch(() => {}))), 2500);
     }
 
     /* ---------- all Alma's: pick and star yours */
@@ -397,8 +410,8 @@
       e.preventDefault();
       if (act === 'ameer') goTo(PORTAL + '?tm=meer', { dir: 'back' });
       else if (act === 'aback') back();
-      else if (act === 'acur') { setCur(b.dataset.s); show(); }
-      else if (act === 'aday') { setDay(b.dataset.d); show(); }
+      else if (act === 'acur') { setCur(b.dataset.s); redraw(); }
+      else if (act === 'aday') { setDay(b.dataset.d); redraw(); }
       else if (act === 'aflt') {
         const k = b.dataset.k;
         FLT[k] = !FLT[k];
@@ -425,7 +438,7 @@
         else location.replace(pageUrl('') + '#/');
       } else if (act === 'aprijs') { store.set('alma:prijs', b.dataset.k); if (route() === 'kies' || SETUP) viewPick(token); else show(); }
     });
-    pullRefresh(() => { Object.keys(MEM).forEach((k) => delete MEM[k]); try { Object.keys(sessionStorage).filter((k) => k.startsWith('tm4-alma:')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {} show(); return new Promise((r) => setTimeout(r, 700)); });
+    pullRefresh(() => { Object.keys(MEM).forEach((k) => delete MEM[k]); dropMenus(true); show(); return new Promise((r) => setTimeout(r, 700)); });
     // back after a while (lunch tomorrow): today has moved on, and the status line with it
     let away = 0;
     document.addEventListener('visibilitychange', () => {
