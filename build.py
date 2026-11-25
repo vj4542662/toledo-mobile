@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 """Builds toledo-mobile.user.js (v4): app layer + the v3.1 classic layer for the remaining Blackboard / KU Loket pages."""
-import re, json, pathlib
+import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.25.2"
+VERSION = "4.25.3"
+# Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
+# The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
+# build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
+def _branch():
+    try: return subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=pathlib.Path(__file__).parent, capture_output=True, text=True).stdout.strip()
+    except Exception: return ''  # noqa: BLE001
+CHANNEL = os.environ.get('TM_CHANNEL') or ('main' if _branch() == 'main' else 'beta')
+assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.25.3": [
+        "Nieuwe versies worden voortaan eerst getest voordat ze bij iedereen komen.",
+    ],
     "4.25.2": [
         "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd.",
     ],
@@ -124,7 +135,7 @@ css = re.sub(r'\n\s*', '\n', css).strip()
 import base64
 css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
 app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'print.js', 'main.js'])
-app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False))
+app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False)).replace('__BRANCH__', CHANNEL)
 
 classic = (src / 'classic-v3.js').read_text()
 classic = classic.split('// ==/UserScript==', 1)[1]
@@ -207,8 +218,8 @@ header = f"""// ==UserScript==
 // @match        https://kurt3.ghum.kuleuven.be/*
 // @match        https://print.kuleuven.be/*
 // @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
-// @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
-// @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
+// @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
+// @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
 // @run-at       document-start
 // @inject-into  content
 // @grant        none
@@ -260,4 +271,4 @@ recent = dict(sorted(NEWS.items(), key=lambda kv: vkey(kv[0]), reverse=True)[:12
 import time
 # built: when this version was published; the app waits until Userscripts' Check Updates can see it (GitHub caches 5 min)
 (here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': int(time.time() * 1000), 'news': recent}, ensure_ascii=False, indent=1) + '\n')
-print(len(out), 'bytes')
+print(len(out), 'bytes,', 'kanaal:', CHANNEL, '(iedereen)' if CHANNEL == 'main' else '(alleen testers)')

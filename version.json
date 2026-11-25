@@ -1,7 +1,10 @@
 {
- "version": "4.25.2",
- "built": 1795613559815,
+ "version": "4.25.3",
+ "built": 1795615356334,
  "news": {
+  "4.25.3": [
+   "Nieuwe versies worden voortaan eerst getest voordat ze bij iedereen komen."
+  ],
   "4.25.2": [
    "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd."
   ],
@@ -36,9 +39,6 @@
   ],
   "4.21.0": [
    "Nieuw in Meer: Toledo-agenda op je iPhone. Met één tik komen je deadlines in de Agenda-app, en ze blijven daar vanzelf bijgewerkt."
-  ],
-  "4.20.2": [
-   "Twee kleine verbeteringen: op de donkere kaarten van Studievoortgang is het label bovenaan weer goed leesbaar, en lijsten met een lange titel (zoals Mijn ISP) gebruiken weer de volle breedte."
   ]
  }
 }
