@@ -1149,3 +1149,11 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .kmap-tools button .i{width:19px;height:19px;vertical-align:-3px}
 .tm4 .kf-cib.pri{background:var(--green)}.tm4 .kf-cib.red{background:var(--red)}
 .tm4 .kf-ci{margin:4px 16px}
+
+/* Alma inside the app (Meer > Alma): a frame that slides in once Alma's app screen stands */
+.tm4 #tm-alma{position:fixed;inset:0;z-index:200;visibility:hidden;pointer-events:none;transform:translateX(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s;background:var(--bg)}
+.tm4 #tm-alma.on{visibility:visible;pointer-events:auto;transform:none;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.tm4 #tm-alma iframe{display:block;width:100%;height:100%;border:0;background:var(--bg)}
+.tm4 .ai .app-spin{position:absolute;inset:0;margin:auto;width:22px;height:22px;border-color:rgba(255,255,255,.35);border-top-color:#fff}
+@media (prefers-reduced-motion:reduce){.tm4 #tm-alma,.tm4 #tm-alma.on{transition:none}}
+.tm4 .ai:has(.app-spin) .i{opacity:.3}

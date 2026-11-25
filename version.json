@@ -1,11 +1,7 @@
 {
- "version": "4.31.0",
- "built": 1795645520195,
+ "version": "4.32.0",
+ "built": 1795646508330,
  "builds": [
-  {
-   "v": "4.28.5",
-   "built": 1795629868966
-  },
   {
    "v": "4.28.6",
    "built": 1795629882046
@@ -33,9 +29,16 @@
   {
    "v": "4.31.0",
    "built": 1795645520195
+  },
+  {
+   "v": "4.32.0",
+   "built": 1795646508330
   }
  ],
  "news": {
+  "4.32.0": [
+   "Alma opent nu binnen de app en schuift pas in beeld als het menu klaarstaat: je ziet de oude website niet meer even flitsen. Kies je Alma's één keer opnieuw."
+  ],
   "4.31.0": [
    "Studieplek toont of een bibliotheek nu open is: \"Sluit om 20:00\" vlak voor sluiten en \"Nu gesloten\" daarna.",
    "Kom je na een tijdje terug in Studieplek, dan zijn de vrije plaatsen meteen opnieuw geladen.",
@@ -73,9 +76,6 @@
   ],
   "4.28.2": [
    "Alma: de eerste keer zet je meteen een ster bij al je Alma's en tik je op Klaar."
-  ],
-  "4.28.1": [
-   "De melding voor een nieuwe versie verschijnt weer, ook als er kort na elkaar meerdere versies komen."
   ]
  }
 }
