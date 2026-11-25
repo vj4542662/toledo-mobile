@@ -1,11 +1,7 @@
 {
- "version": "4.28.5",
- "built": 1795629868966,
+ "version": "4.28.6",
+ "built": 1795629882046,
  "builds": [
-  {
-   "v": "4.27.0",
-   "built": 1795628284930
-  },
   {
    "v": "4.27.1",
    "built": 1795628823259
@@ -33,9 +29,16 @@
   {
    "v": "4.28.5",
    "built": 1795629868966
+  },
+  {
+   "v": "4.28.6",
+   "built": 1795629882046
   }
  ],
  "news": {
+  "4.28.6": [
+   "Studieplek heeft een nieuw, duidelijker icoon."
+  ],
   "4.28.5": [
    "Groepswerken is eenvoudiger: per groep zie je de naam, het vak en de kleur van het vak, met Mail de groep en Groepsruimte boeken."
   ],
@@ -72,9 +75,6 @@
   ],
   "4.25.3": [
    "Nieuwe versies worden voortaan eerst getest voordat ze bij iedereen komen."
-  ],
-  "4.25.2": [
-   "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd."
   ]
  }
 }

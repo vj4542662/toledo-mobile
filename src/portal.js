@@ -580,7 +580,7 @@
         return o.href ? `<a class="app" href="${esc(o.href)}">${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
       };
       const APPS = [
-        { n: 'Studieplek (KURT)', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
+        { n: 'Studieplek', i: 'desk', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
         { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
         { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
         { n: 'Groepswerken', i: 'people', c: '#c2477a', href: groupsHref() },
