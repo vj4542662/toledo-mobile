@@ -249,8 +249,16 @@
       if (lid) warm(lid);
     }, { passive: true });
     // a booking only names its seat ("Agora - Silent Study Seat 111"): find its library by that prefix
+    // Some prefixes don't match ("CBA - Boekenzaal Seat 109" is 2Bergen Arenberg): then KURT's resource details say it
+    // (resLoc, remembered per seat in kurt:rl).
+    const RL = store.get('kurt:rl') || {};
+    const resLoc = (rid) => (RL[rid] ? Promise.resolve(RL[rid]) : memo('rl:' + rid, 10 * 60e3, () => get('/resources/' + rid + '?withDetails=true')).then((x) => {
+      if (x && x.locationId) { RL[rid] = x.locationId; store.set('kurt:rl', RL); }
+      return RL[rid] || null;
+    }));
     function libOf(r, locs) {
-      if (r.locationId) return locs.find((l) => l.id === r.locationId) || { id: r.locationId, unit: '' };
+      const lid = r.locationId || RL[r.resourceId];
+      if (lid) return locs.find((l) => l.id === lid) || { id: lid, unit: '' };
       const pre = fold(String(r.resourceName || '').split(' - ')[0]);
       const w1 = pre.split(' ')[0];
       return (pre && (locs.find((l) => fold(l.unit).startsWith(pre) || fold(l.unit).includes(pre)) || (w1.length > 3 && locs.find((l) => fold(l.unit).startsWith(w1))))) || null;
@@ -273,6 +281,7 @@
             const now = Date.now(), s = fromYmd(r.startDate, r.startTime), e = r.endTime === '00:00' ? fromYmd(r.endDate, '24:00') : fromYmd(r.endDate, r.endTime);
             const live = now >= s - 15 * 60e3 && now < e;
             const hit = libOf(r, d.loc ? d.loc.tiles.flatMap((t) => t.locations) : []);
+            if (!hit && d.loc && r.resourceId && !RL[r.resourceId]) resLoc(r.resourceId).then((x) => { if (x) draw(d); }, () => {});
             const isRoom = !/\d\s*$/.test(String(r.resourceName || ''));
             const unit = hit ? hit.unit : '';
             const cin = live && isIn(r);
@@ -801,7 +810,9 @@
       setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: what, always: true });
       let tiles = (store.get('kurt:locinfo') || {}).tiles;
       if (!tiles) { try { tiles = await memo('tiles', 10 * 60e3, () => get('/tiles')); } catch (_) { tiles = []; } }
-      const hit = libOf(r, tiles.flatMap((t) => t.locations));
+      let hit = libOf(r, tiles.flatMap((t) => t.locations));
+      if (!hit) { const x = await resLoc(r.resourceId).catch(() => null); if (x) hit = { id: x }; }
+      if (my !== token) return;
       if (!hit) { fail('Bibliotheek niet gevonden', nm(r.resourceName)); return; }
       const lid = hit.id;
       let L;
