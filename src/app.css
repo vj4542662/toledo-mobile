@@ -991,18 +991,20 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 /* Groepswerken (Meer): one card per group, members, actions */
 .tm4 .gw{padding:14px 14px 12px;margin:0 0 14px}
 .tm4 .gw-h{display:flex;align-items:center;gap:12px}
-.tm4 .gw-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,#c2477a 16%,transparent);color:#c2477a}
+.tm4 .gw-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:var(--ct)}
+.tm4 .gw-h .main .gw-t{display:flex;align-items:center;flex-wrap:wrap;gap:0 7px;font-size:17px;color:var(--text)}.tm4 .gw-t i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--c)}.tm4 .gw-t a{font-size:15px;font-weight:600;color:var(--cd);text-decoration:none}
+.tm4 .gw{border-top:4px solid var(--c)}
 .tm4 .gw-h .main{flex:1;min-width:0;display:flex;flex-direction:column}.tm4 .gw-h .main b{font-size:17px;font-weight:650}.tm4 .gw-h .main span{font-size:13px;color:var(--sub)}
 .tm4 .gw-n{flex:none;min-width:26px;height:26px;padding:0 8px;border-radius:13px;background:var(--fill,rgba(127,127,127,.14));font-size:13px;font-weight:600;display:grid;place-items:center;color:var(--sub)}
 .tm4 .gw-d{margin:10px 0 0;font-size:13.5px;color:var(--sub);line-height:1.4}
 .tm4 .gw-ppl{margin:10px -4px 0}
 .tm4 .gw-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:650;background:var(--fill,rgba(127,127,127,.14));color:var(--text);margin-right:2px}
-.tm4 .gw-av.me{background:var(--accent);color:#fff}
+.tm4 .gw-av.me{background:var(--c);color:var(--ct)}
 .tm4 .gw-m .i{width:20px;height:20px;color:var(--accent)}
 .tm4 .gw-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .tm4 .gw-acts>*{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 10px;border-radius:12px;border:0;font:inherit;font-size:14px;font-weight:600;text-align:center;background:var(--fill,rgba(127,127,127,.14));color:var(--accent);text-decoration:none}
 .tm4 .gw-acts>* .i{width:18px;height:18px}
-.tm4 .gw-acts .pri{background:var(--accent);color:#fff}
+.tm4 .gw-acts .pri{background:var(--c);color:var(--ct)}.tm4 .gw-acts>a{color:var(--cd)}
 .tm4 .gw-acts [disabled],.tm4 .gw-acts [aria-disabled="true"]{opacity:.45;pointer-events:none}
 
 /* ---------- Alma (v4.28.0): the menu of your own Alma ---------- */

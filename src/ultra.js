@@ -807,15 +807,14 @@
         const sub = [g.set, g.self ? 'je schreef je zelf in' : 'ingedeeld door je docent'].filter(Boolean).join(' · ');
         const ready = ppl.every((p) => p.u);
         const kurt = `https://kurt3.ghum.kuleuven.be/?tmg=${encodeURIComponent(g.t)}&tmc=${encodeURIComponent(shortCourse(name))}&tmm=${encodeURIComponent(mails(g).join(','))}`;
-        return `<div class="card gw">
-          <div class="gw-h"><span class="gw-ic">${ico('people')}</span><span class="main"><b>${esc(g.t)}</b><span>${esc(sub)}</span></span><span class="gw-n">${g.m.length}</span></div>
+        const href = `#/c/${c.pk}?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=meer`;
+        return `<div class="card gw" style="${colorVars(c.k)}">
+          <div class="gw-h"><span class="gw-ic">${ico('people')}</span><span class="main"><span class="gw-t"><b>${esc(g.t)}</b><i></i><a data-nav="1" href="${href}">${esc(shortCourse(name))}</a></span><span>${esc(sub)}</span></span><span class="gw-n">${g.m.length}</span></div>
           ${g.d ? `<p class="gw-d">${esc(g.d)}</p>` : ''}
           <div class="group plain gw-ppl">${rows}</div>
           <div class="gw-acts">
             <button type="button" class="pri" data-act="gwmail" data-pk="${c.pk}" data-g="${g.id}"${ready && mails(g).length ? '' : ' disabled'}>${ico('mail')}Mail de groep</button>
-            <a href="${esc(ULTRA + '/ultra/courses/' + c.pk + '/messages')}" data-act="gwmsg" data-t="${esc(g.t)}">${ico('bubble')}Bericht in Toledo</a>
             <a href="${esc(kurt)}"${ready ? '' : ' aria-disabled="true"'}>${ico('desk')}Groepsruimte boeken</a>
-            <button type="button" data-act="gwcopy" data-pk="${c.pk}" data-g="${g.id}"${ready ? '' : ' disabled'}>${ico('pagemenu')}Kopieer mailadressen</button>
           </div></div>`;
       }
       function draw() {
@@ -827,10 +826,9 @@
           const name = c.t || (c.pk && meta(c.pk).name) || 'Vak';
           if (!x) { if (st.err[c.pk]) none.push(name); else waiting++; return; }
           if (!x.mine.length && !x.open.length) { none.push(name); return; }
-          h += `<a class="gh gc" data-nav="1" href="#/c/${c.pk}?t=${encodeURIComponent(name)}&k=${encodeURIComponent(c.k || '')}&f=meer" style="${colorVars(c.k)}"><i></i>${esc(name)}${CHEV}</a>`;
           x.mine.forEach((g) => { nGroups++; h += card(c, g); });
           x.open.forEach((o) => {
-            h += `<div class="group">${row({ href: `${ULTRA}/ultra/courses/${c.pk}/groups/enrollments`, icon: 'plus', soft: true, title: `Kies een groep: ${o.set}`, sub: o.end ? `Inschrijven kan tot ${when(o.end)}` : 'Inschrijven is open', external: true })}</div>`;
+            h += `<div class="group">${row({ href: `${ULTRA}/ultra/courses/${c.pk}/groups/enrollments`, icon: 'plus', soft: true, title: `Kies een groep: ${o.set}`, sub: [shortCourse(name), o.end ? `inschrijven kan tot ${when(o.end)}` : 'inschrijven is open'].join(' · '), external: true })}</div>`;
           });
         });
         if (waiting) h += `<p class="fresh"><span class="spin" style="width:12px;height:12px;border-width:2px;vertical-align:-1px;margin-right:6px"></span>Nog ${waiting} ${waiting === 1 ? 'vak' : 'vakken'} nakijken…</p>${nGroups ? '' : skGroup(3)}`;
@@ -913,14 +911,6 @@
         act(n, b) {
           if (n === 'gwmail') { const g = groupOf(b); if (g && !b.disabled) compose(mails(g), `${courseName(b.dataset.pk)} – ${g.t}`); return true; }
           if (n === 'gwmail1') { compose([b.dataset.e], b.dataset.s); return true; }
-          if (n === 'gwcopy') {
-            const g = groupOf(b);
-            if (!g || b.disabled) return true;
-            const txt = mails(g).join(', ');
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast('Mailadressen gekopieerd'), () => toast('Kopiëren lukte niet'));
-            return true;
-          }
-          if (n === 'gwmsg') { toast(`Kies "${b.dataset.t}" bij Aan`); setTimeout(() => goTo(b.getAttribute('href')), 700); return true; }
           return false;
         },
       };

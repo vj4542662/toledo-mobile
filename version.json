@@ -1,11 +1,7 @@
 {
- "version": "4.28.4",
- "built": 1795629415257,
+ "version": "4.28.5",
+ "built": 1795629868966,
  "builds": [
-  {
-   "v": "4.26.1",
-   "built": 1795627749299
-  },
   {
    "v": "4.27.0",
    "built": 1795628284930
@@ -33,9 +29,16 @@
   {
    "v": "4.28.4",
    "built": 1795629415257
+  },
+  {
+   "v": "4.28.5",
+   "built": 1795629868966
   }
  ],
  "news": {
+  "4.28.5": [
+   "Groepswerken is eenvoudiger: per groep zie je de naam, het vak en de kleur van het vak, met Mail de groep en Groepsruimte boeken."
+  ],
   "4.28.4": [
    "Alma: een andere dag of Alma kiezen gaat meteen, en het menu van vorige keer staat er al terwijl het nieuwe laadt."
   ],
@@ -72,9 +75,6 @@
   ],
   "4.25.2": [
    "Testversie om het nieuwe updatescherm te zien. Verder is er niets veranderd."
-  ],
-  "4.25.1": [
-   "De app start nu altijd in lichte modus. Liever donker of automatisch? Kies het bij Meer, Weergave."
   ]
  }
 }
