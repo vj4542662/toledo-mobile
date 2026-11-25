@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.22.0"
+VERSION = "4.23.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.23.0": [
+        "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
+    ],
     "4.22.0": [
         "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
         "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester.",
@@ -98,7 +101,7 @@ css = re.sub(r'\n\s*', '\n', css).strip()
 # Manrope (SIL Open Font License, src/fonts/OFL.txt) goes inside the script: the Toledo pages may not load Google Fonts
 import base64
 css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
-app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'main.js'])
+app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'kurt.js', 'print.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(NEWS, ensure_ascii=False))
 
 classic = (src / 'classic-v3.js').read_text()
@@ -180,6 +183,7 @@ header = f"""// ==UserScript==
 // @match        https://idp.kuleuven.be/idp/*
 // @match        https://icts-p-toledo-journey.cloud.icts.kuleuven.be/*
 // @match        https://kurt3.ghum.kuleuven.be/*
+// @match        https://print.kuleuven.be/*
 // @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/main/toledo-mobile.user.js

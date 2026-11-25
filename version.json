@@ -1,6 +1,9 @@
 {
- "version": "4.22.0",
+ "version": "4.23.0",
  "news": {
+  "4.23.0": [
+   "Nieuw in Meer: Printen. Zie je printsaldo, laad op, en stuur een PDF of Word-bestand van je iPhone naar eender welke KU Leuven-printer. Daar scan je je studentenkaart en druk je af."
+  ],
   "4.22.0": [
    "Vakken: kies je favoriete vakken nu in de app. Tik bovenaan op de ster en geef een vak een ster; dat geldt ook in Toledo zelf.",
    "Vakken: zoek in al je vakken tegelijk. Typ een woord in het zoekveld en tik op Zoek in al je vakken: je vindt bestanden, mappen en opdrachten uit al je vakken van dit semester."
@@ -36,9 +39,6 @@
   ],
   "4.17.2": [
    "De uitlegpagina bij het updaten toont het logo weer, en de voorbeelden kleuren mee met licht of donker."
-  ],
-  "4.17.1": [
-   "Groepswerkruimtes: elk lokaal toont nu alleen de vrije uren, als grote knoppen in nette rijen. Volzette lokalen staan apart onderaan."
   ]
  }
 }

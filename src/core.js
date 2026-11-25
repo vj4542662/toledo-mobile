@@ -1,7 +1,7 @@
   /* ================================================================== environment */
   const W = window;
   const VERSION = '__VERSION__';
-  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt', 'raw.githubusercontent.com': 'install' }[location.hostname];
+  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt', 'print.kuleuven.be': 'print', 'raw.githubusercontent.com': 'install' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
   const PATH = W.__TM_PATH__ || location.pathname;
@@ -454,6 +454,8 @@
     help: '<circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7M12 17v.2"/>',
     person: '<circle cx="12" cy="8.6" r="3.6"/><path d="M5 20.2a7 7 0 0 1 14 0"/>',
     star: '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
+    printer: '<path d="M7 8.6V4.2h10v4.4"/><rect x="3.6" y="8.6" width="16.8" height="8" rx="2.2"/><path d="M7 13.6h10v6.2H7z"/><path d="M16.6 11.4h.2" stroke-width="2.2"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
     seat: '<path d="M6 11V6.6A2.6 2.6 0 0 1 8.6 4h6.8A2.6 2.6 0 0 1 18 6.6V11"/><path d="M4.5 11h15v4.4h-15zM6.4 15.4V20M17.6 15.4V20"/>',
   };
   const ico = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;

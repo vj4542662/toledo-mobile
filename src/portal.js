@@ -571,6 +571,7 @@
       const mailApp = store.get('mailApp') !== 'web';
       // KURT (studyplace booking) matters most here: a big card on top
       h += `<a class="kurt" href="${'https://kurt3.ghum.kuleuven.be/'}"><span class="kurt-ic">${ico('seat')}</span><span class="kurt-t"><b>Studieplek reserveren</b><span>KURT · bibliotheken en leercentra</span></span><span class="kurt-go">Reserveer</span></a>`;
+      h += `<a class="kurt prt" href="https://print.kuleuven.be/app?service=page/UserSummary"><span class="kurt-ic">${ico('printer')}</span><span class="kurt-t"><b>Printen</b><span>KU Leuven Print · saldo en wachtrij</span></span><span class="kurt-go">Print</span></a>`;
       h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#6e7f95', 'LIMO', 'Bibliotheek zoeken')}</div>`;
       const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
       const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';

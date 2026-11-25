@@ -4,7 +4,15 @@
   if (SITE === 'install') mode = 'none'; // GitHub: only the update page below
   else if (SITE === 'idp') mode = TOP && PHONE ? 'login-skin' : 'none';
   else if (SITE === 'kurt') mode = TOP && PHONE && params.get('tm') !== 'orig' && !/^\/(check-in|login|logout|signin|saml|api)\b/i.test(PATH) ? 'kurt' : 'none'; // study places
-  else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
+  else if (SITE === 'print') {
+    // KU Leuven Print (PaperCut): its own pages become the Print app; /topup is the payment page
+    const svc = params.get('service') || '';
+    if (params.get('tm') === 'orig') ss.set('tm4-classic-print', String(Date.now()));
+    if (!TOP || !PHONE) mode = 'none';
+    else if (/^\/topup(\/|$)/.test(PATH)) mode = 'topup';
+    else if (!classicOn('print') && /^\/app(;|$)/.test(PATH) && (!svc || /^page\/User/.test(svc))) mode = 'print';
+    else mode = 'none';
+  } else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
     else if (!TOP) mode = 'none';
@@ -62,6 +70,8 @@
   if (mode === 'sync') { whenRoot(syncPage); return; }
   if (mode === 'room') { whenRoot(roomPage); return; }
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
+  if (mode === 'print') { whenRoot(printApp); return; }
+  if (mode === 'topup') { topupPage(); return; }
   if (mode === 'login-skin') { whenRoot(loginSkin); return; }
   if (mode === 'login') { loginWatch(); return; }
   if (mode === 'plain') { classicPill(); return; }
