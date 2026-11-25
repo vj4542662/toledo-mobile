@@ -145,29 +145,28 @@
       return Promise.reject(r.status);
     });
   }
-  // the newest file, by commit (an address no cache has seen yet), so Userscripts gets the new version right away
-  function openInstall(v) {
-    let done = false;
-    const go = (u) => { if (!done) { done = true; location.href = u; } };
-    setTimeout(() => go(installUrl(v)), 2500);
-    ghApi('/commits/main', 'application/vnd.github.sha')
-      .then((sha) => { sha = String(sha).trim(); go(/^[0-9a-f]{40}$/.test(sha) ? `https://raw.githubusercontent.com/vj4542662/toledo-mobile/${sha}/toledo-mobile.user.js?th=${THEME}` : installUrl(v)); }, () => go(installUrl(v)));
-  }
+  // Userscripts' own "Check Updates" reads GitHub through a 5-minute cache (and the phone adds its own), so a version
+  // only counts as available some minutes after it was published (version.json says when: built)
+  const RIPE = 8 * 60e3;
+  const ripe = (info) => !info.built || Date.now() - info.built > RIPE;
+  let ripeT = 0;
   function checkUpdate(cb, force) {
     if (TEST && !W.__TM_UPD_TEST__) return;
     const st = lsJson('tm4:upd');
-    if (st && st.v && newerThan(st.v, VERSION)) cb(st);
+    if (st && st.v && newerThan(st.v, VERSION) && ripe(st)) cb(st);
     if (!force && st && Date.now() - st.ts < 2 * 60e3) return; // version.json is tiny: look (almost) every time the app opens
     const get = (u) => fetch(u + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
     ghApi('/contents/version.json', 'application/vnd.github.raw')
       .catch(() => get(VERSION_URL))
-      .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {} }; })
+      .then((t) => { const j = JSON.parse(t); if (!j || !j.version) throw 0; return { v: String(j.version), news: j.news || {}, built: Number(j.built) || 0 }; })
       .catch(() => get(UPDATE_URL).then((t) => { const m = /@version\s+([\d.]+)/.exec(t); return m ? { v: m[1], news: {} } : null; }))
       .then((info) => {
         if (!info) return;
         info.ts = Date.now();
         lsSet('tm4:upd', info);
-        if (newerThan(info.v, VERSION) && (!st || st.v !== info.v)) cb(info);
+        if (!newerThan(info.v, VERSION)) return;
+        if (!ripe(info)) { clearTimeout(ripeT); ripeT = setTimeout(() => checkUpdate(cb, true), info.built + RIPE - Date.now() + 5e3); return; }
+        if (!st || st.v !== info.v || !ripe(st)) cb(info);
       }, () => {});
   }
 
@@ -208,6 +207,19 @@
   }
   function hideNotice() { const n = $('#tm-upn'); if (n) { n.classList.remove('on'); setTimeout(() => n.remove(), 400); } }
 
+  // how to update: Userscripts' own Updates screen (works from any page, also from Toledo itself)
+  function howToUpdate() {
+    const step = (n, title, mock) => `<li class="ip-step"><span class="ip-n">${n}</span><div><b>${title}</b>${mock || ''}</div></li>`;
+    const pop = (inner) => `<div class="ip-mock ip-us-pop"><div class="ip-us-h">Userscripts<span class="ip-us-ok">${ico('check')}</span></div>${inner}</div>`;
+    return `<ol class="ip-steps">
+      ${step(1, `Tik links in de adresbalk op <span class="ip-k">${ico('pagemenu')}</span> en kies <b>Userscripts</b>`, `<div class="ip-mock ip-bar"><span class="ip-hl">${ico('pagemenu')}</span><span class="ip-url">toledo.kuleuven.be</span><span class="ip-dim">${ico('refresh')}</span></div><div class="ip-mock ip-list"><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div></div>`)}
+      ${step(2, 'Tik bovenaan op het <b>wolkje</b>', pop(`<div class="ip-us-tools"><span>${ico('folder')}</span><span class="ip-us-hit">${ico('clouddl')}</span><i></i><span>${ico('refresh')}</span><span class="ip-us-tog"></span></div>`))}
+      ${step(3, 'Tik op <b>Check Updates</b>', pop('<div class="ip-us-sub">Updates</div><div class="ip-us-empty">There are no file updates available<br><u class="ip-us-hit">Check Updates</u></div>'))}
+      ${step(4, 'Tik naast Toledo Mobile op <b>Update</b>', pop('<div class="ip-us-sub">Updates</div><div class="ip-us-row2">Toledo Mobile<span><u>Source</u><u class="ip-us-hit">Update</u></span></div>'))}
+      ${step(5, 'Sluit Userscripts en tik hieronder op de blauwe knop', '')}
+    </ol>`;
+  }
+
   // the update screen: what is new, three simple steps and one big button
   function updateSheet(info) {
     if (!info || $('.upd-layer')) return;
@@ -218,14 +230,13 @@
         <h2>Nieuwe versie van Toledo Mobile</h2>
         <p class="upd-v">Versie ${esc(info.v)} <span>· je hebt nu ${esc(VERSION)}</span></p>
         ${news.length ? `<div class="upd-news"><b>Wat is er nieuw</b><ul>${news.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-        <div class="upd-how"><b>Zo werkt het (ongeveer 10 seconden)</b>
-          <ol><li>Tik hieronder op <b>Installeren</b>.</li><li>Open <b>Userscripts</b> en tik op de <b>groene balk</b>.</li><li>Schuif naar beneden en tik op <b>Install</b> (niet op het vinkje bovenaan).</li></ol>
-          <p>Op de volgende pagina leggen we het stap voor stap uit, met plaatjes.</p></div>
-        <a class="btn upd-go" href="${esc(installUrl(info.v))}">Installeren</a>
+        <p class="upd-h3">Zo update je (ongeveer 10 seconden)</p>
+        ${howToUpdate()}
+        <button type="button" class="btn upd-go">Klaar, vernieuwen</button>
         <button type="button" class="upd-later">Later</button>
       </div>`, 'upd-layer', 'Update');
     layer.querySelector('.upd-later').addEventListener('click', () => { lsSet('tm4:upd-later', { v: info.v, ts: Date.now() }); close(); });
-    layer.querySelector('.upd-go').addEventListener('click', (e) => { e.preventDefault(); lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); e.currentTarget.textContent = 'Even geduld…'; openInstall(info.v); });
+    layer.querySelector('.upd-go').addEventListener('click', () => { lsSet('tm4:upd-go', { v: info.v, from: VERSION, ts: Date.now() }); location.reload(); });
   }
 
   // after an update: say so once, with what is new
@@ -249,22 +260,17 @@
 
   function notYet(v) {
     if ($('.upd-layer')) return;
-    const layer = document.createElement('div');
-    layer.className = 'upd-layer'; layer.setAttribute('data-tm4', '');
-    layer.innerHTML = `<div class="scrim"></div><div class="sheet upd" role="dialog" aria-modal="true" aria-label="Update"><div class="sg upd-c">
+    const info = lsJson('tm4:upd') || { v, news: {} };
+    const { layer, close } = openLayer(`<div class="sg upd-c">
       <span class="upd-ok warn">${ico('refresh')}</span>
       <h2>De update is nog niet gelukt</h2>
       <p class="upd-v">Je hebt nog versie ${esc(VERSION)}</p>
-      <div class="upd-how"><b>Wat vaak misgaat</b><ol><li>Na de <b>groene balk</b> komt nog een scherm. Schuif dat helemaal naar beneden en tik op de knop <b>Install</b>.</li><li>Tik <b>niet</b> op het blauwe vinkje bovenaan: dat sluit het venster zonder te installeren.</li></ol></div>
-      <button type="button" class="btn upd-go">Opnieuw proberen</button>
-      <button type="button" class="upd-later">Later</button></div></div>`;
-    document.body.appendChild(layer);
-    const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
-    requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); }));
-    const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => layer.remove(), 340); };
-    scrim.addEventListener('click', close);
+      <div class="upd-how"><b>Probeer het zo</b><p class="upd-tip">Staat er na <b>Check Updates</b> nog "no file updates available"? Wacht dan een minuutje en tik nog eens op Check Updates.</p></div>
+      ${howToUpdate()}
+      <button type="button" class="btn upd-go">Klaar, vernieuwen</button>
+      <button type="button" class="upd-later">Later</button></div>`, 'upd-layer', 'Update');
     layer.querySelector('.upd-later').addEventListener('click', close);
-    layer.querySelector('.upd-go').addEventListener('click', (e) => { lsSet('tm4:upd-go', { v, from: VERSION, ts: Date.now() }); e.currentTarget.textContent = 'Even geduld…'; openInstall(v); });
+    layer.querySelector('.upd-go').addEventListener('click', () => { lsSet('tm4:upd-go', { v: info.v || v, from: VERSION, ts: Date.now() }); location.reload(); });
   }
 
   // every app page: check now and each time you come back to the app; onNew(info) lets the page add its own row
@@ -298,22 +304,11 @@
       const fresh = v && newerThan(v, VERSION);
       takeover('Toledo Mobile installeren');
       document.body.className = 'no-tabs';
-      const step = (n, title, mock) => `<li class="ip-step"><span class="ip-n">${n}</span><div><b>${title}</b>${mock || ''}</div></li>`;
-      // pictures of what you really see: Safari's address bar, the Userscripts window (it follows the iPhone's own dark/light setting)
-      const bar = `<div class="ip-mock ip-bar"><span class="ip-hl">${ico('pagemenu')}</span><span class="ip-url">raw.githubusercontent.com</span><span class="ip-dim">${ico('refresh')}</span></div>`;
-      const pop = (inner, check) => `<div class="ip-mock ip-us-pop"><div class="ip-us-h">Userscripts${check ? `<span class="ip-us-chk">${ico('check')}<i></i></span>` : ''}</div>${inner}</div>`;
       document.body.innerHTML = `<main class="ip" data-tm4>
         ${TM_LOGO_SVG}
         <h1>${fresh || !v ? 'Nog even installeren' : 'Je bent helemaal mee'}</h1>
         <p class="ip-sub">${fresh ? `Versie ${esc(v)} staat klaar. Je hebt nu ${esc(VERSION)}.` : v ? `Je hebt de nieuwste versie (${esc(VERSION)}). Je hoeft niets meer te doen.` : 'Volg deze stappen om Toledo Mobile bij te werken.'}</p>
-        ${fresh || !v ? `<ol class="ip-steps">
-          ${step(1, `Tik in de adresbalk links op <span class="ip-k">${ico('pagemenu')}</span> <span class="ip-or">(op oudere iPhones: <span class="ip-k">aA</span>)</span>`, bar)}
-          ${step(2, 'Tik op <b>Userscripts</b>', '<div class="ip-mock ip-list"><div class="ip-li ip-hl2"><span class="ip-us">&lt;/&gt;</span>Userscripts</div></div>')}
-          ${step(3, 'Tik op de <b>groene balk</b>', pop('<div class="ip-us-green">Userscript Installed: <u>Tap to re-install</u></div><div class="ip-us-row">Toledo Mobile<span>JS</span></div>'))}
-          ${step(4, 'Schuif naar beneden en tik op de knop <b>Install</b>', pop('<div class="ip-us-name">Toledo Mobile</div><div class="ip-us-lines"><i></i><i></i><i></i></div><div class="ip-us-scroll">↓ helemaal naar beneden schuiven ↓</div><div class="ip-us-btns"><span>Cancel</span><span class="ip-us-inst">Install</span></div>', true) + '<p class="ip-warn2"><b>Let op:</b> tik <b>niet</b> op het blauwe vinkje bovenaan. Dat sluit het venster zonder te installeren.</p>')}
-          ${step(5, 'Klaar! Tik hieronder op <b>Terug naar Toledo</b>', '')}
-        </ol>
-        <p class="ip-tip">Gaat Userscripts vanzelf open? Begin dan bij stap 3.</p>` : ''}
+        ${fresh || !v ? howToUpdate() : ''}
         <a class="btn ip-back" href="${PORTAL}?tm=vandaag&th=${THEME}">Terug naar Toledo</a>
       </main>`;
     };
@@ -434,6 +429,7 @@
     search: '<circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.5 15.5 4.4 4.4"/>',
     refresh: '<path d="M19.4 12.6a7.4 7.4 0 1 1-2.1-6"/><path d="M19.6 4.4v3.8h-3.8"/>',
     check: '<path d="m5 12.6 4.4 4.4L19 7.4"/>',
+    clouddl: '<path d="M7 18.5h10.2a4 4 0 0 0 .6-7.95A5.6 5.6 0 0 0 6.9 9.3 4.6 4.6 0 0 0 7 18.5z"/><path d="M12 10.6v5.6M9.6 14l2.4 2.4 2.4-2.4"/>',
     close: '<path d="M7 7l10 10M17 7 7 17"/>',
     pagemenu: '<rect x="4" y="4.5" width="16" height="15" rx="3"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/>',
     checks: '<path d="m2.8 12.8 4.3 4.3 9-9.6M12.6 16.6l.5.5 9-9.6"/>',

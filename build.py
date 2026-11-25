@@ -3,10 +3,13 @@
 import re, json, pathlib
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.24.1"
+VERSION = "4.25.0"
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.25.0": [
+        "Updaten gaat nu via Userscripts zelf: tik op het wolkje, dan op Check Updates en dan op Update. De app toont je de stappen met plaatjes.",
+    ],
     "4.24.1": [
         "Printen: laadt soepeler, zonder verspringende lijsten, en toont je nieuwe saldo meteen als je terugkomt na het opladen."
     ],
@@ -248,5 +251,7 @@ out = minify(out)
 # the app checks this small file (not the whole script) to see whether there is a new version
 def vkey(v): return tuple(int(x) for x in v.split('.'))
 recent = dict(sorted(NEWS.items(), key=lambda kv: vkey(kv[0]), reverse=True)[:12])
-(here / 'version.json').write_text(json.dumps({'version': VERSION, 'news': recent}, ensure_ascii=False, indent=1) + '\n')
+import time
+# built: when this version was published; the app waits until Userscripts' Check Updates can see it (GitHub caches 5 min)
+(here / 'version.json').write_text(json.dumps({'version': VERSION, 'built': int(time.time() * 1000), 'news': recent}, ensure_ascii=False, indent=1) + '\n')
 print(len(out), 'bytes')
