@@ -212,7 +212,7 @@
       else if (isVeg(it)) h += '<i class="al-tg veg">veggie</i>';
       else { const m = it.labels.find((l) => /^vis$/i.test(l)); if (m) h += '<i class="al-tg fish">vis</i>'; }
       const e = ecoOf(it);
-      if (e) h += `<i class="al-tg eco e${e}" title="Klimaatimpact">${e}</i>`;
+      if (e) h += `<i class="al-tg eco e${e}" title="Klimaatimpact">eco ${e}</i>`;
       return h;
     }
     const passes = (it) => {
@@ -261,7 +261,7 @@
         if (my !== token) return;
         LAST = m;
         const loc = store.get('alma:r:' + CUR) || {};
-        let h = `<div class="lt"><h1>${esc(a.n)}</h1><p class="lt-sub">${esc(loc.addr || a.c)}${loc.route ? ` · <a href="${esc(loc.route)}" target="_blank" rel="noopener">Route</a>` : ''}</p></div>`;
+        let h = `<div class="lt"><h1>${esc(a.n)}</h1><p class="lt-sub">${esc(loc.addr || a.c)}${loc.route ? ` · <a class="al-route" href="${esc(loc.route)}" target="_blank" rel="noopener">Route</a>` : ''}</p></div>`;
         // your starred Alma's (and the one you're looking at, if it isn't one of them)
         const chips = fs.includes(CUR) ? fs : [CUR].concat(fs);
         h += `<div class="chips al-chips">${chips.map((s) => `<button type="button" class="chip${s === CUR ? ' on' : ''}" data-act="acur" data-s="${esc(s)}">${esc(almaOf(s).n)}</button>`).join('')}<a class="chip al-all" href="#/kies">${ico('plus')}Alle Alma's</a></div>`;
@@ -359,7 +359,6 @@
         <div class="al-tags2">${diet.map((l) => `<span>${esc(l)}</span>`).join('')}${e ? `<span class="eco e${e}">Klimaatimpact ${e} · ${ECO_T[e]}</span>` : ''}</div>
         <div class="al-prices">${PRICE_GROUPS.map((g) => `<div class="${g.k === pg ? 'on' : ''}"><span>${esc(g.n)}</span><b>${esc(eur(it.p[g.k]))}</b></div>`).join('')}</div>
         <a class="btn al-orig" href="${esc(pageUrl(CUR))}?tm=orig&date=${DAY}" target="_blank" rel="noopener">Allergenen op alma.be</a></div></div>`, '', it.n);
-      sh.classList.add('al-sh-wrap');
       return close;
     }
     function allergenSheet() {
