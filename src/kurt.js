@@ -45,7 +45,7 @@
       }
     });
 
-    const nm = (s) => String(s || '').replace(/^.*? - /, '').replace(/\bSilent Study Seat\b/i, 'Plaats').replace(/\bStudy Seat\b/i, 'Plaats').trim() || s;
+    const nm = (s) => String(s || '').replace(/^.*? - /, '').replace(/\bSilent Study Seat\b/i, 'Plaats').replace(/\bStudy Seat\b/i, 'Plaats').replace(/\bSeat\b/i, 'Plaats').trim() || s;
     const seatNo = (s) => (/(\d+[A-Za-z]?)\s*$/.exec(String(s || '')) || [])[1] || nm(s);
     const NL_TYPES = { 302: 'Studieplek', 303: 'Collectieplek', 1: 'Groepswerkruimte', 307: 'Videocallplek', 55: 'Mediaruimte', 12: 'Laptop', 11: 'Audiokit', 22: 'Pentablet', 48: 'Podcastset', 13: 'Projectorkit', 14: 'Videokit', 15: 'Webconferentiekit', 101: 'Databank-pc', 52: 'Bibliotheekspel', 56: 'Studio', 21: 'Camerakit' };
     const NL_TAGS = { 'power socket nearby': 'Stopcontact', silence: 'Stilte', 'adjustable desk': 'Verstelbaar bureau', 'desk lamp': 'Bureaulamp', window: 'Aan het raam', screen: 'Scherm' };
@@ -793,7 +793,7 @@
     // booking doesn't say which room: all rooms of the library are asked once (at the booked hour, in parallel) and the
     // answer is remembered per seat (kurt:sz).
     async function viewFind(id, my) {
-      setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: '', always: true });
+      setNav({ back: { label: 'Terug', act: 'kback', href: '#/' }, title: '', always: true });
       put(sec, `<div class="card kf-card"><div class="sk" style="height:46px"></div><div class="sk" style="height:38px;margin-top:10px"></div></div><div class="kmap-wrap"><div class="kmap sk"></div></div>`);
       const fail = (t, sub) => { if (my === token) put(sec, empty('warn', t, sub || '', `<p style="margin-top:14px"><a class="btn" href="#/">Naar Studieplek</a></p>`)); };
       let list = store.get('kurt:res') ? store.get('kurt:res').v : null;
@@ -807,7 +807,7 @@
       const isRoom = !/\d\s*$/.test(String(r.resourceName || ''));
       const what = isRoom ? 'Groepsruimte ' + nm(r.resourceName) : nm(r.resourceName);
       document.title = what;
-      setNav({ back: { label: 'Studieplek', act: 'kback', href: '#/' }, title: what, always: true });
+      setNav({ back: { label: 'Terug', act: 'kback', href: '#/' }, title: what, always: true });
       let tiles = (store.get('kurt:locinfo') || {}).tiles;
       if (!tiles) { try { tiles = await memo('tiles', 10 * 60e3, () => get('/tiles')); } catch (_) { tiles = []; } }
       let hit = libOf(r, tiles.flatMap((t) => t.locations));
