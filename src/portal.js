@@ -566,22 +566,42 @@
       const u = P.user || {};
       const name = [u.givenName, u.familyName].filter(Boolean).join(' ');
       const unread = P.mail && typeof P.mail.value === 'number' ? P.mail.value : 0;
-      const link = (href, icon, color, title, sub, extra) => row({ href, iconHtml: `<span class="ic" style="--c:${color}">${ico(icon)}</span>`, title, sub, end: extra || '' });
       let h = `<div class="group plain" style="margin-bottom:16px"><div class="prof"><span class="avatar">${esc(initials(name || 'KU L'))}</span><span class="main"><span class="t">${esc(name || 'Student')}</span><span class="s">KU Leuven${store.get('p:rn') || u.userId ? ' · ' + esc(store.get('p:rn') || u.userId) : ''}</span></span></div></div>`;
+      // every service is an "app" in one grid, like the iPhone home screen
+      const app = (o) => {
+        const inner = `<span class="ai" style="--c:${o.c}">${ico(o.i)}${o.badge ? `<b class="ai-bd">${o.badge > 99 ? '99+' : o.badge}</b>` : ''}</span><span class="al">${esc(o.n)}</span>`;
+        return o.href ? `<a class="app" href="${esc(o.href)}">${inner}</a>` : `<button type="button" class="app" data-act="${o.act}">${inner}</button>`;
+      };
+      const APPS = [
+        { n: 'Studieplek', i: 'seat', c: '#1f6f8b', href: 'https://kurt3.ghum.kuleuven.be/' },
+        { n: 'Printen', i: 'printer', c: '#e8893a', href: 'https://print.kuleuven.be/' },
+        { n: 'Mail', i: 'mail', c: '#0a84ff', act: 'mail', badge: unread },
+        { n: 'Studievoortgang en punten', i: 'trend', c: '#34aadc', href: '#studie' },
+        { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
+        { n: 'Agenda', i: 'calendar', c: '#ff9500', href: agendaHref() },
+        { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
+        { n: 'Alma', i: 'food', c: '#d9534f', act: 'soon' },
+        { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
+        { n: 'Attesten', i: 'cert', c: '#8e5bd6', act: 'soon' },
+        { n: 'Hulp', i: 'help', c: '#8a96a3', href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student' },
+        { n: 'Instellingen', i: 'sliders', c: '#5d6b73', href: '#instellingen', badge: P.upd ? 1 : 0 },
+      ];
+      h += `<div class="apps">${APPS.map(app).join('')}</div>`;
+      put($('[data-k="body"]', el), h);
+    };
+
+    // ---- Instellingen (an "app" in Meer): look, mail, updates, about
+    BUILD.instellingen = () => '<div class="lt"><h1>Instellingen</h1></div><div data-k="body"></div>';
+    NAVS.instellingen = () => ({ back: { label: 'Meer', href: '#meer' }, title: 'Instellingen' });
+    FILL.instellingen = (el) => {
+      const L = linkMap();
       const mailApp = store.get('mailApp') !== 'web';
-      // KURT (studyplace booking) matters most here: a big card on top
-      h += `<a class="kurt" href="${'https://kurt3.ghum.kuleuven.be/'}"><span class="kurt-ic">${ico('seat')}</span><span class="kurt-t"><b>Studieplek reserveren</b><span>KURT · bibliotheken en leercentra</span></span><span class="kurt-go">Reserveer</span></a>`;
-      h += `<a class="kurt prt" href="https://print.kuleuven.be/"><span class="kurt-ic">${ico('printer')}</span><span class="kurt-t"><b>Printen</b><span>KU Leuven Print · saldo en wachtrij</span></span><span class="kurt-go">Print</span></a>`;
-      h += `<div class="group">${row({ act: 'mail', iconHtml: `<span class="ic" style="--c:#0a84ff">${ico('mail')}</span>`, title: 'Mail', sub: mailApp ? 'Opent in de Outlook-app' : 'Outlook in Safari', end: unread ? `<span class="badge">${unread > 99 ? '99+' : unread}</span>` : '' })}${link(L.LIMO || 'https://limo.libis.be/index.html', 'library', '#6e7f95', 'LIMO', 'Bibliotheek zoeken')}</div>`;
-      const S0 = P.study && P.study.v && P.study.v.study && P.study.v.study[0];
-      const stSub = S0 && S0.pct != null ? `Diplomapercentage ${nl(S0.pct, 2)}%` : 'Resultaten, studiepunten en grafieken';
-      const I0 = P.study && P.study.v && P.study.v.isp;
-      const ispSub = I0 ? `${I0.courses.filter((c) => c.st === 'now').length} vakken dit jaar · ${nl(I0.courses.filter((c) => c.st === 'now').reduce((a, c) => a + c.sp, 0), 0)} sp` : 'Je vakken en studiepunten';
-      h += `<div class="gh">Studie</div><div class="group">${row({ href: '#studie', iconHtml: `<span class="ic" style="--c:#34aadc">${ico('trend')}</span>`, title: 'Studievoortgang', sub: stSub })}${row({ href: '#isp', iconHtml: `<span class="ic" style="--c:#00a79d">${ico('idcard')}</span>`, title: 'Mijn ISP', sub: ispSub })}${row({ href: gradesHref() || L['BB-GRADES-ULTRA'] || ULTRA + '/ultra/grades', iconHtml: `<span class="ic" style="--c:#5856d6">${ico('chart')}</span>`, title: 'Cijfers', sub: 'Je vakken van dit semester' })}${row({ href: agendaHref(), iconHtml: `<span class="ic" style="--c:#ff9500">${ico('calendar')}</span>`, title: 'Toledo-agenda op je iPhone', sub: 'Deadlines vanzelf in je Agenda-app' })}</div>`;
+      const ic = (icon, color) => `<span class="ic" style="--c:${color}">${ico(icon)}</span>`;
+      let h = `<div class="group plain set-about"><span class="ai" style="--c:#1f6f8b">${ico('book')}</span><span class="main"><span class="t">Toledo Mobile</span><span class="s">Versie ${esc(VERSION)}${CHANNEL === 'beta' ? ' (testversie)' : ''}</span></span></div>`;
+      if (P.upd) h += `<div class="group" style="margin-top:12px">${row({ act: 'update', iconHtml: ic('refresh', '#34c759'), title: 'Update naar versie ' + P.upd.v, sub: 'Tik om te installeren' })}</div>`;
       h += `<div class="gh">Weergave</div>${segHtml([{ id: 'auto', label: 'Automatisch' }, { id: 'light', label: 'Licht' }, { id: 'dark', label: 'Donker' }], THEME, 'theme')}<p class="gf" style="margin-top:-6px">Automatisch volgt de instelling van je iPhone.</p>`;
       h += `<div class="gh">Mail openen in</div>${segHtml([{ id: 'app', label: 'Outlook-app' }, { id: 'web', label: 'Safari' }], mailApp ? 'app' : 'web', 'mailpref')}<p class="gf" style="margin-top:-6px">In de Outlook-app blijf je aangemeld met je KU Leuven-account.</p>`;
-      h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('refresh')}</span>`, title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: `<span class="ic" style="--c:#8e8e93">${ico('swap')}</span>`, title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${link(L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', 'help', '#8e8e93', 'Hulp bij Toledo')}</div>`;
-      if (P.upd) h += `<div class="group">${row({ act: 'update', iconHtml: `<span class="ic" style="--c:#34c759">${ico('refresh')}</span>`, title: 'Update naar versie ' + P.upd.v, sub: 'Nieuwe versie van Toledo Mobile, tik om te installeren' })}</div>`;
+      h += `<div class="gh">App</div><div class="group">${row({ act: 'reload', iconHtml: ic('refresh', '#8e8e93'), title: 'Alles vernieuwen', chevron: false })}${row({ act: 'classic', iconHtml: ic('swap', '#8e8e93'), title: 'Klassieke Toledo', sub: 'De gewone website, zonder app-weergave' })}${row({ href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student', iconHtml: ic('help', '#8e8e93'), title: 'Hulp bij Toledo' })}</div>`;
       h += `<p class="foot">Toledo Mobile ${VERSION}${CHANNEL === 'beta' ? ' (testversie)' : ''}<br>Gebruikt je eigen Toledo-sessie.</p><p class="legal">Gemaakt met behulp van AI door Jeremy Verschuren. Toledo Mobile is een onafhankelijk project en is niet verbonden aan, goedgekeurd door of geassocieerd met KU Leuven. Toledo Mobile telt anoniem hoeveel mensen het gebruiken, zonder persoonsgegevens of studiegegevens. Je studiegegevens blijven op je eigen toestel en gaan nooit naar de maker. Gebruik op eigen risico.</p>`;
       put($('[data-k="body"]', el), h);
     };
@@ -618,6 +638,7 @@
       put($('[data-k="body"]', el), h || (S && S.length ? empty('trend', 'Resultaat niet gevonden', 'Dit vak staat niet meer in je studievoortgang.') : stEmpty('studie')));
     };
     const SUBVIEW = { studie: 'meer', isp: 'meer', resultaat: 'meer' };
+    const UNDER = { instellingen: 'meer' }; // opened from Meer, but no study data needed
 
     /* ---------------- view switching ---------------- */
     function view(id) {
@@ -636,6 +657,7 @@
     function render(id) { const v = view(id); FILL[id](v.el); v.dirty = false; }
     let rq = 0;
     function dirty(...ids) {
+      if (ids.includes('meer')) ids.push('instellingen');
       ids.forEach((i) => { if (V[i]) V[i].dirty = true; });
       if (rq) return;
       rq = requestAnimationFrame(() => {
@@ -661,7 +683,7 @@
       const v = view(id);
       Object.values(V).forEach((x) => x.el.classList.toggle('on', x === v));
       if (!first) { v.el.classList.remove('fade'); void v.el.offsetWidth; v.el.classList.add('fade'); }
-      setTabOn(SUBVIEW[id] || id);
+      setTabOn(SUBVIEW[id] || UNDER[id] || id);
       if (SUBVIEW[id]) {
         // nothing to show yet: get it, and if the hidden frame can't, open KU Loket for a moment (at most once per 5 minutes, never right after a sync)
         const auto = !P.study && !syncM && Date.now() - (Number(ss.get('tm4-stauto')) || 0) > 5 * 60e3;
@@ -686,7 +708,7 @@
       const qmap = { courses: 'vakken', menu: 'meer', agenda: 'rooster', examens: 'rooster/examens', vandaag: 'vandaag', vakken: 'vakken', rooster: 'rooster', updates: 'updates', meer: 'meer', studie: 'studie', isp: 'isp' };
       if (qmap[q] && h.split('/')[0] !== qmap[q].split('/')[0]) h = qmap[q];
       const [a, b] = h.split('/');
-      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp', resultaat: 'resultaat' };
+      const map = { '': 'vandaag', home: 'vandaag', vandaag: 'vandaag', vakken: 'vakken', courses: 'vakken', rooster: 'rooster', agenda: 'rooster', updates: 'updates', messages: 'updates', meer: 'meer', menu: 'meer', studie: 'studie', isp: 'isp', resultaat: 'resultaat', instellingen: 'instellingen', settings: 'instellingen' };
       return { tab: map[a] || 'vandaag', sub: b || '' };
     }
     function badges() {
@@ -772,7 +794,7 @@
           ] });
         }, 2600);
       },
-      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.meer(V.meer.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
+      mailpref: (b) => { store.set('mailApp', b.dataset.id); FILL.instellingen(V.instellingen.el); toast(b.dataset.id === 'web' ? 'Mail opent in Safari' : 'Mail opent in de Outlook-app'); },
       loket: () => sheet({ title: 'KU Loket', actions: [
         { label: 'Studietracker', href: 'https://kuleuven.be/kuloket/zr_0184?sap-language=NL' },
         { label: 'Uurrooster in KU Loket', href: 'https://www.kuleuven.be/kuloket/zr_0367?sap-language=NL' },
@@ -781,11 +803,12 @@
         { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
       ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
+      soon: () => {}, // Alma, Sport, Attesten: only an icon for now, the app itself comes later
       theme: (b) => {
         const t = b.dataset.id;
         saveTheme(t);
         applyTheme(t);
-        segSet(V.meer.el, t);
+        if (V.instellingen) segSet(V.instellingen.el, t);
         toast(t === 'light' ? 'Lichte modus' : t === 'dark' ? 'Donkere modus' : 'Volgt je iPhone');
       },
       reload: () => { ['p:events', 'p:enr', 'p:upcoming', 'p:mail'].forEach((k) => store.del(k)); toast('Bezig met vernieuwen…'); loadAll(true); refreshAgenda(true); },

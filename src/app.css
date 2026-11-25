@@ -967,3 +967,21 @@ html.tm4 body:not(.no-tabs):not(.kfull)::after{content:"";position:fixed;z-index
 html.tm4.dark .ip-us-hit{color:#8fb8ff}
 @media (prefers-color-scheme:dark){html.tm4:not(.light) .ip-us-hit{color:#8fb8ff}}
 .tm4 .upd-h3{margin:4px 0 8px;text-align:left;font-size:13px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.02em}
+/* ---------- Meer as an app grid (v4.26.0): every service is an "app" icon, 3 per row ---------- */
+.tm4 .apps{display:grid;grid-template-columns:repeat(3,1fr);row-gap:20px;margin:22px 16px 0}
+.tm4 .app{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0;border:0;background:none;color:var(--text);font:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.tm4 .app.pressed .ai{transform:scale(.92);filter:brightness(.92)}
+.tm4 .ai{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:21px;color:#fff;flex:none;transition:transform .15s,filter .15s;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 85%,#000));
+  box-shadow:0 2px 6px color-mix(in srgb,var(--c) 30%,transparent),inset 0 0 0 .5px rgba(255,255,255,.25)}
+.tm4.dark .ai{box-shadow:inset 0 0 0 .5px rgba(255,255,255,.15)}
+@media (prefers-color-scheme:dark){.tm4:not(.light) .ai{box-shadow:inset 0 0 0 .5px rgba(255,255,255,.15)}}
+.tm4 .ai .i{width:36px;height:36px;stroke:#fff;stroke-width:2}
+.tm4 .ai-bd{position:absolute;top:-5px;right:-5px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--red);color:#fff;font-size:12.5px;font-weight:800;line-height:22px;text-align:center;box-shadow:0 0 0 2px var(--bg)}
+.tm4 .al{max-width:110px;font-size:13px;line-height:16px;font-weight:600;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tm4 .set-about{display:flex;align-items:center;gap:14px;padding:14px}
+.tm4 .set-about .ai{width:60px;height:60px;border-radius:17px}
+.tm4 .set-about .ai .i{width:30px;height:30px}
+.tm4 .set-about .t{font-size:18px;font-weight:700}
+.tm4 .set-about .main{display:flex;flex-direction:column}
+.tm4 .set-about .s{color:var(--sub);font-size:13.5px}

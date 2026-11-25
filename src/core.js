@@ -453,6 +453,10 @@
     star: '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
     printer: '<path d="M7 8.6V4.2h10v4.4"/><rect x="3.6" y="8.6" width="16.8" height="8" rx="2.2"/><path d="M7 13.6h10v6.2H7z"/><path d="M16.6 11.4h.2" stroke-width="2.2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    sliders: '<path d="M4 7.5h9.4M17.8 7.5H20M4 16.5h2.4M10.8 16.5H20"/><circle cx="15.6" cy="7.5" r="2.2"/><circle cx="8.6" cy="16.5" r="2.2"/>',
+    food: '<path d="M7 3.6v6.2a2.2 2.2 0 0 0 4.4 0V3.6M9.2 3.6v16.8M16.6 20.4V3.6c-2 .9-3 3-3 6.2v3.4h3"/>',
+    sport: '<circle cx="12" cy="12" r="8.6"/><path d="M3.6 10.4c4.6.6 9.4 3.8 11.2 9.6M8.4 4.2c3.3 2.7 4.6 7 3.6 11.8M20.4 13.2c-3.4-1.6-7.6-1.4-11 .9"/>',
+    cert: '<path d="M7 3.6h7.6l4 4V12M5.5 5.1A1.5 1.5 0 0 1 7 3.6M5.5 5.1V19A1.5 1.5 0 0 0 7 20.5h3.4M8.6 9h6M8.6 12.4h4"/><circle cx="16.4" cy="15.6" r="3"/><path d="m14.6 18.2-.8 3.2 2.6-1.2 2.6 1.2-.8-3.2"/>',
     seat: '<path d="M6 11V6.6A2.6 2.6 0 0 1 8.6 4h6.8A2.6 2.6 0 0 1 18 6.6V11"/><path d="M4.5 11h15v4.4h-15zM6.4 15.4V20M17.6 15.4V20"/>',
   };
   const ico = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
@@ -716,7 +720,7 @@
   function initPress() {
     if (W.__tm4press) return;
     W.__tm4press = true;
-    const SEL = '.row, .tile, .chip, .kz, .kf, .btn, .hero, .lesson[data-href], .exam[data-href], .ann, .teaser, .wd, .nb, .tabbar a, .sheet .sa, .frow, .more-row';
+    const SEL = '.row, .app, .tile, .chip, .kz, .kf, .btn, .hero, .lesson[data-href], .exam[data-href], .ann, .teaser, .wd, .nb, .tabbar a, .sheet .sa, .frow, .more-row';
     let el = null, t = 0, x = 0, y = 0;
     const clear = () => { clearTimeout(t); if (el) { const e = el; setTimeout(() => e.classList.remove('pressed'), 110); } el = null; };
     document.addEventListener('touchstart', (ev) => {
