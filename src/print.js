@@ -185,7 +185,7 @@
       const draw = () => {
         if (my !== token || DEAD) return;
         let h = `<div class="lt"><h1>Printen</h1><p class="lt-sub">KU Leuven Print</p></div>`;
-        h += balCard(d.sum, `<a class="pr-bal-go" href="#/opladen">${ico('plus')}Opladen</a>`);
+        h += balCard(d.sum, `<a class="pr-bal-go" href="${O}/topup/nl">${ico('plus')}Opladen</a>`);
         h += `<a class="pr-go" href="#/nieuw"><span class="pr-go-ic">${PRINTER}</span><span class="pr-go-t"><b>Document printen</b><span>PDF of Word van je iPhone naar elke KU Leuven-printer</span></span>${CHEV}</a>`;
         // just sent, still being prepared
         d.fresh.forEach((f) => {
@@ -200,7 +200,7 @@
         else {
           h += held.map(jobCard).join('');
           const tot = held.reduce((a, j) => a + (j.cost || 0), 0);
-          if (d.sum && d.sum.bal != null && tot > d.sum.bal + 1e-6) h += `<p class="ko-hint err">${ico('warn')}<span>Samen kost dit ${esc(eur(tot))}, meer dan je saldo. <a href="#/opladen">Laad eerst op.</a></span></p>`;
+          if (d.sum && d.sum.bal != null && tot > d.sum.bal + 1e-6) h += `<p class="ko-hint err">${ico('warn')}<span>Samen kost dit ${esc(eur(tot))}, meer dan je saldo. <a href="${O}/topup/nl">Laad eerst op.</a></span></p>`;
           h += `<p class="ko-hint">${ico('info')}<span>Scan je studentenkaart aan eender welke KU Leuven-printer en kies je document. Je betaalt pas als het afgedrukt is.</span></p>`;
         }
         const logs = (d.logs || []).slice(0, 4);
@@ -289,7 +289,7 @@
         let line = '';
         if (est) line = `${pages(est.pages)}${est.cost != null ? ` · ongeveer ${eur(est.cost)}` : ''}`;
         const low = est && est.cost != null && sum && sum.bal != null && est.cost > sum.bal + 1e-6;
-        h += `<div class="pr-send">${line ? `<p class="pr-est">${esc(line)}${sum && sum.bal != null ? `<span>Je saldo: ${esc(eur(sum.bal))}</span>` : ''}</p>` : ''}${low ? `<p class="ko-hint err">${ico('warn')}<span>Je saldo is te laag voor dit document. <a href="#/opladen">Laad eerst op</a>, of verstuur het nu en laad op voor je afdrukt.</span></p>` : ''}
+        h += `<div class="pr-send">${line ? `<p class="pr-est">${esc(line)}${sum && sum.bal != null ? `<span>Je saldo: ${esc(eur(sum.bal))}</span>` : ''}</p>` : ''}${low ? `<p class="ko-hint err">${ico('warn')}<span>Je saldo is te laag voor dit document. <a href="${O}/topup/nl">Laad eerst op</a>, of verstuur het nu en laad op voor je afdrukt.</span></p>` : ''}
           <button type="button" class="btn pr-go-btn" data-act="psend"${FILES.length ? '' : ' disabled'}>${PRINTER}Versturen</button>
           <p class="kb-legal">${OPT.printer ? 'Je document gaat naar deze printer.' : 'Je document wacht tot je je studentenkaart scant aan eender welke KU Leuven-printer. Je betaalt pas bij het afdrukken (zwart-wit 5 cent per pagina, kleur 15 cent).'}</p>
           ${OPT.printer ? '' : `<p class="gf" style="margin:8px 0 0"><button type="button" data-act="pprinter">Een bepaalde printer kiezen</button></p>`}</div>`;
@@ -493,7 +493,7 @@
       };
       TOP_UP.set = (v) => { amt = v; ss.set('tm4-print-amt', String(v)); draw(); };
       TOP_UP.go = () => { goTo(O + '/topup/nl?amount=' + amt); };
-      draw();
+      goTo(O + '/topup/nl', { replace: true });
     }
     const TOP_UP = { set() {}, go() {} };
 
@@ -593,34 +593,90 @@
     show();
   }
 
-  // print.kuleuven.be/topup: KU Leuven's payment page. From the app (?tm=pay&amount=5) the amount is already picked
-  // and the button is highlighted, but you tap it yourself: sending the form from a script right after the page
-  // (and the KU Leuven login) loaded gave a "systeemfout" on the iPhone. A button at the top leads back to the app.
+  // print.kuleuven.be/topup: KU Leuven's payment page becomes the app's "Opladen" screen. The page's own form
+  // stays (hidden) and is what gets sent when you tap Betaal, so the payment works exactly as on the site; it is
+  // never sent by itself (sending it from a script right after the page loaded gave a "systeemfout").
+  // Any other /topup page (after paying) keeps its own look, with a button back to the app at the top.
   function topupPage() {
-    const amt = params.get('amount') || ss.get('tm4-topup-amt');
-    if (params.get('amount')) ss.set('tm4-topup-amt', params.get('amount'));
+    if (params.get('amount')) ss.set('tm4-print-amt', params.get('amount'));
+    const hide = document.createElement('style');
+    hide.textContent = 'html{background:' + (isDark() ? '#000' : '#f2f2f7') + '!important}body{visibility:hidden!important}';
+    (document.head || document.documentElement).appendChild(hide);
+    const unhide = () => hide.remove();
+    setTimeout(unhide, 7000);
     const ready = (fn) => (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn());
     ready(() => {
-      if (!document.body || document.querySelector('form[action*="idp.kuleuven.be"]')) return; // on its way to the login
+      if (!document.body || document.querySelector('form[action*="idp.kuleuven.be"]')) { unhide(); return; } // on its way to the login
+      const form = document.querySelector('form[action*="/topup/topup"]') || (document.querySelector('input[name="amount"]') || {}).form;
+      const radios = form ? Array.from(form.querySelectorAll('input[name="amount"]')) : [];
+      if (!form || !radios.length) { unhide(); pill(); return; }
+      const bt = (document.querySelector('.current-balance span') || {}).textContent || '';
+      const bm = /(-?\d+)[.,](\d{2})/.exec(bt);
+      const bal = bm ? Number(bm[1] + '.' + bm[2]) : null;
+      const logos = Array.from(document.querySelectorAll('.payment-methods img')).map((m) => ({ src: m.src, alt: m.alt || '' }));
+      const amounts = radios.map((r) => Number(r.value)).filter((v) => v > 0);
+      let amt = Number(ss.get('tm4-print-amt'));
+      if (!amounts.includes(amt)) amt = amounts.includes(5) ? 5 : amounts[0];
+      const back = location.origin + '/';
+      takeover('Opladen', []);
+      buildShell([
+        { id: 'vandaag', label: 'Vandaag', icon: 'house', href: PORTAL + '?tm=vandaag' },
+        { id: 'vakken', label: 'Vakken', icon: 'book', href: PORTAL + '?tm=vakken' },
+        { id: 'rooster', label: 'Rooster', icon: 'calendar', href: PORTAL + '?tm=rooster' },
+        { id: 'updates', label: 'Updates', icon: 'bell', href: PORTAL + '?tm=updates' },
+        { id: 'meer', label: 'Meer', icon: 'grid', href: PORTAL + '?tm=meer' },
+      ], 'meer');
+      setNav({ title: 'Opladen', back: { label: 'Printen', href: back } });
+      form.hidden = true;
+      document.body.appendChild(form); // the page's own form, sent as it is
+      const main = $('#tm-main');
+      const sec = document.createElement('section');
+      sec.className = 'view on';
+      sec.setAttribute('data-tm4', '');
+      main.appendChild(sec);
+      const eu = (v) => '€ ' + v.toFixed(2).replace('.', ',');
+      const pg = (v) => { const n = Math.floor(v / 0.05 + 1e-6); return n === 1 ? '1 pagina zwart-wit' : n + " pagina's zwart-wit"; };
+      let busy = false;
+      const draw = () => {
+        const after = bal != null ? bal + amt : null;
+        put(sec, `<div class="lt"><h1>Opladen</h1><p class="lt-sub">KU Leuven Print</p></div>
+          <div class="card pr-bal"><span class="pr-bal-l">Je printsaldo</span><b class="pr-bal-v">${bal != null ? esc(eu(bal)) : '–'}</b><span class="pr-bal-s">${bal != null ? esc(pg(bal)) : ''}</span></div>
+          <div class="gh">Hoeveel wil je opladen?</div>
+          <div class="pr-amts">${amounts.map((a) => `<button type="button" class="pr-amt-b${a === amt ? ' on' : ''}" data-v="${a}"><b>€ ${a}</b><span>${a * 20} pagina's</span></button>`).join('')}</div>
+          <div class="pr-send">${after != null ? `<p class="pr-est">Na het opladen: ${esc(eu(after))}<span>${esc(pg(after))}</span></p>` : ''}
+          <button type="button" class="btn pr-go-btn" data-act="pay"${busy ? ' disabled' : ''}>${busy ? '<span class="spin"></span>' : esc('Betaal ' + eu(amt).replace(',00', ''))}</button>
+          ${logos.length ? `<p class="pr-logos">${logos.map((l) => `<img src="${esc(l.src)}" alt="${esc(l.alt)}">`).join('')}</p>` : ''}
+          <p class="kb-legal">Je betaalt veilig bij de betaaldienst van KU Leuven, met Bancontact, Visa, Mastercard of Maestro. Daarna staat het bedrag meteen op je saldo. Zwart-wit kost 5 cent per pagina, kleur 15 cent; het saldo werkt op alle KU Leuven-campussen.</p></div>`);
+      };
+      sec.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b || busy) return;
+        if (b.dataset.v) { amt = Number(b.dataset.v); ss.set('tm4-print-amt', String(amt)); draw(); return; }
+        if (b.dataset.act === 'pay') {
+          const r = radios.find((x) => Number(x.value) === amt);
+          if (!r) return;
+          r.checked = true;
+          busy = true;
+          draw();
+          const sb = form.querySelector('button[type="submit"], input[type="submit"]');
+          if (!TEST) leaving('fwd');
+          try { if (form.requestSubmit) form.requestSubmit(sb || undefined); else if (sb) sb.click(); else form.submit(); }
+          catch (_) { form.submit(); }
+          setTimeout(() => { busy = false; draw(); }, 15000); // still here (no connection?): let you try again
+        }
+      });
+      W.addEventListener('pageshow', (e) => { if (e.persisted && busy) { busy = false; draw(); } });
+      draw();
+    });
+    function pill() {
       const st = document.createElement('style');
-      st.textContent = '#tm-topback{position:fixed;z-index:99999;left:12px;top:calc(10px + env(safe-area-inset-top));padding:9px 15px;border-radius:19px;background:#1f6f8b;color:#fff!important;font:600 15px -apple-system,system-ui,sans-serif;text-decoration:none!important;box-shadow:0 4px 14px rgba(0,0,0,.2)}'
-        + 'body{padding-top:52px!important}'
-        + '.tm-pay{display:block!important;width:100%!important;font-size:19px!important;padding:14px!important;border-radius:14px!important;background:#1f6f8b!important;border-color:#1f6f8b!important;box-shadow:0 0 0 4px rgba(31,111,139,.25)!important}';
+      st.textContent = '#tm-topback{position:fixed;z-index:99999;left:12px;top:calc(10px + env(safe-area-inset-top));padding:9px 15px;border-radius:19px;background:#1f6f8b;color:#fff!important;font:600 15px -apple-system,system-ui,sans-serif;text-decoration:none!important;box-shadow:0 4px 14px rgba(0,0,0,.2)}body{padding-top:52px!important}';
       document.head.appendChild(st);
       const a = document.createElement('a');
       a.id = 'tm-topback';
-      a.href = location.origin + '/app?service=page/UserSummary#/';
+      a.href = location.origin + '/';
       a.textContent = '‹ Terug naar Printen';
       document.body.appendChild(a);
-      const r = /^(2|5|10|25)$/.test(amt || '') && document.querySelector('input[name="amount"][value="' + amt + '"]');
-      if (!r || !r.form) return;
-      r.checked = true;
-      const btn = r.form.querySelector('button[type="submit"], input[type="submit"]');
-      if (btn) {
-        btn.classList.add('tm-pay');
-        btn.textContent = 'Betaal € ' + amt;
-        r.form.addEventListener('change', () => { const c = r.form.querySelector('input[name="amount"]:checked'); if (c) btn.textContent = 'Betaal € ' + c.value; });
-        setTimeout(() => btn.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
-      }
-    });
+    }
   }
+

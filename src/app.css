@@ -942,3 +942,5 @@ html.tm4 body:not(.no-tabs):not(.kfull)::after{content:"";position:fixed;z-index
 .tm4 .pr-form .ko-hint{margin:0 4px 12px}
 .tm4 .pr-q{width:100%;height:42px;margin:0 0 12px;padding:0 14px;border:0;border-radius:14px;background:var(--fill);color:var(--text);font:16px var(--font);-webkit-appearance:none;appearance:none}
 .tm4 .pr-list{min-height:200px;margin:0 -16px}
+.tm4 .pr-logos{display:flex;justify-content:center;gap:8px;margin:14px 0 0}
+.tm4 .pr-logos img{height:24px;width:auto;border-radius:4px;background:#fff;padding:2px}
