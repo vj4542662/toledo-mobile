@@ -2,7 +2,7 @@
   const W = window;
   const VERSION = '__VERSION__';
   const CHANNEL = '__BRANCH__'; // 'beta' = test version (only for testers), 'main' = for everyone
-  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt', 'print.kuleuven.be': 'print', 'www.alma.be': 'alma', 'alma.be': 'alma', 'raw.githubusercontent.com': 'install' }[location.hostname];
+  const SITE = { 'toledo.kuleuven.be': 'portal', 'ultra.edu.kuleuven.cloud': 'ultra', 'webwsp.aps.kuleuven.be': 'loket', 'idp.kuleuven.be': 'idp', 'icts-p-toledo-journey.cloud.icts.kuleuven.be': 'journey', 'kurt3.ghum.kuleuven.be': 'kurt', 'print.kuleuven.be': 'print', 'www.alma.be': 'alma', 'alma.be': 'alma', 'usc.kuleuven.cloud': 'sport', 'raw.githubusercontent.com': 'install' }[location.hostname];
   const TOP = W.top === W;
   const TEST = !!W.__TM_TEST__;
   const PATH = W.__TM_PATH__ || location.pathname;

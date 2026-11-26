@@ -667,7 +667,7 @@
         { n: 'Mijn ISP', i: 'idcard', c: '#00a79d', href: '#isp' },
         { n: 'LIMO', i: 'library', c: '#6e7f95', href: L.LIMO || 'https://limo.libis.be/index.html' },
         { n: 'Alma', i: 'food', c: '#d9534f', href: 'https://www.alma.be/nl/restaurants#/?th=' + THEME, act: 'alma' },
-        { n: 'Sport', i: 'sport', c: '#2fb36b', act: 'soon' },
+        { n: 'Sport', i: 'sport', c: '#2fb36b', href: 'https://usc.kuleuven.cloud/?tm=app#/?th=' + THEME },
         { n: 'Attesten', i: 'cert', c: '#8e5bd6', href: `${LOKET}?tm=attest&ma=${store.get('mailApp') === 'web' ? 'web' : 'app'}&th=${THEME}` },
         { n: 'Hulp', i: 'help', c: '#8a96a3', href: L['HELP-LEUVEN-STUDENT'] || 'https://associatie.kuleuven.be/toledo/nl/help_KULeuven_campus_Leuven_student' },
         { n: 'Instellingen', i: 'sliders', c: '#5d6b73', href: '#instellingen', badge: P.upd ? 1 : 0 },
@@ -895,7 +895,6 @@
         { label: 'Studievoortgangsdossier', href: 'https://kuleuven.be/kuloket/zr_1017?sap-language=NL' },
       ] }),
       login: () => { ss.set('tm4-login', '1'); location.reload(); },
-      soon: () => {}, // Sport: only an icon for now, the app itself comes later
       alma: (el) => openAlma(el.getAttribute('href'), el),
       theme: (b) => {
         const t = b.dataset.id;

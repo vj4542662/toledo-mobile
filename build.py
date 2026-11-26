@@ -3,7 +3,7 @@
 import re, json, pathlib, os, subprocess
 here = pathlib.Path(__file__).parent
 src = here / 'src'
-VERSION = "4.33.1"
+VERSION = "4.34.0"
 # Two channels: the branch 'beta' is the test channel (only Jeremy's iPhone points there), 'main' is for everyone.
 # The built file points its update links at the branch it was built on. Only on main (or TM_CHANNEL=main) does it
 # build for everyone; anything else builds for the test channel. Release to everyone with: sh release.sh
@@ -15,6 +15,9 @@ assert CHANNEL in ('main', 'beta'), CHANNEL
 # What's new, in plain language for students (no technical terms). Add a line for every version you publish:
 # the app shows these in the update screen and once more right after updating.
 NEWS = {
+    "4.34.0": [
+        "Nieuw in Meer: Sport. Bekijk alle sessies van KU Leuven Sport per dag met de vrije plaatsen, zet een ster bij je eigen sporten, zie de vrije uren van padel, tennis en andere velden, en onder Mijn je sportkaart en je inschrijvingen.",
+    ],
     "4.33.1": [
         "Je studieplek-reservaties staan meteen in de Agenda, ook als je Studieplek nog niet geopend hebt. Examens van januari, juni en augustus staan elk in een eigen blok.",
     ],
@@ -205,7 +208,7 @@ import base64
 css = css.replace('__MANROPE__', 'data:font/woff2;base64,' + base64.b64encode((src / 'fonts' / 'manrope-latin.woff2').read_bytes()).decode())
 # the "Wat is er nieuw" after an update only needs the last versions (older ones stay here for reference)
 APP_NEWS = dict(sorted(NEWS.items(), key=lambda kv: tuple(int(x) for x in kv[0].split('.')), reverse=True)[:15])
-app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'attest.js', 'kurt.js', 'print.js', 'alma.js', 'main.js'])
+app = ''.join((src / f).read_text() for f in ['core.js', 'study.js', 'portal.js', 'ultra.js', 'loket.js', 'attest.js', 'kurt.js', 'print.js', 'alma.js', 'sport.js', 'main.js'])
 app = app.replace('__VERSION__', VERSION).replace('__NEWS__', json.dumps(APP_NEWS, ensure_ascii=False)).replace('__BRANCH__', CHANNEL)
 
 classic = (src / 'classic-v3.js').read_text()
@@ -227,6 +230,7 @@ header = f"""// ==UserScript==
 // @match        https://print.kuleuven.be/*
 // @match        https://www.alma.be/*
 // @match        https://alma.be/*
+// @match        https://usc.kuleuven.cloud/*
 // @match        https://raw.githubusercontent.com/vj4542662/toledo-mobile/*
 // @updateURL    https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
 // @downloadURL  https://raw.githubusercontent.com/vj4542662/toledo-mobile/{CHANNEL}/toledo-mobile.user.js
@@ -243,6 +247,8 @@ header = f"""// ==UserScript==
   - Pages the app doesn't cover (submitting an assignment, tests, KU Loket apps) keep the phone layout of version 3.
   - KURT (study places, kurt3.ghum.kuleuven.be) becomes an app screen: libraries with live occupancy, rooms with free seats, and the floor plan to tap a seat and book it.
   - Alma (www.alma.be, the student restaurants) becomes an app screen: the menu of your own Alma with prices, hours and filters.
+  - KU Leuven Sport (usc.kuleuven.cloud) becomes an app screen: sessions per day with free places, your own sports,
+    free hours of the fields, and your sportkaart. Booking and paying happen on the site itself.
   - The KU Leuven sign-in page gets an app look, and "Log in via KU Leuven Authenticator" opens the
     Authenticator app straight away. The script never reads or fills in your username or password there.
   - The update page on GitHub (this file) shows simple steps instead of code, and the app checks GitHub's small

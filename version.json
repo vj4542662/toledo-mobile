@@ -1,11 +1,7 @@
 {
- "version": "4.33.1",
- "built": 1795647686072,
+ "version": "4.34.0",
+ "built": 1795684925001,
  "builds": [
-  {
-   "v": "4.29.1",
-   "built": 1795630740377
-  },
   {
    "v": "4.29.2",
    "built": 1795631024045
@@ -33,9 +29,16 @@
   {
    "v": "4.33.1",
    "built": 1795647686072
+  },
+  {
+   "v": "4.34.0",
+   "built": 1795684925001
   }
  ],
  "news": {
+  "4.34.0": [
+   "Nieuw in Meer: Sport. Bekijk alle sessies van KU Leuven Sport per dag met de vrije plaatsen, zet een ster bij je eigen sporten, zie de vrije uren van padel, tennis en andere velden, en onder Mijn je sportkaart en je inschrijvingen."
+  ],
   "4.33.1": [
    "Je studieplek-reservaties staan meteen in de Agenda, ook als je Studieplek nog niet geopend hebt. Examens van januari, juni en augustus staan elk in een eigen blok."
   ],
@@ -73,9 +76,6 @@
   ],
   "4.28.5": [
    "Groepswerken is eenvoudiger: per groep zie je de naam, het vak en de kleur van het vak, met Mail de groep en Groepsruimte boeken."
-  ],
-  "4.28.4": [
-   "Alma: een andere dag of Alma kiezen gaat meteen, en het menu van vorige keer staat er al terwijl het nieuwe laadt."
   ]
  }
 }

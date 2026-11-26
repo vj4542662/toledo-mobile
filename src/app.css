@@ -1182,3 +1182,57 @@ html.tm4.dark .ip-us-hit{color:#8fb8ff}
 .tm4 .ex-gap i{width:2px;height:22px;border-radius:1px;background:var(--g);opacity:.55}
 .tm4 .ex-gap .cap{height:20px;font-size:12px}
 .tm4 .ex-gap + .exam::before{display:none}
+
+/* ---------- Sport (v4.34.0): sessions, fields and your sportkaart (reuses the Alma day strip, chips and sheets) ---------- */
+.tm4 .sp-seg{padding:0 16px 12px}
+.tm4 .sp-seg .seg{margin:0}
+.tm4 .sp-flt{padding-bottom:12px}
+.tm4 .sp-flt .chip.al-all{background:var(--card)}
+.tm4 .sp-flt .chip .i{width:15px;height:15px}
+.tm4 .sp-flt .chip.on .i{fill:currentColor}
+.tm4 .sp-g{--inset:16px}
+.tm4 .sp-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 16px;text-align:left;position:relative}
+.tm4 .sp-row+.sp-row::before{content:"";position:absolute;top:0;left:74px;right:16px;height:1px;background:var(--sep)}
+.tm4 .sp-tm{flex:none;width:46px;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.tm4 .sp-tm b{font-size:15.5px;font-weight:800}
+.tm4 .sp-tm small{font-size:11.5px;font-weight:600;color:var(--tabi)}
+.tm4 .sp-mn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tm4 .sp-mn b{font-size:15.5px;font-weight:700;line-height:20px}
+.tm4 .sp-mn span{font-size:13px;color:var(--sub);line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tm4 .sp-tag{font-style:normal;margin-left:6px;padding:1px 6px;border-radius:6px;background:var(--fill);color:var(--sub);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;vertical-align:2px}
+.tm4 .sp-pl{flex:none;display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap}
+.tm4 .sp-pl .i{width:13px;height:13px;stroke-width:2.8}
+.tm4 .sp-pl.ok,.tm4 .sp-pl.in{background:color-mix(in srgb,var(--green) 15%,var(--card));color:color-mix(in srgb,var(--green) 72%,var(--text))}
+.tm4 .sp-pl.few{background:color-mix(in srgb,var(--orange) 15%,var(--card));color:color-mix(in srgb,var(--orange) 75%,var(--text))}
+.tm4 .sp-pl.full{background:var(--fill);color:var(--tabi)}
+.tm4 .sp-pl.walk{background:var(--tint);color:var(--accent)}
+.tm4 .card.sp-field{margin:0 16px 12px;padding:12px 0 2px}
+.tm4 .sp-fh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 16px 8px}
+.tm4 .sp-fh b{font-size:16px;font-weight:700}
+.tm4 .sp-fh span{font-size:13px;color:var(--sub);white-space:nowrap}
+.tm4 .sp-slots{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px 12px}
+.tm4 .sp-slot{padding:7px 11px;border-radius:11px;background:var(--tint);color:var(--accent);font-size:14px;font-weight:800}
+.tm4 .sp-slot.x{background:var(--fill);color:var(--ter);text-decoration:line-through}
+.tm4 .sp-none{padding:0 16px 12px;font-size:14px;color:var(--sub)}
+.tm4 .card.sp-login{margin:0 16px 12px;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.tm4 .sp-login>.i{width:26px;height:26px;color:var(--accent)}
+.tm4 .sp-login b{font-size:16px}
+.tm4 .sp-login span{font-size:14px;color:var(--sub);line-height:19px}
+.tm4 .sp-login .btn{margin-top:8px}
+.tm4 .sp-me{margin:0 16px 4px}
+.tm4 .card.sp-card{margin:0 16px 10px;padding:13px 16px;display:flex;align-items:center;gap:12px}
+.tm4 .sp-card b{display:block;font-size:15.5px;font-weight:700}
+.tm4 .sp-card small{display:block;font-size:13.5px;color:var(--sub);line-height:18px;margin-top:1px}
+.tm4 .sp-ci{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--green) 15%,var(--card));color:var(--green)}
+.tm4 .sp-card.none .sp-ci{background:var(--fill);color:var(--sub)}
+.tm4 .sp-ci .i{width:22px;height:22px;stroke-width:2.4}
+.tm4 .sp-places{margin:4px 0 8px;font-size:15px}
+.tm4 .sp-ok{display:flex;align-items:center;gap:6px;margin:4px 0 8px;font-size:15px;font-weight:700;color:var(--green)}
+.tm4 .sp-ok .i{width:18px;height:18px;stroke-width:2.8}
+.tm4 .sp-star{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px;padding:11px;border-radius:14px;background:var(--fill);color:var(--accent);font-size:15px;font-weight:700}
+.tm4 .sp-star .i{width:18px;height:18px}
+.tm4 .sp-star.on{color:#c28a14}
+.tm4 .sp-star.on .i{fill:#e0a92b;stroke:#e0a92b}
+.tm4 .sp-note{margin-top:8px;font-size:13px;line-height:18px;color:var(--sub)}
+.tm4 .sp-seg ~ .al-days .al-day{flex-basis:56px}
+.tm4 .sp-none a{color:var(--accent);font-weight:700}

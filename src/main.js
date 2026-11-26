@@ -20,6 +20,11 @@
     const inFrame = !TOP && params.get('tm') === 'frame';
     mode = (TOP || inFrame) && PHONE && params.get('tm') !== 'orig' && /^\/(nl|en)\/restaurants(\/[a-z0-9-]+)?\/?$/.test(PATH) ? 'alma' : 'none';
     W.__TM_FRAME__ = inFrame && mode === 'alma';
+  } else if (SITE === 'sport') {
+    // KU Leuven Sport: the start address (or ?tm=app from Meer) becomes the Sport app; booking, paying and signing
+    // in happen on the site's own pages, which stay untouched for that visit (sportOrig)
+    if (params.get('tm') === 'orig') ss.set('tm4-classic-sport', String(Date.now()));
+    mode = TOP && PHONE && (params.get('tm') === 'app' || (PATH === '/' && !classicOn('sport') && !ss.get('tm4-sport-login'))) ? 'sport' : 'none';
   } else if (SITE === 'journey') mode = TOP && PHONE ? 'cover' : 'none'; // Toledo's link service, on its way to the course
   else if (SITE === 'loket') {
     if (!TOP && params.get('tm') === 'bridge') mode = 'bridge';
@@ -85,6 +90,8 @@
   if (mode === 'kurt') { whenRoot(kurtApp); return; }
   if (mode === 'krbridge') { kurtBridge(); return; }
   if (mode === 'alma') { whenRoot(almaApp); return; }
+  if (mode === 'sport') { whenRoot(sportApp); return; }
+  if (SITE === 'sport') { if (TOP) sportLoginWatch(); return; }
   if (mode === 'print') {
     // signed out, the server sends a small page that forwards to the KU Leuven login: let it (or send it on ourselves)
     if (document.querySelector('form[action*="idp.kuleuven.be"]') || /Shibboleth Authentication/i.test(document.title || '')) return;
